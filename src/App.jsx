@@ -540,6 +540,7 @@ export default function App() {
           <img src='/logo.jpg' alt='Team 4550' style={{ height: '68px', width: '68px', objectFit: 'contain', borderRadius: '8px' }} />
           <h1 style={styles.title}>4550 - Something's Bruin | SPONSOR TRACKER</h1>
         </div>
+        <a href="/" style={{ fontSize: 12, color: '#64748b', textDecoration: 'none', fontFamily: "'Share Tech Mono', monospace", letterSpacing: '1px' }}>← Main Site</a>
       </div>
 
       <div style={{ ...styles.main, position: 'relative', zIndex: 1 }}>
