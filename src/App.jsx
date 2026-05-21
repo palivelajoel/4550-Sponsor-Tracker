@@ -42,8 +42,7 @@ const styles = {
   app: { minHeight: '100vh', background: '#080a0f', fontFamily: "'Exo 2', sans-serif", color: '#f1f5f9', padding: '0' },
   header: { background: 'rgba(255,255,255,0.03)', borderBottom: '1px solid rgba(255,255,255,0.08)', padding: '20px 32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' },
   title: { fontSize: '28px', fontFamily: "'Orbitron', sans-serif", letterSpacing: '3px', color: '#ef4444', margin: 0 },
-  liveBadge: { display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.3)', borderRadius: '20px', padding: '6px 14px', fontSize: '11px', color: '#22c55e', letterSpacing: '1px' },
-  dot: { width: '8px', height: '8px', borderRadius: '50%', background: '#22c55e', animation: 'pulse 2s infinite' },
+
   main: { padding: '28px 32px', maxWidth: '1400px', margin: '0 auto' },
   statsRow: { display: 'flex', gap: '12px', marginBottom: '24px', flexWrap: 'wrap' },
   statCard: { flex: '1', minWidth: '100px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', padding: '16px', textAlign: 'center' },
@@ -540,9 +539,6 @@ export default function App() {
         <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
           <img src='/logo.jpg' alt='Team 4550' style={{ height: '68px', width: '68px', objectFit: 'contain', borderRadius: '8px' }} />
           <h1 style={styles.title}>4550 - Something's Bruin | SPONSOR TRACKER</h1>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <div style={styles.liveBadge}><div style={styles.dot} />LIVE</div>
         </div>
       </div>
 
