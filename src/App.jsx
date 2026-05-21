@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { createClient } from '@supabase/supabase-js'
 import Starfield from './Starfield.jsx'
-import { uploadFile } from './hubUtils.jsx'
+import { uploadFile, FONTS } from './hubUtils.jsx'
 
 const supabase = createClient(
   import.meta.env.VITE_SUPABASE_URL,
@@ -39,39 +39,39 @@ const EMAIL_TEMPLATES = [
 ]
 
 const styles = {
-  app: { minHeight: '100vh', background: 'linear-gradient(135deg, #0a0f1e 0%, #0d1b3e 50%, #0a0f1e 100%)', fontFamily: '"DM Mono", "Courier New", monospace', color: '#e2e8f0', padding: '0' },
+  app: { minHeight: '100vh', background: '#080a0f', fontFamily: "'Exo 2', sans-serif", color: '#f1f5f9', padding: '0' },
   header: { background: 'rgba(255,255,255,0.03)', borderBottom: '1px solid rgba(255,255,255,0.08)', padding: '20px 32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' },
-  title: { fontSize: '28px', fontFamily: '"Bebas Neue", "Impact", sans-serif', letterSpacing: '3px', color: '#60a5fa', margin: 0 },
+  title: { fontSize: '28px', fontFamily: "'Orbitron', sans-serif", letterSpacing: '3px', color: '#ef4444', margin: 0 },
   liveBadge: { display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.3)', borderRadius: '20px', padding: '6px 14px', fontSize: '11px', color: '#22c55e', letterSpacing: '1px' },
   dot: { width: '8px', height: '8px', borderRadius: '50%', background: '#22c55e', animation: 'pulse 2s infinite' },
   main: { padding: '28px 32px', maxWidth: '1400px', margin: '0 auto' },
   statsRow: { display: 'flex', gap: '12px', marginBottom: '24px', flexWrap: 'wrap' },
   statCard: { flex: '1', minWidth: '100px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', padding: '16px', textAlign: 'center' },
-  statNum: { fontSize: '28px', fontFamily: '"Bebas Neue", sans-serif', letterSpacing: '2px' },
+  statNum: { fontSize: '28px', fontFamily: "'Orbitron', sans-serif", letterSpacing: '2px' },
   statLabel: { fontSize: '10px', color: '#94a3b8', letterSpacing: '1px', marginTop: '2px' },
   controls: { display: 'flex', gap: '10px', marginBottom: '24px', flexWrap: 'wrap' },
-  input: { background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '8px', padding: '10px 14px', color: '#e2e8f0', fontSize: '13px', fontFamily: '"DM Mono", monospace', outline: 'none', flex: '1', minWidth: '180px' },
-  select: { background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '8px', padding: '10px 14px', color: '#e2e8f0', fontSize: '13px', fontFamily: '"DM Mono", monospace', outline: 'none', cursor: 'pointer' },
-  btn: { background: 'rgba(59,130,246,0.25)', border: '1px solid rgba(59,130,246,0.5)', borderRadius: '8px', padding: '10px 16px', color: '#bfdbfe', fontSize: '12px', fontFamily: '"DM Mono", monospace', cursor: 'pointer', letterSpacing: '1px', fontWeight: '600', whiteSpace: 'nowrap' },
+  input: { background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '8px', padding: '10px 14px', color: '#e2e8f0', fontSize: '13px', fontFamily: "'Share Tech Mono', monospace", outline: 'none', flex: '1', minWidth: '180px' },
+  select: { background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '8px', padding: '10px 14px', color: '#e2e8f0', fontSize: '13px', fontFamily: "'Share Tech Mono', monospace", outline: 'none', cursor: 'pointer' },
+  btn: { background: '#ef4444', border: 'none', borderRadius: '8px', padding: '10px 16px', color: '#fff', fontSize: '12px', fontFamily: "'Orbitron', sans-serif", cursor: 'pointer', letterSpacing: '1px', fontWeight: '700', whiteSpace: 'nowrap' },
   grid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '18px' },
-  card: { background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '14px', padding: '20px', transition: 'all 0.3s ease', outline: '1px solid rgba(255,255,255,0.08)', wordBreak: 'break-word', overflowWrap: 'anywhere' },
+  card: { background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '14px', padding: '20px', transition: 'all 0.3s ease', wordBreak: 'break-word', overflowWrap: 'anywhere' },
   cardHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '14px', gap: '12px' },
-  company: { fontSize: '18px', fontFamily: '"Bebas Neue", sans-serif', letterSpacing: '2px', color: '#f1f5f9', wordBreak: 'break-word', overflowWrap: 'anywhere', minWidth: 0 },
+  company: { fontSize: '18px', fontFamily: "'Orbitron', sans-serif", letterSpacing: '2px', color: '#f1f5f9', wordBreak: 'break-word', overflowWrap: 'anywhere', minWidth: 0 },
   statusBadge: { display: 'inline-flex', alignItems: 'center', justifyContent: 'center', whiteSpace: 'nowrap', borderRadius: '20px', padding: '4px 12px', fontSize: '10px', letterSpacing: '1px', fontWeight: '600', border: '1px solid' },
   fieldRow: { display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px', fontSize: '12px', color: '#94a3b8', minWidth: 0, flexWrap: 'wrap' },
-  copyBtn: { background: 'rgba(59,130,246,0.2)', border: '1px solid rgba(59,130,246,0.35)', borderRadius: '4px', padding: '2px 8px', color: '#bfdbfe', fontSize: '10px', cursor: 'pointer', fontFamily: '"DM Mono", monospace' },
+  copyBtn: { background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '4px', padding: '2px 8px', color: '#ef4444', fontSize: '10px', cursor: 'pointer', fontFamily: "'Share Tech Mono', monospace" },
   cardActions: { display: 'flex', gap: '8px', marginTop: '14px', paddingTop: '14px', borderTop: '1px solid rgba(255,255,255,0.06)', flexWrap: 'wrap' },
-  editBtn: { background: 'rgba(59,130,246,0.15)', border: '1px solid rgba(59,130,246,0.3)', borderRadius: '6px', padding: '6px 12px', color: '#60a5fa', fontSize: '11px', cursor: 'pointer', fontFamily: '"DM Mono", monospace', flex: 1 },
-  deleteBtn: { background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.25)', borderRadius: '6px', padding: '6px 12px', color: '#f87171', fontSize: '11px', cursor: 'pointer', fontFamily: '"DM Mono", monospace' },
+  editBtn: { background: 'transparent', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '6px', padding: '6px 12px', color: '#94a3b8', fontSize: '11px', cursor: 'pointer', fontFamily: "'Share Tech Mono', monospace", flex: 1 },
+  deleteBtn: { background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.25)', borderRadius: '6px', padding: '6px 12px', color: '#f87171', fontSize: '11px', cursor: 'pointer', fontFamily: "'Share Tech Mono', monospace" },
   modal: { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '20px' },
-  modalBox: { background: '#0d1b3e', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '16px', padding: '28px', width: '100%', maxWidth: '500px', maxHeight: '90vh', overflowY: 'auto' },
-  modalTitle: { fontFamily: '"Bebas Neue", sans-serif', fontSize: '22px', letterSpacing: '2px', color: '#60a5fa', marginBottom: '20px' },
+  modalBox: { background: '#0d1117', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '16px', padding: '28px', width: '100%', maxWidth: '500px', maxHeight: '90vh', overflowY: 'auto' },
+  modalTitle: { fontFamily: "'Orbitron', sans-serif", fontSize: '22px', letterSpacing: '2px', color: '#ef4444', marginBottom: '20px' },
   field: { marginBottom: '14px' },
   label: { display: 'block', fontSize: '10px', color: '#94a3b8', letterSpacing: '1px', marginBottom: '6px' },
-  modalInput: { width: '100%', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '8px', padding: '10px 14px', color: '#e2e8f0', fontSize: '13px', fontFamily: '"DM Mono", monospace', outline: 'none', boxSizing: 'border-box' },
+  modalInput: { width: '100%', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '8px', padding: '10px 14px', color: '#e2e8f0', fontSize: '13px', fontFamily: "'Share Tech Mono', monospace", outline: 'none', boxSizing: 'border-box' },
   modalActions: { display: 'flex', gap: '10px', marginTop: '20px', flexWrap: 'wrap' },
-  toast: { position: 'fixed', bottom: '24px', right: '24px', background: '#1e3a5f', border: '1px solid rgba(96,165,250,0.4)', borderRadius: '10px', padding: '12px 20px', color: '#e2e8f0', fontSize: '13px', zIndex: 2000, animation: 'fadeIn 0.3s ease' },
-  lookupBtn: { background: 'rgba(59,130,246,0.2)', border: '1px solid rgba(59,130,246,0.4)', borderRadius: '6px', padding: '8px 14px', color: '#bfdbfe', fontSize: '11px', cursor: 'pointer', fontFamily: '"DM Mono", monospace', whiteSpace: 'nowrap' },
+  toast: { position: 'fixed', bottom: '24px', right: '24px', background: '#ef4444', border: 'none', borderRadius: '10px', padding: '12px 20px', color: '#fff', fontSize: '13px', zIndex: 2000, animation: 'fadeIn 0.3s ease' },
+  lookupBtn: { background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '6px', padding: '8px 14px', color: '#ef4444', fontSize: '11px', cursor: 'pointer', fontFamily: "'Share Tech Mono', monospace", whiteSpace: 'nowrap' },
   lookupRow: { display: 'flex', gap: '8px', alignItems: 'flex-end' },
 }
 
@@ -90,10 +90,10 @@ function SuggestionsBox({ showToast }) {
   }
   return (
     <div style={{ marginTop: '48px', padding: '24px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '14px' }}>
-      <div style={{ fontFamily: '"Bebas Neue", sans-serif', fontSize: '16px', letterSpacing: '2px', color: '#60a5fa', marginBottom: '8px' }}>💡 SUGGESTIONS</div>
+      <div style={{ fontFamily: "'Orbitron', sans-serif", fontSize: '16px', letterSpacing: '2px', color: '#ef4444', marginBottom: '8px' }}>💡 SUGGESTIONS</div>
       <p style={{ fontSize: '11px', color: '#475569', margin: '0 0 12px', letterSpacing: '0.5px' }}>Have an idea or found a bug? Leave a suggestion and the team will review it.</p>
-      <textarea value={msg} onChange={e => setMsg(e.target.value)} placeholder="Type your suggestion here..." style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', padding: '10px 14px', color: '#e2e8f0', fontSize: '12px', fontFamily: '"DM Mono", monospace', outline: 'none', resize: 'vertical', height: '80px', boxSizing: 'border-box' }} />
-      <button onClick={submit} disabled={sending || !msg.trim()} style={{ marginTop: '8px', background: 'rgba(59,130,246,0.25)', border: '1px solid rgba(59,130,246,0.5)', borderRadius: '8px', padding: '8px 20px', color: '#bfdbfe', fontSize: '12px', fontFamily: '"DM Mono", monospace', cursor: 'pointer', letterSpacing: '1px' }}>
+      <textarea value={msg} onChange={e => setMsg(e.target.value)} placeholder="Type your suggestion here..." style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', padding: '10px 14px', color: '#e2e8f0', fontSize: '12px', fontFamily: "'Share Tech Mono', monospace", outline: 'none', resize: 'vertical', height: '80px', boxSizing: 'border-box' }} />
+      <button onClick={submit} disabled={sending || !msg.trim()} style={{ marginTop: '8px', background: '#ef4444', border: 'none', borderRadius: '8px', padding: '8px 20px', color: '#fff', fontSize: '12px', fontFamily: "'Orbitron', sans-serif", cursor: 'pointer', letterSpacing: '1px', fontWeight: 700 }}>
         {sending ? 'SENDING...' : 'SUBMIT'}
       </button>
     </div>
@@ -123,7 +123,7 @@ function EmailTemplatesModal({ sponsor, onClose }) {
         <div style={styles.modalTitle}>📧 EMAIL TEMPLATES — {sponsor?.company}</div>
         <div style={{ display: 'flex', gap: '8px', marginBottom: '16px', flexWrap: 'wrap' }}>
           {EMAIL_TEMPLATES.map((t, i) => (
-            <button key={i} onClick={() => selectTemplate(i)} style={{ ...styles.btn, background: selected === i ? 'rgba(59,130,246,0.4)' : 'rgba(59,130,246,0.15)', borderColor: selected === i ? '#60a5fa' : 'rgba(59,130,246,0.3)' }}>{t.label}</button>
+            <button key={i} onClick={() => selectTemplate(i)} style={{ ...styles.btn, background: selected === i ? '#ef4444' : 'transparent', border: selected === i ? 'none' : '1px solid rgba(239,68,68,0.3)', color: selected === i ? '#fff' : '#ef4444' }}>{t.label}</button>
           ))}
         </div>
         <div style={styles.field}>
@@ -177,7 +177,7 @@ function NotesModal({ sponsor, onClose }) {
         <div style={styles.field}>
           <label style={styles.label}>ADD INTERACTION NOTE</label>
           <textarea style={{ ...styles.modalInput, height: '80px', resize: 'vertical' }} value={newNote} onChange={e => setNewNote(e.target.value)} placeholder="e.g. Called and spoke with manager, follow up next week..." />
-          <button style={{ ...styles.btn, marginTop: '8px' }} onClick={addNote}>+ ADD NOTE</button>
+          <button style={{ ...styles.editBtn, marginTop: '8px', background: '#ef4444', color: '#fff', border: 'none', padding: '8px 16px', borderRadius: '8px', fontWeight: 600 }} onClick={addNote}>+ ADD NOTE</button>
         </div>
         <div style={{ borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: '14px' }}>
           {loading ? <div style={{ color: '#475569', fontSize: '12px' }}>Loading...</div> :
@@ -249,7 +249,7 @@ function Modal({ sponsor, onClose, onSave }) {
           <label style={styles.label}>LOGO URL</label>
           <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
             <input style={{ ...styles.modalInput, flex: 1 }} value={form.logo_url || ''} onChange={e => set('logo_url', e.target.value)} placeholder="https://..." />
-            <button type="button" onClick={() => logoFileRef.current?.click()} style={styles.lookupBtn}>{logoUploading ? '⏳' : '📸'}</button>
+            <button type="button" onClick={() => logoFileRef.current?.click()} style={{ ...styles.lookupBtn, fontSize: 16 }}>{logoUploading ? '⏳' : '📸'}</button>
             <input ref={logoFileRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={e => { if (e.target.files[0]) uploadLogo(e.target.files[0]) }} />
           </div>
           {form.logo_url && (
@@ -400,8 +400,6 @@ export default function App() {
   const [loading, setLoading] = useState(true)
   const [lookingUp, setLookingUp] = useState(false)
   const [lookupProgress, setLookupProgress] = useState({ current: 0, total: 0 })
-  const [darkMode, setDarkMode] = useState(true)
-
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(null), 3500) }
 
   const fetchSponsors = useCallback(async () => {
@@ -504,39 +502,38 @@ export default function App() {
   const counts = STATUS_OPTIONS.reduce((acc, s) => { acc[s] = sponsors.filter(x => x.status === s).length; return acc }, {})
 
   useEffect(() => { document.title = '4550 Something\'s Bruin | Sponsor Tracker' }, [])
-  const bg = darkMode
-    ? 'linear-gradient(135deg, #0a0f1e 0%, #0d1b3e 50%, #0a0f1e 100%)'
-    : 'linear-gradient(135deg, #e0e7ff 0%, #dbeafe 50%, #e0e7ff 100%)'
-  const textColor = darkMode ? '#e2e8f0' : '#1e293b'
-  const cardBg = darkMode ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.7)'
-  const cardBorder = darkMode ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)'
 
   if (!authed) return (
-    <div style={{ minHeight: '100vh', background: bg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: '"DM Mono", monospace' }}>
-      <style>{'@import url(\'https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@400;500&display=swap\');'}</style>
+    <div style={{ minHeight: '100vh', background: '#080a0f', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: "'Exo 2', sans-serif" }}>
+      <style>{FONTS}</style>
       <div style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '20px', padding: '48px 40px', width: '100%', maxWidth: '380px', textAlign: 'center' }}>
         <img src='/logo.jpg' alt='Team 4550' style={{ height: '80px', width: '80px', objectFit: 'contain', borderRadius: '12px', marginBottom: '20px' }} />
-        <div style={{ fontFamily: '"Bebas Neue", sans-serif', fontSize: '24px', letterSpacing: '3px', color: '#60a5fa', marginBottom: '6px' }}>SOMETHING'S BRUIN</div>
+        <div style={{ fontFamily: "'Orbitron', sans-serif", fontSize: '24px', letterSpacing: '3px', color: '#ef4444', marginBottom: '6px' }}>SOMETHING'S BRUIN</div>
         <div style={{ fontSize: '11px', color: '#475569', letterSpacing: '2px', marginBottom: '32px' }}>SPONSOR TRACKER · TEAM 4550</div>
-        <input type='password' placeholder='Enter team password' value={pwInput} onChange={e => { setPwInput(e.target.value); setPwError(false) }} onKeyDown={e => e.key === 'Enter' && handleLogin()} style={{ width: '100%', background: 'rgba(255,255,255,0.06)', border: pwError ? '1px solid #ef4444' : '1px solid rgba(255,255,255,0.12)', borderRadius: '8px', padding: '12px 16px', color: '#e2e8f0', fontSize: '13px', fontFamily: '"DM Mono", monospace', outline: 'none', boxSizing: 'border-box', marginBottom: '8px' }} />
+        <input type='password' placeholder='Enter team password' value={pwInput} onChange={e => { setPwInput(e.target.value); setPwError(false) }} onKeyDown={e => e.key === 'Enter' && handleLogin()} style={{ width: '100%', background: 'rgba(255,255,255,0.06)', border: pwError ? '1px solid #ef4444' : '1px solid rgba(255,255,255,0.12)', borderRadius: '8px', padding: '12px 16px', color: '#e2e8f0', fontSize: '13px', fontFamily: "'Share Tech Mono', monospace", outline: 'none', boxSizing: 'border-box', marginBottom: '8px' }} />
         {pwError && <div style={{ color: '#ef4444', fontSize: '11px', marginBottom: '12px' }}>Incorrect password</div>}
-        <button onClick={handleLogin} style={{ width: '100%', background: 'rgba(59,130,246,0.25)', border: '1px solid rgba(59,130,246,0.5)', borderRadius: '8px', padding: '12px', color: '#bfdbfe', fontSize: '13px', fontFamily: '"DM Mono", monospace', cursor: 'pointer', letterSpacing: '1px', marginTop: '4px' }}>ENTER</button>
+        <button onClick={handleLogin} style={{ width: '100%', background: '#ef4444', border: 'none', borderRadius: '8px', padding: '12px', color: '#fff', fontSize: '13px', fontFamily: "'Orbitron', sans-serif", cursor: 'pointer', letterSpacing: '1px', fontWeight: 700, marginTop: '4px' }}>ENTER</button>
       </div>
     </div>
   )
 
   return (
-    <div style={{ ...styles.app, background: bg, color: textColor, position: 'relative' }}>
-      <Starfield density={12000} opacity={darkMode ? 0.28 : 0.12} />
+    <div style={{ ...styles.app, position: 'relative' }}>
+      <div style={{ position:"fixed", inset:0, pointerEvents:"none", overflow:"hidden", zIndex:0 }}>
+        <Starfield density={12000} opacity={0.28} />
+        {[{ s:500, t:"-20%", l:"-15%", c:"rgba(239,68,68,0.07)", d:"0s" }, { s:350, b:"-10%", r:"-10%", c:"rgba(59,130,246,0.05)", d:"1.5s" }, { s:250, t:"45%", r:"15%", c:"rgba(168,85,247,0.04)", d:"0.8s" }].map((o,i) => (
+          <div key={i} style={{ position:"absolute", width:o.s, height:o.s, top:o.t, bottom:o.b, left:o.l, right:o.r, borderRadius:"50%", background:`radial-gradient(circle, ${o.c}, transparent)`, animation:`orbFloat ${6+i}s ease-in-out infinite`, animationDelay:o.d }} />
+        ))}
+        <div style={{ position:"absolute", inset:0, backgroundImage:"linear-gradient(rgba(239,68,68,0.04) 1px,transparent 1px),linear-gradient(90deg,rgba(239,68,68,0.04) 1px,transparent 1px)", backgroundSize:"44px 44px" }} />
+        <div style={{ position:"absolute", left:0, right:0, height:2, background:"linear-gradient(90deg,transparent,rgba(239,68,68,0.3),transparent)", animation:"scanline 4s linear infinite", top:"-4px" }} />
+      </div>
+      <style>{FONTS}</style>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@400;500&display=swap');
-        @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
-        @keyframes fadeIn { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+        @keyframes orbFloat{0%,100%{transform:scale(1);}50%{transform:scale(1.15);}}
         .sponsor-card { outline: 1px solid rgba(255,255,255,0.08); border-radius: 14px; transform: translateZ(0); transition: transform 0.22s ease, box-shadow 0.22s ease, outline-color 0.22s ease; }
-        .sponsor-card:hover { transform: translateY(-3px) scale(1.01); box-shadow: 0 24px 55px rgba(14,165,233,0.14); outline-color: rgba(96,165,250,0.45); }
-        * { box-sizing: border-box; } body { margin: 0; }
+        .sponsor-card:hover { transform: translateY(-3px) scale(1.01); box-shadow: 0 24px 55px rgba(239,68,68,0.14); outline-color: rgba(239,68,68,0.45); }
         input::placeholder { color: #475569; } textarea::placeholder { color: #475569; }
-        select option { background: #0d1b3e; }
+        select option { background: #0a0e18; }
       `}</style>
 
       <div style={{ ...styles.header, position: 'relative', zIndex: 1 }}>
@@ -545,7 +542,6 @@ export default function App() {
           <h1 style={styles.title}>4550 - Something's Bruin | SPONSOR TRACKER</h1>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <button onClick={() => setDarkMode(d => !d)} style={{ ...styles.btn, fontSize: '16px', padding: '6px 12px' }}>{darkMode ? '☀️' : '🌙'}</button>
           <div style={styles.liveBadge}><div style={styles.dot} />LIVE</div>
         </div>
       </div>
@@ -559,7 +555,7 @@ export default function App() {
 
         <div style={styles.statsRow}>
           <div style={styles.statCard}>
-            <div style={{ ...styles.statNum, color: '#60a5fa' }}>{sponsors.length}</div>
+            <div style={{ ...styles.statNum, color: '#ef4444' }}>{sponsors.length}</div>
             <div style={styles.statLabel}>TOTAL</div>
           </div>
           {STATUS_OPTIONS.map(s => (
@@ -604,7 +600,7 @@ export default function App() {
               const tierColor = TIER_COLORS[s.tier] || '#64748b'
               const isFollowUpDue = s.follow_up_date && s.follow_up_date <= today
               return (
-                <div key={s.id} style={{ ...styles.card, background: cardBg, borderColor: cardBorder, outline: isFollowUpDue ? '2px solid rgba(245,158,11,0.4)' : 'none' }}>
+                <div key={s.id} style={{ ...styles.card, outline: isFollowUpDue ? '2px solid rgba(245,158,11,0.4)' : 'none' }}>
                   <div style={styles.cardHeader}>
                     <div>
                       <div style={styles.company}>{s.company}</div>
@@ -617,8 +613,8 @@ export default function App() {
                       {isFollowUpDue && <div style={{ fontSize: '9px', color: '#fbbf24', letterSpacing: '1px' }}>⏰ FOLLOW-UP DUE</div>}
                     </div>
                   </div>
-                  {s.email && <div style={styles.fieldRow}><span>📧</span><a href={`mailto:${s.email}`} target='_blank' rel='noreferrer' style={{ flex: 1, color: '#93c5fd', textDecoration: 'none', wordBreak: 'break-all', overflowWrap: 'anywhere', minWidth: 0 }}>{s.email}</a><button style={styles.copyBtn} onClick={() => copy(s.email)}>COPY</button></div>}
-                  {s.phone && <div style={styles.fieldRow}><span>📞</span><a href={`tel:${s.phone}`} style={{ flex: 1, color: '#93c5fd', textDecoration: 'none', wordBreak: 'break-all', overflowWrap: 'anywhere', minWidth: 0 }}>{s.phone}</a><button style={styles.copyBtn} onClick={() => copy(s.phone)}>COPY</button></div>}
+                  {s.email && <div style={styles.fieldRow}><span>📧</span><a href={`mailto:${s.email}`} target='_blank' rel='noreferrer' style={{ flex: 1, color: '#fca5a5', textDecoration: 'none', wordBreak: 'break-all', overflowWrap: 'anywhere', minWidth: 0 }}>{s.email}</a><button style={styles.copyBtn} onClick={() => copy(s.email)}>COPY</button></div>}
+                  {s.phone && <div style={styles.fieldRow}><span>📞</span><a href={`tel:${s.phone}`} style={{ flex: 1, color: '#fca5a5', textDecoration: 'none', wordBreak: 'break-all', overflowWrap: 'anywhere', minWidth: 0 }}>{s.phone}</a><button style={styles.copyBtn} onClick={() => copy(s.phone)}>COPY</button></div>}
                   {s.notes && <div style={{ ...styles.fieldRow, alignItems: 'flex-start' }}><span>📝</span><span style={{ color: '#94a3b8', lineHeight: '1.5', fontSize: '11px', wordBreak: 'break-word', overflowWrap: 'anywhere', whiteSpace: 'pre-wrap', minWidth: 0 }}>{s.notes}</span></div>}
                   {s.follow_up_date && <div style={styles.fieldRow}><span>📅</span><span style={{ color: isFollowUpDue ? '#fbbf24' : '#94a3b8', fontSize: '11px' }}>Follow up: {s.follow_up_date}</span></div>}
                   <div style={{ marginTop: '12px' }}>
@@ -639,7 +635,7 @@ export default function App() {
           </div>
         )}
         <SuggestionsBox showToast={showToast} />
-        <div style={{ textAlign: 'center', padding: '24px', fontSize: '11px', color: 'rgba(255,255,255,0.15)', fontFamily: '"DM Mono", monospace', letterSpacing: '2px', borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '40px' }}>
+        <div style={{ textAlign: 'center', padding: '24px', fontSize: '11px', color: '#334155', fontFamily: "'Share Tech Mono', monospace", letterSpacing: '2px', borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '40px' }}>
           BUILT BY PALIVELA_JOEL · FRC TEAM 4550
         </div>
       </div>

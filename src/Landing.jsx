@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, memo } from "react";
+import { useEffect, useRef, useState } from "react";
 import Starfield from "./Starfield.jsx";
 import { CaptainPhoto } from "./hubUtils.jsx";
 
@@ -27,92 +27,6 @@ function DistortedGrid() {
     }} />
   );
 }
-
-// Random glitch overlay — small screen chunks flash/distort at random intervals
-function GlitchOverlay() {
-  const [glitches, setGlitches] = useState([]);
-  useEffect(() => {
-    const interval = setInterval(() => {
-      const count = Math.floor(Math.random() * 3) + 1;
-      const newGlitches = Array.from({ length: count }, () => ({
-        id: Date.now() + Math.random(),
-        x: Math.random() * 100,
-        y: Math.random() * 100,
-        w: Math.random() * 120 + 30,
-        h: Math.random() * 8 + 3,
-        skew: (Math.random() - 0.5) * 10,
-        color: Math.random() > 0.5 ? "rgba(239,68,68,0.15)" : "rgba(59,130,246,0.1)",
-      }));
-      setGlitches(prev => [...prev, ...newGlitches].slice(-8));
-    }, 4000);
-    return () => clearInterval(interval);
-  }, []);
-  return (
-    <div style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 9999, overflow: "hidden" }}>
-      {glitches.map(g => (
-        <div
-          key={g.id}
-          style={{
-            position: "absolute",
-            left: `${g.x}%`,
-            top: `${g.y}%`,
-            width: g.w,
-            height: g.h,
-            background: g.color,
-            transform: `skewX(${g.skew}deg)`,
-            animation: "glitchFade 0.25s ease-out forwards",
-            mixBlendMode: "screen",
-          }}
-        />
-      ))}
-    </div>
-  );
-}
-
-// Wraps a section and randomly applies a visual glitch burst (filter + offset + flicker overlay)
-const GlitchSection = memo(function GlitchSection({ children }) {
-  const [glitching, setGlitching] = useState(false);
-  const timerRef = useRef(null);
-
-  useEffect(() => {
-    const schedule = () => {
-      const delay = 5000 + Math.random() * 15000;
-      timerRef.current = setTimeout(() => {
-        setGlitching(true);
-        timerRef.current = setTimeout(() => {
-          setGlitching(false);
-          schedule();
-        }, 600 + Math.random() * 1400);
-      }, delay);
-    };
-    schedule();
-    return () => clearTimeout(timerRef.current);
-  }, []);
-
-  const dx = glitching ? (Math.random() - 0.5) * 10 : 0;
-  const dy = glitching ? (Math.random() - 0.5) * 5 : 0;
-  const sk = glitching ? (Math.random() - 0.5) * 3 : 0;
-
-  return (
-    <div style={{ position: "relative" }}>
-      <div style={{
-        filter: glitching ? "hue-rotate(90deg) brightness(1.6) contrast(2) saturate(3)" : "none",
-        transform: glitching ? `translate(${dx}px, ${dy}px) skewX(${sk}deg)` : "none",
-        transition: glitching ? "none" : "filter 0.4s ease-out, transform 0.3s ease-out",
-      }}>
-        {children}
-      </div>
-      {glitching && (
-        <div style={{
-          position: "absolute", inset: 0, pointerEvents: "none", zIndex: 10,
-          background: "linear-gradient(90deg, rgba(239,68,68,0.18), rgba(59,130,246,0.14), rgba(239,68,68,0.18))",
-          mixBlendMode: "screen",
-          animation: "glitchFlicker 0.08s linear infinite",
-        }} />
-      )}
-    </div>
-  );
-});
 
 // Subtle bear / Bruin references scattered in the background
 function BruinBg() {
@@ -337,6 +251,7 @@ export default function Landing() {
       <BruinBg />
       {/* Distorted grid that warps on scroll */}
         <DistortedGrid />
+      
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&family=Exo+2:wght@300;400;600;700&family=Bebas+Neue&display=swap');
         *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
@@ -347,9 +262,7 @@ export default function Landing() {
         @keyframes menuSlide{from{opacity:0;transform:translateY(-8px);}to{opacity:1;transform:translateY(0);}}
         @keyframes orbFloat{0%,100%{transform:scale(1);}50%{transform:scale(1.15);}}
         @keyframes scanline{0%{top:-4px;}100%{top:100%;}}
-        @keyframes glitch{0%,90%,100%{text-shadow:none;}92%{text-shadow:-3px 0 #ef4444,3px 0 #3b82f6;}95%{text-shadow:3px 0 #ef4444,-3px 0 #3b82f6;}97%{text-shadow:none;}}
-        @keyframes glitchFade{from{opacity:1;}to{opacity:0;}}
-        @keyframes glitchFlicker{0%,100%{opacity:1;}50%{opacity:0.2;}}
+
         a{-webkit-tap-highlight-color:transparent;}
         /* Make sections semi-transparent to show the grid */
         section,footer,nav{position:relative;z-index:1;background:rgba(8,10,15,0.85);backdrop-filter:blur(10px);}
@@ -381,6 +294,7 @@ export default function Landing() {
           .captains-grid{grid-template-columns:1fr;}
           .stats-grid{gap:8px;}
         }
+        @keyframes glitch{0%,90%,100%{text-shadow:none;}92%{text-shadow:-3px 0 #ef4444,3px 0 #3b82f6;}95%{text-shadow:3px 0 #ef4444,-3px 0 #3b82f6;}97%{text-shadow:none;}}
       `}</style>
 
       {/* NAV */}
@@ -419,12 +333,12 @@ export default function Landing() {
       <section style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "linear-gradient(180deg,rgba(8,10,15,0.55) 0%,rgba(13,17,23,0.66) 100%)", paddingTop: 70, position: "relative", overflow: "hidden" }}>
         <ParticleCanvas isMobile={isMobile} />
         <div style={{ position: "absolute", inset: 0, backgroundImage: "linear-gradient(rgba(239,68,68,0.04) 1px,transparent 1px),linear-gradient(90deg,rgba(239,68,68,0.04) 1px,transparent 1px)", backgroundSize: isMobile ? "40px 40px" : "60px 60px", pointerEvents: "none" }} />
-        <GlitchSection>
+        
           <div ref={heroParallaxRef} style={{ textAlign: "center", zIndex: 1, padding: isMobile ? "0 20px" : "0 24px", transform: isMobile ? "none" : "none" }}>
             <div style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: isMobile ? 9 : 11, color: "#64748b", letterSpacing: isMobile ? 2 : 3, marginBottom: 20 }}>FRC ROBOTICS · CHERRY CREEK HIGH SCHOOL · GREENWOOD VILLAGE, CO</div>
             <img src={logoUrl} alt="Team Logo" style={{ width: isMobile ? 88 : 110, height: isMobile ? 88 : 110, borderRadius: "50%", objectFit: "cover", border: "2px solid rgba(239,68,68,0.4)", boxShadow: "0 0 40px rgba(239,68,68,0.2)", marginBottom: isMobile ? 20 : 28, animation: "fadeUp 0.8s ease both" }} />
-            <h1 style={{ fontFamily: "'Orbitron', sans-serif", fontWeight: 900, fontSize: isMobile ? "clamp(22px,8vw,40px)" : "clamp(32px,6vw,72px)", letterSpacing: isMobile ? 2 : 4, color: "#f1f5f9", animation: "fadeUp 0.8s ease 0.15s both, glitch 10s ease-in-out infinite" }}>SOMETHING'S BRUIN</h1>
-            <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: isMobile ? "clamp(16px,5vw,24px)" : "clamp(18px,3vw,32px)", color: "#ef4444", letterSpacing: isMobile ? 6 : 8, marginTop: 6, animation: "fadeUp 0.8s ease 0.25s both, glitch 12s ease-in-out infinite 2s" }}>FRC TEAM 4550</div>
+            <h1 style={{ fontFamily: "'Orbitron', sans-serif", fontWeight: 900, fontSize: isMobile ? "clamp(22px,8vw,40px)" : "clamp(32px,6vw,72px)", letterSpacing: isMobile ? 2 : 4, color: "#f1f5f9",         animation: "fadeUp 0.8s ease 0.15s both, glitch 10s ease-in-out infinite" }}>SOMETHING'S BRUIN</h1>
+            <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: isMobile ? "clamp(16px,5vw,24px)" : "clamp(18px,3vw,32px)", color: "#ef4444", letterSpacing: isMobile ? 6 : 8, marginTop: 6,         animation: "fadeUp 0.8s ease 0.25s both, glitch 12s ease-in-out infinite 2s" }}>FRC TEAM 4550</div>
             <div style={{ width: 50, height: 2, background: "linear-gradient(90deg,transparent,#ef4444,transparent)", margin: isMobile ? "18px auto" : "24px auto", animation: "fadeUp 0.8s ease 0.35s both" }} />
             <p style={{ color: "#94a3b8", fontSize: isMobile ? 14 : 16, maxWidth: 420, margin: "0 auto", marginBottom: isMobile ? 28 : 36, lineHeight: 1.7, minHeight: isMobile ? 44 : 28, padding: "0 8px" }}>
               Engineering excellence. Community impact. Championship mindset.
@@ -434,12 +348,12 @@ export default function Landing() {
               <a href={donate} target="_blank" rel="noreferrer" style={{ background: "transparent", color: "#ef4444", textDecoration: "none", padding: isMobile ? "12px 24px" : "14px 32px", borderRadius: 6, border: "1px solid #ef4444", fontFamily: "'Orbitron', sans-serif", fontWeight: 700, fontSize: isMobile ? 11 : 13, letterSpacing: 2 }}>SUPPORT US</a>
             </div>
           </div>
-        </GlitchSection>
+        
       </section>
 
       {/* ABOUT */}
       <section id="about"><div className="sec">
-        <GlitchSection>
+        
           <FadeSection>
             <Eyebrow>// WHO WE ARE</Eyebrow>
             <SectionTitle>About the Team</SectionTitle>
@@ -458,13 +372,13 @@ export default function Landing() {
               </div>
             </div>
           </FadeSection>
-        </GlitchSection>
+        
       </div></section>
 
       {/* OUR TEAM */}
       {captains.length > 0 && (
         <section id="team" style={{ background: "rgba(255,255,255,0.015)" }}><div className="sec">
-          <GlitchSection>
+          
             <FadeSection>
               <Eyebrow>// LEADERSHIP</Eyebrow>
               <SectionTitle>Our Team</SectionTitle>
@@ -479,13 +393,13 @@ export default function Landing() {
                 ))}
               </div>
             </FadeSection>
-          </GlitchSection>
+          
         </div></section>
       )}
 
       {/* SUB-TEAMS */}
       <section id="sub-teams"><div className="sec">
-        <GlitchSection>
+        
           <FadeSection>
             <Eyebrow>// HOW WE BUILD</Eyebrow>
             <SectionTitle>Sub-Teams</SectionTitle>
@@ -499,12 +413,12 @@ export default function Landing() {
               ))}
             </div>
           </FadeSection>
-        </GlitchSection>
+        
       </div></section>
 
       {/* OUTREACH */}
       <section id="outreach" style={{ background: "rgba(255,255,255,0.015)" }}><div className="sec">
-        <GlitchSection>
+        
           <FadeSection>
             <Eyebrow>// COMMUNITY</Eyebrow>
             <SectionTitle>Community Outreach</SectionTitle>
@@ -522,12 +436,12 @@ export default function Landing() {
               ))}
             </div>
           </FadeSection>
-        </GlitchSection>
+        
       </div></section>
 
       {/* MEDIA */}
       <section id="media-gallery"><div className="sec">
-        <GlitchSection>
+        
           <FadeSection>
             <Eyebrow>// GALLERY</Eyebrow>
             <SectionTitle>Media Gallery</SectionTitle>
@@ -536,12 +450,12 @@ export default function Landing() {
               <a href="/media" style={{ display: "inline-block", background: "#ef4444", color: "#fff", textDecoration: "none", padding: isMobile ? "12px 28px" : "14px 36px", borderRadius: 6, fontFamily: "'Orbitron', sans-serif", fontWeight: 700, fontSize: isMobile ? 11 : 13, letterSpacing: 2 }}>EXPLORE GALLERY →</a>
             </div>
           </FadeSection>
-        </GlitchSection>
+        
       </div></section>
 
       {/* SOCIAL MEDIA */}
       <section id="media"><div className="sec">
-        <GlitchSection>
+        
           <FadeSection>
             <Eyebrow>// FOLLOW ALONG</Eyebrow>
             <SectionTitle>Social Media</SectionTitle>
@@ -558,14 +472,14 @@ export default function Landing() {
               ))}
             </div>
           </FadeSection>
-        </GlitchSection>
+        
       </div></section>
 
       <SponsorBar sponsors={sponsors} />
 
       {/* SPONSORS */}
       <section id="sponsors" style={{ background: "rgba(255,255,255,0.015)" }}><div className="sec">
-        <GlitchSection>
+        
           <FadeSection>
             <div style={{ textAlign: "center" }}>
               <Eyebrow>// PARTNER WITH US</Eyebrow>
@@ -579,12 +493,12 @@ export default function Landing() {
               <a href={`mailto:${email}`} style={{ display: "inline-block", background: "#ef4444", color: "#fff", textDecoration: "none", padding: isMobile ? "12px 24px" : "14px 32px", borderRadius: 6, fontFamily: "'Orbitron', sans-serif", fontWeight: 700, fontSize: isMobile ? 11 : 13, letterSpacing: 2 }}>CONTACT US TO SPONSOR</a>
             </div>
           </FadeSection>
-        </GlitchSection>
+        
       </div></section>
 
       {/* DONATE */}
       <section style={{ background: "rgba(239,68,68,0.05)", borderTop: "1px solid rgba(239,68,68,0.2)" }}><div className="sec">
-        <GlitchSection>
+        
           <FadeSection>
             <div style={{ textAlign: "center" }}>
               <Eyebrow>// SUPPORT THE TEAM</Eyebrow>
@@ -593,12 +507,12 @@ export default function Landing() {
               <a href={donate} target="_blank" rel="noreferrer" style={{ display: "inline-block", background: "#ef4444", color: "#fff", textDecoration: "none", padding: isMobile ? "12px 28px" : "14px 32px", borderRadius: 6, fontFamily: "'Orbitron', sans-serif", fontWeight: 700, fontSize: isMobile ? 11 : 13, letterSpacing: 2 }}>DONATE NOW</a>
             </div>
           </FadeSection>
-        </GlitchSection>
+        
       </div></section>
 
       {/* CONTACT */}
       <section id="contact"><div className="sec">
-        <GlitchSection>
+        
           <FadeSection>
             <div style={{ textAlign: "center" }}>
               <Eyebrow>// GET IN TOUCH</Eyebrow>
@@ -612,7 +526,7 @@ export default function Landing() {
               </div>
             </div>
           </FadeSection>
-        </GlitchSection>
+        
       </div></section>
 
       {/* FOOTER */}
@@ -621,7 +535,7 @@ export default function Landing() {
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <img src={logoUrl} alt="logo" style={{ width: 36, height: 36, borderRadius: "50%", objectFit: "cover" }} />
             <div>
-              <div style={{ fontFamily: "'Orbitron', sans-serif", fontSize: 13, fontWeight: 700, color: "#ef4444" }}>SOMETHING'S BRUIN</div>
+              <div style={{ fontFamily: "'Orbitron', sans-serif", fontSize: 13, fontWeight: 700, color: "#ef4444", animation: "glitch 20s ease-in-out infinite 3s" }}>SOMETHING'S BRUIN</div>
               <div style={{ fontSize: 11, color: "#64748b", fontFamily: "'Share Tech Mono', monospace" }}>FRC Team 4550 · Cherry Creek High School</div>
             </div>
           </div>
@@ -639,8 +553,8 @@ export default function Landing() {
 }
 
 function Eyebrow({ children }) {
-  return <div style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 12, color: "#ef4444", letterSpacing: 3, marginBottom: 10 }}>{children}</div>;
+  return <div style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 12, color: "#ef4444", letterSpacing: 3, marginBottom: 10, animation: "glitch 15s ease-in-out infinite" }}>{children}</div>;
 }
 function SectionTitle({ children }) {
-  return <h2 style={{ fontFamily: "'Orbitron', sans-serif", fontWeight: 700, fontSize: "clamp(20px,4vw,36px)", color: "#f1f5f9", marginBottom: 36 }}>{children}</h2>;
+  return <h2 style={{ fontFamily: "'Orbitron', sans-serif", fontWeight: 700, fontSize: "clamp(20px,4vw,36px)", color: "#f1f5f9", marginBottom: 36, animation: "glitch 18s ease-in-out infinite 1s" }}>{children}</h2>;
 }

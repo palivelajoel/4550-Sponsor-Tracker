@@ -1,13 +1,11 @@
 import crypto from 'crypto';
 
 const JWT_SECRET = process.env.JWT_SECRET;
-const TOKEN_EXPIRY = 7 * 24 * 3600;
-
 export function createToken(payload) {
   if (!JWT_SECRET) throw new Error('JWT_SECRET not configured');
   const header = { alg: 'HS256', typ: 'JWT' };
   const now = Math.floor(Date.now() / 1000);
-  const data = { ...payload, iat: now, exp: now + TOKEN_EXPIRY };
+  const data = { ...payload, iat: now };
   const b64 = (o) => Buffer.from(JSON.stringify(o)).toString('base64url');
   const h = b64(header), p = b64(data);
   const s = crypto.createHmac('sha256', JWT_SECRET).update(`${h}.${p}`).digest('base64url');

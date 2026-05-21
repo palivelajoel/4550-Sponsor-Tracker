@@ -7,12 +7,20 @@ const ROLES = ["Member", "Captain", "Admin"];
 const SUBTEAMS = ["Build", "Programming", "Marketing & Outreach", "General"];
 
 async function adminProxy(table, action, payload) {
-  const token = localStorage.getItem("admin_token");
-  console.log("DEBUG: Admin panel localStorage keys:", Object.keys(localStorage));
-  console.log("DEBUG: Attempting to retrieve 'admin_token':", token);
-  
+  let token = localStorage.getItem("admin_token");
   if (!token) {
     throw new Error("Missing admin auth session. Sign in with your username and password.");
+  }
+  // Client-side expiry check so we don't silently fail
+  try {
+    const parsed = JSON.parse(atob(token.split('.')[1]));
+    if (parsed.exp * 1000 < Date.now()) {
+      localStorage.removeItem("admin_authed");
+      localStorage.removeItem("admin_token");
+      throw new Error("Session expired. Please sign in again.");
+    }
+  } catch (e) {
+    if (e.message === "Session expired. Please sign in again.") throw e;
   }
   const res = await fetch("/api/admin-proxy", {
     method: "POST",
@@ -29,6 +37,10 @@ async function adminProxy(table, action, payload) {
       const j = JSON.parse(txt);
       if (j?.error) msg = typeof j.error === "string" ? j.error : JSON.stringify(j.error);
     } catch { /* plain text body */ }
+    if (res.status === 401) {
+      localStorage.removeItem("admin_authed");
+      localStorage.removeItem("admin_token");
+    }
     throw new Error(msg);
   }
   return res.json();
@@ -76,7 +88,20 @@ export default function Admin() {
   }, []);
 
   useEffect(() => {
-    if (localStorage.getItem("admin_authed") === "true") { setAuthed(true); loadAll(); }
+    if (localStorage.getItem("admin_authed") === "true") {
+      const token = localStorage.getItem("admin_token");
+      if (token) {
+        try {
+          const parsed = JSON.parse(atob(token.split('.')[1]));
+          if (parsed.exp * 1000 < Date.now()) {
+            localStorage.removeItem("admin_authed");
+            localStorage.removeItem("admin_token");
+            return;
+          }
+        } catch { /* ignore parse errors */ }
+      }
+      setAuthed(true); loadAll();
+    }
   }, []);
 
   function showToast(msg, color = "#22c55e") { setToast({ msg, color }); setTimeout(() => setToast(""), 3000); }
