@@ -18,15 +18,17 @@ const MONTHS = ["January", "February", "March", "April", "May", "June", "July", 
 export default function HubCalendar() {
   const [authed] = useState(isAuthed());
   const [canEdit] = useState(canEditHub());
+  const [tab, setTab] = useState("todos");
   const [events, setEvents] = useState([]);
   const [today] = useState(new Date());
   const [view, setView] = useState({ year: new Date().getFullYear(), month: new Date().getMonth() });
-  const [modal, setModal] = useState(null); // null | { mode: 'add'|'edit', event?, date? }
+  const [modal, setModal] = useState(null);
   const [form, setForm] = useState({ title: "", type: "event", date: "", end_date: "", time: "", description: "", all_day: true });
   const [saving, setSaving] = useState(false);
   const [selectedDay, setSelectedDay] = useState(null);
   const [toast, setToast] = useState("");
   const [isMobile, setIsMobile] = useState(window.innerWidth < 760);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     if (!authed) { window.location.href = "/member-hub"; return; }
@@ -82,7 +84,7 @@ export default function HubCalendar() {
     setSelectedDay(null);
   }
 
-  // Calendar grid
+  // Calendar grid helpers
   const firstDay = new Date(view.year, view.month, 1).getDay();
   const daysInMonth = new Date(view.year, view.month + 1, 0).getDate();
   const cells = [];
@@ -101,7 +103,35 @@ export default function HubCalendar() {
   const upcomingEvents = events.filter(e => e.date >= today.toISOString().split("T")[0]).slice(0, 8);
   const selectedEvents = selectedDay ? eventsOnDay(selectedDay) : [];
 
+  const icalUrl = `${window.location.origin}/api/calendar.ics`;
+
+  async function copyIcalUrl() {
+    try {
+      await navigator.clipboard.writeText(icalUrl);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      showToast("Could not copy. URL: " + icalUrl);
+    }
+  }
+
   if (!authed) return null;
+
+  const tabStyle = (active) => ({
+    padding: "10px 20px",
+    cursor: "pointer",
+    fontFamily: "'Orbitron', sans-serif",
+    fontSize: 12,
+    fontWeight: 700,
+    letterSpacing: 1.5,
+    color: active ? C.text : C.dim,
+    borderBottom: active ? `2px solid ${C.red}` : "2px solid transparent",
+    transition: "all 0.15s",
+    background: "transparent",
+    borderTop: "none",
+    borderLeft: "none",
+    borderRight: "none",
+  });
 
   return (
     <div style={{ minHeight: "100vh", background: C.bg, color: C.text, fontFamily: "'Exo 2', sans-serif", position: "relative" }}>
@@ -109,135 +139,186 @@ export default function HubCalendar() {
       <style>{FONTS}</style>
       {toast && <div style={toastStyle}>{toast}</div>}
 
-      {/* Header */}
       <HubHeader title="📅 Team Calendar" />
 
-      <div style={{ maxWidth: 1300, margin: "0 auto", padding: isMobile ? "18px 12px" : "28px 20px", display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 320px", gap: isMobile ? 16 : 24, alignItems: "start", position: "relative", zIndex: 1 }}>
+      {/* Tabs */}
+      <div style={{ display: "flex", borderBottom: `1px solid ${C.border}`, background: "rgba(13,17,23,0.8)", position: "sticky", top: 0, zIndex: 50 }}>
+        <button onClick={() => setTab("todos")} style={tabStyle(tab === "todos")}>📋 TO DOS</button>
+        <button onClick={() => setTab("subscribe")} style={tabStyle(tab === "subscribe")}>📅 SUBSCRIBE</button>
+      </div>
 
-        {/* Left: Calendar */}
-        <div>
-          {/* Month nav */}
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
-            <button onClick={() => setView(v => { const d = new Date(v.year, v.month - 1); return { year: d.getFullYear(), month: d.getMonth() }; })} style={navBtnStyle}>←</button>
-            <div style={{ fontFamily: "'Orbitron', sans-serif", fontSize: 18, fontWeight: 700, color: C.text }}>{MONTHS[view.month]} {view.year}</div>
-            <button onClick={() => setView(v => { const d = new Date(v.year, v.month + 1); return { year: d.getFullYear(), month: d.getMonth() }; })} style={navBtnStyle}>→</button>
+      {tab === "subscribe" ? (
+        /* ── Subscribe Tab ── */
+        <div style={{ maxWidth: 600, margin: "0 auto", padding: isMobile ? "18px 12px" : "28px 20px", position: "relative", zIndex: 1 }}>
+          <div style={{ fontFamily: "'Orbitron', sans-serif", fontSize: 15, fontWeight: 700, color: C.text, marginBottom: 8 }}>
+            Subscribe to Calendar
+          </div>
+          <div style={{ fontSize: 13, color: C.muted, marginBottom: 24, lineHeight: 1.6 }}>
+            This calendar includes both to-dos (from the To Dos tab) and task deadlines. 
+            Subscribe in your favorite calendar app — changes auto-sync.
           </div>
 
-          {/* Day headers */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 4, marginBottom: 4 }}>
-            {DAYS.map(d => (
-              <div key={d} style={{ textAlign: "center", fontFamily: "monospace", fontSize: 11, color: C.dim, padding: "6px 0" }}>{d}</div>
-            ))}
+          {/* iCal URL */}
+          <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 10, padding: 16, marginBottom: 20 }}>
+            <div style={{ fontSize: 11, color: C.dim, fontFamily: "monospace", marginBottom: 8 }}>CALENDAR URL</div>
+            <div style={{ display: "flex", gap: 8 }}>
+              <code style={{ flex: 1, background: "rgba(0,0,0,0.3)", padding: "10px 12px", borderRadius: 6, fontSize: 12, color: C.text, fontFamily: "monospace", wordBreak: "break-all", border: `1px solid ${C.border}` }}>
+                {icalUrl}
+              </code>
+              <button onClick={copyIcalUrl} style={{ ...addBtnStyle, fontSize: 12, padding: "10px 14px", flexShrink: 0 }}>
+                {copied ? "✓ Copied" : "Copy"}
+              </button>
+            </div>
           </div>
 
-          {/* Grid */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 4 }}>
-            {cells.map((day, i) => {
-              if (!day) return <div key={`e${i}`} />;
-              const dayEvs = eventsOnDay(day);
-              const selected = selectedDay === day;
-              const todayCell = isToday(day);
-              return (
-                <div
-                  key={day}
-                  onClick={() => setSelectedDay(selected ? null : day)}
-                  style={{
-                    minHeight: isMobile ? 58 : 80,
-                    background: selected ? "rgba(239,68,68,0.12)" : todayCell ? "rgba(59,130,246,0.1)" : C.surface,
-                    border: `1px solid ${selected ? "rgba(239,68,68,0.5)" : todayCell ? "rgba(59,130,246,0.4)" : C.border}`,
-                    borderRadius: 8,
-                    padding: isMobile ? "5px 4px" : "6px 7px",
-                    cursor: "pointer",
-                    transition: "all 0.15s",
-                  }}
-                  onDoubleClick={() => openAdd({ year: view.year, month: view.month, day })}
-                >
-                  <div style={{ fontFamily: "monospace", fontSize: 12, fontWeight: todayCell ? 700 : 400, color: todayCell ? C.blue : C.muted, marginBottom: 4 }}>{day}</div>
-                  {dayEvs.slice(0, 3).map(ev => (
-                    <div key={ev.id} style={{ fontSize: 10, background: `${typeColor(ev.type)}22`, color: typeColor(ev.type), borderRadius: 3, padding: "1px 5px", marginBottom: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                      {ev.title}
-                    </div>
-                  ))}
-                  {dayEvs.length > 3 && <div style={{ fontSize: 9, color: C.dim }}>+{dayEvs.length - 3} more</div>}
-                </div>
-              );
-            })}
-          </div>
-
-          {/* Selected day panel */}
-          {selectedDay && (
-            <div style={{ marginTop: 16, background: C.surface, border: `1px solid ${C.border}`, borderRadius: 10, padding: 16 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-                <div style={{ fontFamily: "'Orbitron', sans-serif", fontSize: 13, color: C.text }}>{MONTHS[view.month]} {selectedDay}, {view.year}</div>
-                <button onClick={() => openAdd({ year: view.year, month: view.month, day: selectedDay })} style={addBtnStyle}>+ Add Event</button>
+          {/* Instructions */}
+          <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 10, padding: 16, marginBottom: 12 }}>
+            <div style={{ fontSize: 11, color: C.dim, fontFamily: "monospace", marginBottom: 14 }}>HOW TO SUBSCRIBE</div>
+            {[
+              { app: "Google Calendar", steps: "Open Google Calendar → Other calendars → + → From URL → paste the URL → Add calendar" },
+              { app: "Apple Calendar", steps: "File → New Calendar Subscription → paste the URL → Subscribe → adjust settings → OK" },
+              { app: "Outlook", steps: "Open Outlook → Calendar → Add calendar → From internet → paste the URL → OK" },
+              { app: "Any iCal app", steps: "Most calendar apps support iCal subscriptions. Paste the URL as a web calendar link." },
+            ].map(item => (
+              <div key={item.app} style={{ marginBottom: 14, paddingBottom: 14, borderBottom: `1px solid ${C.border}` }}>
+                <div style={{ fontWeight: 600, fontSize: 13, color: C.text, marginBottom: 4 }}>{item.app}</div>
+                <div style={{ fontSize: 12, color: C.muted, lineHeight: 1.5 }}>{item.steps}</div>
               </div>
-              {selectedEvents.length === 0 && <div style={{ color: C.dim, fontSize: 13 }}>No events. Double-click any day to add.</div>}
-              {selectedEvents.map(ev => (
-                <div key={ev.id} style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "10px 0", borderBottom: `1px solid ${C.border}` }}>
-                  <div style={{ width: 4, minHeight: 40, borderRadius: 2, background: typeColor(ev.type), flexShrink: 0, marginTop: 2 }} />
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontWeight: 600, fontSize: 14, color: C.text }}>{ev.title}</div>
-                    <div style={{ fontSize: 11, color: typeColor(ev.type), fontFamily: "monospace", marginTop: 2 }}>{ev.type?.toUpperCase()}{ev.time ? ` · ${ev.time}` : ""}</div>
-                    {ev.description && <div style={{ fontSize: 12, color: C.muted, marginTop: 4 }}>{ev.description}</div>}
+            ))}
+            <div style={{ fontSize: 11, color: C.dim, fontFamily: "monospace", marginTop: 8 }}>
+              The feed includes all to-dos and task deadlines. Captains/admins can add events on the To Dos tab — they appear in your subscribed calendar within minutes.
+            </div>
+          </div>
+        </div>
+      ) : (
+        /* ── To Dos (existing calendar) Tab ── */
+        <div style={{ maxWidth: 1300, margin: "0 auto", padding: isMobile ? "18px 12px" : "28px 20px", display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 320px", gap: isMobile ? 16 : 24, alignItems: "start", position: "relative", zIndex: 1 }}>
+
+          {/* Left: Calendar */}
+          <div>
+            {/* Month nav */}
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
+              <button onClick={() => setView(v => { const d = new Date(v.year, v.month - 1); return { year: d.getFullYear(), month: d.getMonth() }; })} style={navBtnStyle}>←</button>
+              <div style={{ fontFamily: "'Orbitron', sans-serif", fontSize: 18, fontWeight: 700, color: C.text }}>{MONTHS[view.month]} {view.year}</div>
+              <button onClick={() => setView(v => { const d = new Date(v.year, v.month + 1); return { year: d.getFullYear(), month: d.getMonth() }; })} style={navBtnStyle}>→</button>
+            </div>
+
+            {/* Day headers */}
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 4, marginBottom: 4 }}>
+              {DAYS.map(d => (
+                <div key={d} style={{ textAlign: "center", fontFamily: "monospace", fontSize: 11, color: C.dim, padding: "6px 0" }}>{d}</div>
+              ))}
+            </div>
+
+            {/* Grid */}
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 4 }}>
+              {cells.map((day, i) => {
+                if (!day) return <div key={`e${i}`} />;
+                const dayEvs = eventsOnDay(day);
+                const selected = selectedDay === day;
+                const todayCell = isToday(day);
+                return (
+                  <div
+                    key={day}
+                    onClick={() => setSelectedDay(selected ? null : day)}
+                    style={{
+                      minHeight: isMobile ? 58 : 80,
+                      background: selected ? "rgba(239,68,68,0.12)" : todayCell ? "rgba(59,130,246,0.1)" : C.surface,
+                      border: `1px solid ${selected ? "rgba(239,68,68,0.5)" : todayCell ? "rgba(59,130,246,0.4)" : C.border}`,
+                      borderRadius: 8,
+                      padding: isMobile ? "5px 4px" : "6px 7px",
+                      cursor: "pointer",
+                      transition: "all 0.15s",
+                    }}
+                    onDoubleClick={() => openAdd({ year: view.year, month: view.month, day })}
+                  >
+                    <div style={{ fontFamily: "monospace", fontSize: 12, fontWeight: todayCell ? 700 : 400, color: todayCell ? C.blue : C.muted, marginBottom: 4 }}>{day}</div>
+                    {dayEvs.slice(0, 3).map(ev => (
+                      <div key={ev.id} style={{ fontSize: 10, background: `${typeColor(ev.type)}22`, color: typeColor(ev.type), borderRadius: 3, padding: "1px 5px", marginBottom: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {ev.title}
+                      </div>
+                    ))}
+                    {dayEvs.length > 3 && <div style={{ fontSize: 9, color: C.dim }}>+{dayEvs.length - 3} more</div>}
                   </div>
-                  <div style={{ display: "flex", gap: 6 }}>
-                    {canEdit ? (
-                      <>
-                        <button onClick={() => openEdit(ev)} style={ghostBtn}>Edit</button>
-                        <button onClick={() => deleteEvent(ev.id)} style={dangerBtn}>✕</button>
-                      </>
-                    ) : (
-                      <div style={{ color: C.dim, fontSize: 11, fontFamily: "monospace" }}>View only</div>
-                    )}
+                );
+              })}
+            </div>
+
+            {/* Selected day panel */}
+            {selectedDay && (
+              <div style={{ marginTop: 16, background: C.surface, border: `1px solid ${C.border}`, borderRadius: 10, padding: 16 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+                  <div style={{ fontFamily: "'Orbitron', sans-serif", fontSize: 13, color: C.text }}>{MONTHS[view.month]} {selectedDay}, {view.year}</div>
+                  <button onClick={() => openAdd({ year: view.year, month: view.month, day: selectedDay })} style={addBtnStyle}>+ Add Event</button>
+                </div>
+                {selectedEvents.length === 0 && <div style={{ color: C.dim, fontSize: 13 }}>No to-dos. Double-click any day to add.</div>}
+                {selectedEvents.map(ev => (
+                  <div key={ev.id} style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "10px 0", borderBottom: `1px solid ${C.border}` }}>
+                    <div style={{ width: 4, minHeight: 40, borderRadius: 2, background: typeColor(ev.type), flexShrink: 0, marginTop: 2 }} />
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontWeight: 600, fontSize: 14, color: C.text }}>{ev.title}</div>
+                      <div style={{ fontSize: 11, color: typeColor(ev.type), fontFamily: "monospace", marginTop: 2 }}>{ev.type?.toUpperCase()}{ev.time ? ` · ${ev.time}` : ""}</div>
+                      {ev.description && <div style={{ fontSize: 12, color: C.muted, marginTop: 4 }}>{ev.description}</div>}
+                    </div>
+                    <div style={{ display: "flex", gap: 6 }}>
+                      {canEdit ? (
+                        <>
+                          <button onClick={() => openEdit(ev)} style={ghostBtn}>Edit</button>
+                          <button onClick={() => deleteEvent(ev.id)} style={dangerBtn}>✕</button>
+                        </>
+                      ) : (
+                        <div style={{ color: C.dim, fontSize: 11, fontFamily: "monospace" }}>View only</div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Right: Sidebar */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            {canEdit ? (
+              <button onClick={() => openAdd(null)} style={{ ...addBtnStyle, width: "100%", padding: "12px", fontSize: 13, fontFamily: "'Orbitron', sans-serif", letterSpacing: 1 }}>+ ADD TO DO</button>
+            ) : (
+              <div style={{ color: C.dim, fontSize: 12, fontFamily: "monospace", padding: "12px", background: "rgba(255,255,255,0.03)", borderRadius: 10, textAlign: "center" }}>View only: captains and mentors can edit to-dos.</div>
+            )}
+
+            {/* Legend */}
+            <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 10, padding: 16 }}>
+              <div style={{ fontFamily: "'Orbitron', sans-serif", fontSize: 11, color: C.dim, letterSpacing: 2, marginBottom: 12 }}>TO DO TYPES</div>
+              {EVENT_TYPES.map(t => (
+                <div key={t.value} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 7 }}>
+                  <div style={{ width: 10, height: 10, borderRadius: "50%", background: t.color }} />
+                  <span style={{ fontSize: 12, color: C.muted, fontFamily: "monospace" }}>{t.label}</span>
+                </div>
+              ))}
+            </div>
+
+            {/* Upcoming */}
+            <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 10, padding: 16 }}>
+              <div style={{ fontFamily: "'Orbitron', sans-serif", fontSize: 11, color: C.dim, letterSpacing: 2, marginBottom: 12 }}>UPCOMING TO DOS</div>
+              {upcomingEvents.length === 0 && <div style={{ color: C.dim, fontSize: 12 }}>No upcoming to-dos.</div>}
+              {upcomingEvents.map(ev => (
+                <div key={ev.id} onClick={() => openEdit(ev)} style={{ display: "flex", gap: 8, marginBottom: 10, cursor: "pointer" }}>
+                  <div style={{ width: 3, borderRadius: 2, background: typeColor(ev.type), flexShrink: 0 }} />
+                  <div>
+                    <div style={{ fontSize: 12, fontWeight: 600, color: C.text }}>{ev.title}</div>
+                    <div style={{ fontSize: 10, color: C.dim, fontFamily: "monospace" }}>{ev.date}{ev.time ? ` · ${ev.time}` : ""}</div>
                   </div>
                 </div>
               ))}
             </div>
-          )}
-        </div>
-
-        {/* Right: Sidebar */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-          {canEdit ? (
-            <button onClick={() => openAdd(null)} style={{ ...addBtnStyle, width: "100%", padding: "12px", fontSize: 13, fontFamily: "'Orbitron', sans-serif", letterSpacing: 1 }}>+ ADD EVENT</button>
-          ) : (
-            <div style={{ color: C.dim, fontSize: 12, fontFamily: "monospace", padding: "12px", background: "rgba(255,255,255,0.03)", borderRadius: 10, textAlign: "center" }}>View only: captains and mentors can edit this calendar.</div>
-          )}
-
-          {/* Legend */}
-          <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 10, padding: 16 }}>
-            <div style={{ fontFamily: "'Orbitron', sans-serif", fontSize: 11, color: C.dim, letterSpacing: 2, marginBottom: 12 }}>EVENT TYPES</div>
-            {EVENT_TYPES.map(t => (
-              <div key={t.value} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 7 }}>
-                <div style={{ width: 10, height: 10, borderRadius: "50%", background: t.color }} />
-                <span style={{ fontSize: 12, color: C.muted, fontFamily: "monospace" }}>{t.label}</span>
-              </div>
-            ))}
-          </div>
-
-          {/* Upcoming */}
-          <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 10, padding: 16 }}>
-            <div style={{ fontFamily: "'Orbitron', sans-serif", fontSize: 11, color: C.dim, letterSpacing: 2, marginBottom: 12 }}>UPCOMING</div>
-            {upcomingEvents.length === 0 && <div style={{ color: C.dim, fontSize: 12 }}>No upcoming events.</div>}
-            {upcomingEvents.map(ev => (
-              <div key={ev.id} onClick={() => openEdit(ev)} style={{ display: "flex", gap: 8, marginBottom: 10, cursor: "pointer" }}>
-                <div style={{ width: 3, borderRadius: 2, background: typeColor(ev.type), flexShrink: 0 }} />
-                <div>
-                  <div style={{ fontSize: 12, fontWeight: 600, color: C.text }}>{ev.title}</div>
-                  <div style={{ fontSize: 10, color: C.dim, fontFamily: "monospace" }}>{ev.date}{ev.time ? ` · ${ev.time}` : ""}</div>
-                </div>
-              </div>
-            ))}
           </div>
         </div>
-      </div>
+      )}
 
       {/* Modal */}
       {modal && (
         <div style={overlayStyle} onClick={e => { if (e.target === e.currentTarget) setModal(null); }}>
           <div style={modalStyle}>
             <div style={{ fontFamily: "'Orbitron', sans-serif", fontSize: 15, fontWeight: 700, color: C.text, marginBottom: 20 }}>
-              {modal.mode === "add" ? "Add Event" : "Edit Event"}
+              {modal.mode === "add" ? "Add To Do" : "Edit To Do"}
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
               <input placeholder="Title *" value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} style={inputStyle} />
