@@ -155,6 +155,7 @@ function SponsorBar({ sponsors = [], isMobile }) {
         ))}
       </div>
     </div>
+    </div>
   );
 }
 
