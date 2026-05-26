@@ -1044,105 +1044,105 @@ function SiteConfig({ config, logoUrl, setLogoUrl, reload, showToast, isMobile }
           </div>
         ))}
       </div>
-      <SponsorRibbonManager vals={vals} setVals={setVals} saveKey={saveKey} isMobile={isMobile} showToast={showToast} />
+      <SponsorRibbonManager />
     </div>
   );
-}
 
-// ── SPONSOR RIBBON MANAGER ────────────────────────────────
-function SponsorRibbonManager({ vals, setVals, saveKey, isMobile, showToast }) {
-  const [ribbonItems, setRibbonItems] = useState(() => {
-    try { return JSON.parse(vals.sponsor_ribbon_items || "[]"); } catch { return []; }
-  });
-  const [uploading, setUploading] = useState(false);
-  const [pending, setPending] = useState(null);
-  const fileRef = useRef(null);
+  // ── SPONSOR RIBBON MANAGER (nested) ─────────────────────
+  function SponsorRibbonManager() {
+    const [ribbonItems, setRibbonItems] = useState(() => {
+      try { return JSON.parse(vals.sponsor_ribbon_items || "[]"); } catch { return []; }
+    });
+    const [uploading, setUploading] = useState(false);
+    const [pending, setPending] = useState(null);
+    const fileRef = useRef(null);
 
-  useEffect(() => {
-    try { setRibbonItems(JSON.parse(vals.sponsor_ribbon_items || "[]")); } catch { setRibbonItems([]); }
-  }, [vals.sponsor_ribbon_items]);
+    useEffect(() => {
+      try { setRibbonItems(JSON.parse(vals.sponsor_ribbon_items || "[]")); } catch { setRibbonItems([]); }
+    }, [vals.sponsor_ribbon_items]);
 
-  async function handleFile(e) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setUploading(true);
-    setPending(null);
-    try {
-      const url = await uploadFile(file, 'team-assets');
-      if (!url) { showToast("Upload failed.", "#ef4444"); setUploading(false); return; }
-      const reader = new FileReader();
-      reader.onload = async (ev) => {
-        const base64 = ev.target.result.split(',')[1];
-        const r = await fetch("/api/extract-brands", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ imageBase64: base64, mimeType: file.type }),
-        });
-        if (!r.ok) { showToast("AI extraction failed.", "#ef4444"); setUploading(false); return; }
-        const data = await r.json();
-        const name = data.brands?.[0] || file.name.replace(/\.[^.]+$/, '').replace(/[-_]/g, ' ');
-        setPending({ company: name, logo_url: url });
-        setUploading(false);
-      };
-      reader.readAsDataURL(file);
-    } catch { showToast("Error processing image.", "#ef4444"); setUploading(false); }
-  }
+    async function handleFile(e) {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      setUploading(true);
+      setPending(null);
+      try {
+        const url = await uploadFile(file, 'team-assets');
+        if (!url) { showToast("Upload failed.", "#ef4444"); setUploading(false); return; }
+        const reader = new FileReader();
+        reader.onload = async (ev) => {
+          const base64 = ev.target.result.split(',')[1];
+          const r = await fetch("/api/extract-brands", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ imageBase64: base64, mimeType: file.type }),
+          });
+          if (!r.ok) { showToast("AI extraction failed.", "#ef4444"); setUploading(false); return; }
+          const data = await r.json();
+          const name = data.brands?.[0] || file.name.replace(/\.[^.]+$/, '').replace(/[-_]/g, ' ');
+          setPending({ company: name, logo_url: url });
+          setUploading(false);
+        };
+        reader.readAsDataURL(file);
+      } catch { showToast("Error processing image.", "#ef4444"); setUploading(false); }
+    }
 
-  function confirmAdd() {
-    if (!pending) return;
-    const updated = [...ribbonItems, pending];
-    setRibbonItems(updated);
-    setVals(v => ({ ...v, sponsor_ribbon_items: JSON.stringify(updated) }));
-    setPending(null);
-    showToast("Added to ribbon.");
-  }
+    function confirmAdd() {
+      if (!pending) return;
+      const updated = [...ribbonItems, pending];
+      setRibbonItems(updated);
+      setVals(v => ({ ...v, sponsor_ribbon_items: JSON.stringify(updated) }));
+      setPending(null);
+      showToast("Added to ribbon.");
+    }
 
-  function removeItem(idx) {
-    const updated = ribbonItems.filter((_, i) => i !== idx);
-    setRibbonItems(updated);
-    setVals(v => ({ ...v, sponsor_ribbon_items: JSON.stringify(updated) }));
-  }
+    function removeItem(idx) {
+      const updated = ribbonItems.filter((_, i) => i !== idx);
+      setRibbonItems(updated);
+      setVals(v => ({ ...v, sponsor_ribbon_items: JSON.stringify(updated) }));
+    }
 
-  return (
-    <div style={{ ...S.card, marginTop: 16 }}>
-      <div style={S.cardTitle}>Sponsor Ribbon</div>
-      <div style={{ display: "flex", flexDirection: isMobile ? 'column' : 'row', gap: isMobile ? 6 : 10, marginBottom: 12, alignItems: isMobile ? 'stretch' : 'center' }}>
-        <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: 13, color: "#e2e8f0", flexShrink: 0 }}>
-          <input type="checkbox" checked={vals.sponsor_bar_enabled !== "false"} onChange={e => setVals({ ...vals, sponsor_bar_enabled: e.target.checked ? "true" : "false" })} style={{ width: 16, height: 16, cursor: "pointer" }} />
-          Show on homepage
-        </label>
-        <button onClick={() => saveKey("sponsor_bar_enabled")} style={{ ...S.btnGhost, width: isMobile ? '100%' : undefined }}>Save Toggle</button>
-      </div>
-      <div style={{ fontSize: 12, color: "#94a3b8", fontFamily: "monospace", marginBottom: 10 }}>Upload a sponsor logo image — AI will detect the company name automatically:</div>
-      <div style={{ display: "flex", gap: 8, marginBottom: 12, alignItems: "center", flexWrap: "wrap" }}>
-        <button onClick={() => fileRef.current?.click()} style={{ ...S.btnPrimary, width: isMobile ? '100%' : undefined }}>{uploading ? "Uploading..." : "Upload Logo Image"}</button>
-        <input ref={fileRef} type="file" accept="image/*" style={{ display: "none" }} onChange={handleFile} />
-        {uploading && <span style={{ fontSize: 12, color: "#a78bfa", fontFamily: "monospace" }}>Uploading & identifying...</span>}
-      </div>
-      {pending && (
-        <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", background: "rgba(34,197,94,0.1)", border: "1px solid rgba(34,197,94,0.3)", borderRadius: 8, marginBottom: 12, flexWrap: "wrap" }}>
-          <img src={pending.logo_url} alt="" style={{ width: 32, height: 32, borderRadius: 4, objectFit: "contain", background: "rgba(255,255,255,0.05)" }} />
-          <span style={{ flex: 1, fontSize: 13, color: "#e2e8f0" }}>Detected: <strong>{pending.company}</strong></span>
-          <button onClick={confirmAdd} style={S.btnPrimary}>Add to Ribbon</button>
-          <button onClick={() => setPending(null)} style={S.btnGhost}>Cancel</button>
+    return (
+      <div style={{ ...S.card, marginTop: 16 }}>
+        <div style={S.cardTitle}>Sponsor Ribbon</div>
+        <div style={{ display: "flex", flexDirection: isMobile ? 'column' : 'row', gap: isMobile ? 6 : 10, marginBottom: 12, alignItems: isMobile ? 'stretch' : 'center' }}>
+          <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: 13, color: "#e2e8f0", flexShrink: 0 }}>
+            <input type="checkbox" checked={vals.sponsor_bar_enabled !== "false"} onChange={e => setVals({ ...vals, sponsor_bar_enabled: e.target.checked ? "true" : "false" })} style={{ width: 16, height: 16, cursor: "pointer" }} />
+            Show on homepage
+          </label>
+          <button onClick={() => saveKey("sponsor_bar_enabled")} style={{ ...S.btnGhost, width: isMobile ? '100%' : undefined }}>Save Toggle</button>
         </div>
-      )}
-      <div style={{ fontSize: 12, color: "#94a3b8", fontFamily: "monospace", marginBottom: 10 }}>Current ribbon sponsors:</div>
-      {ribbonItems.length === 0 && <div style={{ fontSize: 12, color: "#475569", fontFamily: "monospace", marginBottom: 10 }}>No sponsors in ribbon yet.</div>}
-      {ribbonItems.length > 0 && (
-        <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 12 }}>
-          {ribbonItems.map((item, i) => (
-            <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 10px", background: "rgba(255,255,255,0.03)", borderRadius: 8, border: "1px solid rgba(255,255,255,0.06)" }}>
-              {item.logo_url ? <img src={item.logo_url} alt="" style={{ width: 28, height: 28, borderRadius: 4, objectFit: "contain", background: "rgba(255,255,255,0.05)" }} /> : <span style={{ fontSize: 18 }}>🏢</span>}
-              <span style={{ flex: 1, fontSize: 13, color: "#e2e8f0" }}>{item.company}</span>
-              <button onClick={() => removeItem(i)} style={{ background: "transparent", border: "none", color: "#ef4444", cursor: "pointer", fontSize: 16 }}>&times;</button>
-            </div>
-          ))}
-          <button onClick={async () => { try { await saveKey("sponsor_ribbon_items", JSON.stringify(ribbonItems)); } catch (e) { showToast("Save failed: " + (e.message || e), "#ef4444"); } }} style={{ ...S.btnGhost, alignSelf: 'flex-start' }}>Save Ribbon</button>
+        <div style={{ fontSize: 12, color: "#94a3b8", fontFamily: "monospace", marginBottom: 10 }}>Upload a sponsor logo image — AI will detect the company name automatically:</div>
+        <div style={{ display: "flex", gap: 8, marginBottom: 12, alignItems: "center", flexWrap: "wrap" }}>
+          <button onClick={() => fileRef.current?.click()} style={{ ...S.btnPrimary, width: isMobile ? '100%' : undefined }}>{uploading ? "Uploading..." : "Upload Logo Image"}</button>
+          <input ref={fileRef} type="file" accept="image/*" style={{ display: "none" }} onChange={handleFile} />
+          {uploading && <span style={{ fontSize: 12, color: "#a78bfa", fontFamily: "monospace" }}>Uploading & identifying...</span>}
         </div>
-      )}
-    </div>
-  );
+        {pending && (
+          <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", background: "rgba(34,197,94,0.1)", border: "1px solid rgba(34,197,94,0.3)", borderRadius: 8, marginBottom: 12, flexWrap: "wrap" }}>
+            <img src={pending.logo_url} alt="" style={{ width: 32, height: 32, borderRadius: 4, objectFit: "contain", background: "rgba(255,255,255,0.05)" }} />
+            <span style={{ flex: 1, fontSize: 13, color: "#e2e8f0" }}>Detected: <strong>{pending.company}</strong></span>
+            <button onClick={confirmAdd} style={S.btnPrimary}>Add to Ribbon</button>
+            <button onClick={() => setPending(null)} style={S.btnGhost}>Cancel</button>
+          </div>
+        )}
+        <div style={{ fontSize: 12, color: "#94a3b8", fontFamily: "monospace", marginBottom: 10 }}>Current ribbon sponsors:</div>
+        {ribbonItems.length === 0 && <div style={{ fontSize: 12, color: "#475569", fontFamily: "monospace", marginBottom: 10 }}>No sponsors in ribbon yet.</div>}
+        {ribbonItems.length > 0 && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 12 }}>
+            {ribbonItems.map((item, i) => (
+              <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 10px", background: "rgba(255,255,255,0.03)", borderRadius: 8, border: "1px solid rgba(255,255,255,0.06)" }}>
+                {item.logo_url ? <img src={item.logo_url} alt="" style={{ width: 28, height: 28, borderRadius: 4, objectFit: "contain", background: "rgba(255,255,255,0.05)" }} /> : <span style={{ fontSize: 18 }}>🏢</span>}
+                <span style={{ flex: 1, fontSize: 13, color: "#e2e8f0" }}>{item.company}</span>
+                <button onClick={() => removeItem(i)} style={{ background: "transparent", border: "none", color: "#ef4444", cursor: "pointer", fontSize: 16 }}>&times;</button>
+              </div>
+            ))}
+            <button onClick={async () => { try { await saveKey("sponsor_ribbon_items", JSON.stringify(ribbonItems)); } catch (e) { showToast("Save failed: " + (e.message || e), "#ef4444"); } }} style={{ ...S.btnGhost, alignSelf: 'flex-start' }}>Save Ribbon</button>
+          </div>
+        )}
+      </div>
+    );
+  }
 }
 
 // ── PIT MAP EDITOR ────────────────────────────────────────
