@@ -126,25 +126,27 @@ function ParticleCanvas({ isMobile }) {
   return <canvas ref={canvasRef} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", pointerEvents: "none", opacity: 0.6 }} />;
 }
 
-function SponsorBar({ sponsors = [] }) {
+function SponsorBar({ sponsors = [], isMobile }) {
   const shown = sponsors.filter(s => s.company);
   if (shown.length === 0) return null;
   const items = shown.map(s => ({ company: s.company, logo_url: s.logo_url }));
-  const duped = [...items, ...items];
-  const speed = Math.max(20, items.length * 4);
+  const duped = [...items, ...items, ...items];
+  const speed = Math.max(30, items.length * 5);
   return (
-    <div style={{ width: "100%", overflow: "hidden", background: "rgba(255,255,255,0.015)", borderTop: "1px solid rgba(255,255,255,0.05)", borderBottom: "1px solid rgba(255,255,255,0.05)", padding: "18px 0", position: "relative" }}>
-      <style>{`@keyframes sponsorMarquee{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}`}</style>
-      <div style={{ display: "flex", gap: 48, animation: `sponsorMarquee ${speed}s linear infinite`, width: "max-content", "&:hover": { animationPlayState: "paused" } }}
+    <div style={{ width: "100%", overflow: "hidden", background: "rgba(255,255,255,0.015)", borderTop: "1px solid rgba(255,255,255,0.05)", borderBottom: "1px solid rgba(255,255,255,0.05)", padding: "24px 0", position: "relative" }}>
+      <style>{`@keyframes sponsorCardMarquee{0%{transform:translateX(0)}100%{transform:translateX(-33.333%)}}`}</style>
+      <div style={{ display: "flex", gap: 16, animation: `sponsorCardMarquee ${speed}s linear infinite`, width: "max-content" }}
         onMouseEnter={e => e.currentTarget.style.animationPlayState = "paused"}
         onMouseLeave={e => e.currentTarget.style.animationPlayState = "running"}>
         {duped.map((s, i) => (
-          <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0, whiteSpace: "nowrap" }}>
+          <div key={i} style={{ width: isMobile ? 140 : 180, flexShrink: 0, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 10, padding: isMobile ? "18px 12px" : "24px 18px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 10, minHeight: isMobile ? 100 : 120 }}>
             {s.logo_url ? (
-              <img src={s.logo_url} alt={s.company} style={{ height: 36, width: 36, objectFit: "contain", borderRadius: 6, background: "rgba(255,255,255,0.05)" }}
-                onError={e => { e.target.style.display = "none"; e.target.nextSibling.style.display = "inline"; }} />
-            ) : null}
-            <span style={{ fontSize: 14, fontWeight: 600, color: "#94a3b8", letterSpacing: 1, fontFamily: "'Exo 2', sans-serif" }}>{s.company}</span>
+              <img src={s.logo_url} alt={s.company} style={{ width: isMobile ? 44 : 56, height: isMobile ? 44 : 56, objectFit: "contain", borderRadius: 6, background: "rgba(255,255,255,0.05)" }}
+                onError={e => { e.target.style.display = "none"; }} />
+            ) : (
+              <div style={{ width: isMobile ? 44 : 56, height: isMobile ? 44 : 56, borderRadius: 6, background: "rgba(255,255,255,0.05)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, color: "#475569" }}>🏢</div>
+            )}
+            <span style={{ fontSize: isMobile ? 11 : 13, fontWeight: 600, color: "#94a3b8", textAlign: "center", fontFamily: "'Exo 2', sans-serif", lineHeight: 1.3, overflow: "hidden", textOverflow: "ellipsis", maxWidth: "100%" }}>{s.company}</span>
           </div>
         ))}
       </div>
@@ -475,7 +477,7 @@ export default function Landing() {
         
       </div></section>
 
-      <SponsorBar sponsors={sponsors} />
+      {config.sponsor_bar_enabled !== "false" && <SponsorBar sponsors={sponsors} isMobile={isMobile} />}
 
       {/* SPONSORS */}
       <section id="sponsors" style={{ background: "rgba(255,255,255,0.015)" }}><div className="sec">

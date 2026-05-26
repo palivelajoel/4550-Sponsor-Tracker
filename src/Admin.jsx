@@ -1047,6 +1047,14 @@ function SiteConfig({ config, logoUrl, setLogoUrl, reload, showToast, isMobile }
             <button onClick={() => saveKey(f.key)} style={{ ...S.btnGhost, width: isMobile ? '100%' : undefined }}>Save</button>
           </div>
         ))}
+        <div style={{ display: "flex", flexDirection: isMobile ? 'column' : 'row', gap: isMobile ? 6 : 10, marginTop: 4, alignItems: isMobile ? 'stretch' : 'center' }}>
+          <label style={{ color: "#94a3b8", fontSize: 12, minWidth: isMobile ? 0 : 120, fontFamily: "monospace" }}>Sponsor Bar</label>
+          <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: 13, color: "#e2e8f0" }}>
+            <input type="checkbox" checked={vals.sponsor_bar_enabled !== "false"} onChange={e => setVals({ ...vals, sponsor_bar_enabled: e.target.checked ? "true" : "false" })} style={{ width: 16, height: 16, cursor: "pointer" }} />
+            Show sponsor ribbon on homepage
+          </label>
+          <button onClick={() => saveKey("sponsor_bar_enabled")} style={{ ...S.btnGhost, width: isMobile ? '100%' : undefined }}>Save</button>
+        </div>
       </div>
     </div>
   );
