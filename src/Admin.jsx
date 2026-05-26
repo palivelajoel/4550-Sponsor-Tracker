@@ -951,12 +951,13 @@ function SiteConfig({ config, logoUrl, setLogoUrl, reload, showToast, isMobile }
     });
   }, []);
 
-  async function saveKey(key) {
+  async function saveKey(key, overrideVal) {
+    const val = overrideVal !== undefined ? overrideVal : vals[key];
     const existing = (await sbFetch(`site_config?key=eq.${key}&select=key`)) || [];
     if (existing?.length) {
-      await adminProxy('site_config', 'update', { id: existing[0].id, updates: { value: vals[key] } });
+      await adminProxy('site_config', 'update', { id: existing[0].id, updates: { value: val } });
     } else {
-      await adminProxy('site_config', 'insert', { key, value: vals[key] });
+      await adminProxy('site_config', 'insert', { key, value: val });
     }
     reload(); showToast(`✅ Saved: ${key}`);
   }
@@ -1096,7 +1097,7 @@ function SponsorRibbonManager({ vals, setVals, saveKey, isMobile, showToast }) {
     if (!pending) return;
     const updated = [...ribbonItems, pending];
     setRibbonItems(updated);
-    setVals({ ...vals, sponsor_ribbon_items: JSON.stringify(updated) });
+    setVals(v => ({ ...v, sponsor_ribbon_items: JSON.stringify(updated) }));
     setPending(null);
     showToast("Added to ribbon.");
   }
@@ -1104,7 +1105,7 @@ function SponsorRibbonManager({ vals, setVals, saveKey, isMobile, showToast }) {
   function removeItem(idx) {
     const updated = ribbonItems.filter((_, i) => i !== idx);
     setRibbonItems(updated);
-    setVals({ ...vals, sponsor_ribbon_items: JSON.stringify(updated) });
+    setVals(v => ({ ...v, sponsor_ribbon_items: JSON.stringify(updated) }));
   }
 
   return (
@@ -1142,7 +1143,7 @@ function SponsorRibbonManager({ vals, setVals, saveKey, isMobile, showToast }) {
               <button onClick={() => removeItem(i)} style={{ background: "transparent", border: "none", color: "#ef4444", cursor: "pointer", fontSize: 16 }}>&times;</button>
             </div>
           ))}
-          <button onClick={() => { setVals({ ...vals, sponsor_ribbon_items: JSON.stringify(ribbonItems) }); saveKey("sponsor_ribbon_items"); }} style={{ ...S.btnGhost, alignSelf: 'flex-start' }}>Save Ribbon</button>
+          <button onClick={() => { setVals(v => ({ ...v, sponsor_ribbon_items: JSON.stringify(ribbonItems) })); saveKey("sponsor_ribbon_items", JSON.stringify(ribbonItems)); }} style={{ ...S.btnGhost, alignSelf: 'flex-start' }}>Save Ribbon</button>
         </div>
       )}
     </div>
