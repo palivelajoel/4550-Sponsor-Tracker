@@ -140,16 +140,16 @@ function SponsorBar({ sponsors = [], isMobile }) {
         <SectionTitle>Our Sponsors</SectionTitle>
       </div>
       <div style={{ overflow: "hidden" }}>
-      <div style={{ display: "flex", gap: 16, willChange: "transform", animation: `sponsorCardMarquee ${speed}s linear infinite`, width: "max-content" }}
+      <div style={{ display: "flex", gap: 24, willChange: "transform", animation: `sponsorCardMarquee ${speed}s linear infinite`, width: "max-content" }}
         onMouseEnter={e => { e.currentTarget.style.transition = "opacity 0.3s ease"; e.currentTarget.style.opacity = "0.5"; }}
         onMouseLeave={e => { e.currentTarget.style.opacity = "1"; }}>
         {duped.map((s, i) => (
-          <div key={i} style={{ width: isMobile ? 140 : 180, flexShrink: 0, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 10, padding: isMobile ? "18px 12px" : "24px 18px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 10, minHeight: isMobile ? 100 : 120 }}>
+          <div key={i} style={{ width: isMobile ? 200 : 280, flexShrink: 0, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 10, padding: isMobile ? "24px 16px" : "32px 24px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 10, minHeight: isMobile ? 130 : 160 }}>
             {s.logo_url ? (
-              <img src={s.logo_url} alt="" style={{ width: isMobile ? 44 : 56, height: isMobile ? 44 : 56, objectFit: "contain", borderRadius: 6, background: "rgba(255,255,255,0.05)" }}
+              <img src={s.logo_url} alt="" style={{ width: isMobile ? 60 : 80, height: isMobile ? 60 : 80, objectFit: "contain", borderRadius: 6, background: "rgba(255,255,255,0.05)" }}
                 onError={e => { e.target.style.display = "none"; }} />
             ) : (
-              <div style={{ width: isMobile ? 44 : 56, height: isMobile ? 44 : 56, borderRadius: 6, background: "rgba(255,255,255,0.05)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, color: "#475569" }}>🏢</div>
+              <div style={{ width: isMobile ? 60 : 80, height: isMobile ? 60 : 80, borderRadius: 6, background: "rgba(255,255,255,0.05)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, color: "#475569" }}>🏢</div>
             )}
           </div>
         ))}
