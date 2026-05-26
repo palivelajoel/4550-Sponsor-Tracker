@@ -76,9 +76,10 @@ export default async function handler(req, res) {
     if (action === 'upsert') {
       const { key, value } = bodyPayload || {};
       if (!key) return res.status(400).json({ error: 'Missing key' });
-      const { data: existing } = await supabase.from(table).select('id').eq('key', key).maybeSingle();
+      const { data: existing, error: selErr } = await supabase.from(table).select('key').eq('key', key).maybeSingle();
+      if (selErr) return res.status(500).json({ error: selErr.message });
       if (existing) {
-        const { data, error } = await supabase.from(table).update({ value }).eq('id', existing.id).select();
+        const { data, error } = await supabase.from(table).update({ value }).eq('key', key).select();
         if (error) return res.status(500).json({ error: error.message });
         return res.status(200).json({ data });
       }
