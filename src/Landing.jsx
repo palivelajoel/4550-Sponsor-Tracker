@@ -330,7 +330,7 @@ export default function Landing() {
       </nav>
 
       {/* HERO */}
-      <section style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "linear-gradient(180deg,rgba(8,10,15,0.55) 0%,rgba(13,17,23,0.66) 100%)", paddingTop: 70, position: "relative", overflow: "hidden" }}>
+      <section style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "linear-gradient(180deg,rgba(8,10,15,1) 0%,rgba(13,17,23,0.85) 100%)", paddingTop: isMobile ? 130 : 70, position: "relative", overflow: "hidden" }}>
         <ParticleCanvas isMobile={isMobile} />
         <div style={{ position: "absolute", inset: 0, backgroundImage: "linear-gradient(rgba(239,68,68,0.04) 1px,transparent 1px),linear-gradient(90deg,rgba(239,68,68,0.04) 1px,transparent 1px)", backgroundSize: isMobile ? "40px 40px" : "60px 60px", pointerEvents: "none" }} />
         
@@ -541,12 +541,13 @@ export default function Landing() {
           </div>
           <div className="footer-links">
             {navItems.map(l => <a key={l} href={`#${l.toLowerCase().replace(/\s/g,"-")}`} style={{ color: "#64748b", textDecoration: "none", fontSize: 12, fontFamily: "'Share Tech Mono', monospace" }}>{l}</a>)}
-            <a href="/member-hub" style={{ color: "#64748b", textDecoration: "none", fontSize: 12, fontFamily: "'Share Tech Mono', monospace" }}>Member Hub</a>
-            <a href="/privacy" style={{ color: "#64748b", textDecoration: "none", fontSize: 12, fontFamily: "'Share Tech Mono', monospace" }}>Privacy Policy</a>
-            <a href="/terms" style={{ color: "#64748b", textDecoration: "none", fontSize: 12, fontFamily: "'Share Tech Mono', monospace" }}>Terms &amp; Conditions</a>
           </div>
         </div>
         <div style={{ textAlign: "center", color: "#334155", fontSize: 11, fontFamily: "'Share Tech Mono', monospace", borderTop: "1px solid rgba(255,255,255,0.04)", paddingTop: 18 }}>
+          <a href="/privacy" style={{ color: "#475569", textDecoration: "none" }}>Privacy Policy</a>
+          <span style={{ color: "#334155" }}> &middot; </span>
+          <a href="/terms" style={{ color: "#475569", textDecoration: "none" }}>Terms &amp; Conditions</a>
+          <br />
           &copy; {new Date().getFullYear()} FRC Team 4550 Something's Bruin &middot; Built by Palivela_Joel
         </div>
       </footer>
