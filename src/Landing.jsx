@@ -141,12 +141,11 @@ function SponsorBar({ sponsors = [], isMobile }) {
         {duped.map((s, i) => (
           <div key={i} style={{ width: isMobile ? 140 : 180, flexShrink: 0, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 10, padding: isMobile ? "18px 12px" : "24px 18px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 10, minHeight: isMobile ? 100 : 120 }}>
             {s.logo_url ? (
-              <img src={s.logo_url} alt={s.company} style={{ width: isMobile ? 44 : 56, height: isMobile ? 44 : 56, objectFit: "contain", borderRadius: 6, background: "rgba(255,255,255,0.05)" }}
+              <img src={s.logo_url} alt="" style={{ width: isMobile ? 44 : 56, height: isMobile ? 44 : 56, objectFit: "contain", borderRadius: 6, background: "rgba(255,255,255,0.05)" }}
                 onError={e => { e.target.style.display = "none"; }} />
             ) : (
               <div style={{ width: isMobile ? 44 : 56, height: isMobile ? 44 : 56, borderRadius: 6, background: "rgba(255,255,255,0.05)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, color: "#475569" }}>🏢</div>
             )}
-            <span style={{ fontSize: isMobile ? 11 : 13, fontWeight: 600, color: "#94a3b8", textAlign: "center", fontFamily: "'Exo 2', sans-serif", lineHeight: 1.3, overflow: "hidden", textOverflow: "ellipsis", maxWidth: "100%" }}>{s.company}</span>
           </div>
         ))}
       </div>
