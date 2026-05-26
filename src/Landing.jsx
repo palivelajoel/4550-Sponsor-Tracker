@@ -131,13 +131,13 @@ function SponsorBar({ sponsors = [], isMobile }) {
   if (shown.length === 0) return null;
   const items = shown.map(s => ({ company: s.company, logo_url: s.logo_url }));
   const duped = [...items, ...items, ...items];
-  const speed = Math.max(30, items.length * 5);
+  const speed = Math.max(20, items.length * 3);
   return (
     <div style={{ width: "100%", overflow: "hidden", background: "rgba(255,255,255,0.015)", borderTop: "1px solid rgba(255,255,255,0.05)", borderBottom: "1px solid rgba(255,255,255,0.05)", padding: "24px 0", position: "relative" }}>
-      <style>{`@keyframes sponsorCardMarquee{0%{transform:translateX(0)}100%{transform:translateX(-33.333%)}}`}</style>
-      <div style={{ display: "flex", gap: 16, animation: `sponsorCardMarquee ${speed}s linear infinite`, width: "max-content" }}
-        onMouseEnter={e => e.currentTarget.style.animationPlayState = "paused"}
-        onMouseLeave={e => e.currentTarget.style.animationPlayState = "running"}>
+      <style>{`@keyframes sponsorCardMarquee{0%{transform:translate3d(0,0,0)}100%{transform:translate3d(-33.333%,0,0)}}`}</style>
+      <div style={{ display: "flex", gap: 16, willChange: "transform", animation: `sponsorCardMarquee ${speed}s linear infinite`, width: "max-content" }}
+        onMouseEnter={e => { e.currentTarget.style.transition = "opacity 0.3s ease"; e.currentTarget.style.opacity = "0.5"; }}
+        onMouseLeave={e => { e.currentTarget.style.opacity = "1"; }}>
         {duped.map((s, i) => (
           <div key={i} style={{ width: isMobile ? 140 : 180, flexShrink: 0, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 10, padding: isMobile ? "18px 12px" : "24px 18px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 10, minHeight: isMobile ? 100 : 120 }}>
             {s.logo_url ? (
