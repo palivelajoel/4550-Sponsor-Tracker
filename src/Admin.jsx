@@ -1058,20 +1058,47 @@ function SponsorRibbonManager({ vals, setVals, saveKey, isMobile, showToast }) {
   const [ribbonItems, setRibbonItems] = useState(() => {
     try { return JSON.parse(vals.sponsor_ribbon_items || "[]"); } catch { return []; }
   });
-  const [newCompany, setNewCompany] = useState("");
-  const [newLogo, setNewLogo] = useState("");
+  const [uploading, setUploading] = useState(false);
+  const [pending, setPending] = useState(null);
+  const fileRef = useRef(null);
 
   useEffect(() => {
     try { setRibbonItems(JSON.parse(vals.sponsor_ribbon_items || "[]")); } catch { setRibbonItems([]); }
   }, [vals.sponsor_ribbon_items]);
 
-  function addItem() {
-    if (!newCompany.trim()) return;
-    const updated = [...ribbonItems, { company: newCompany.trim(), logo_url: newLogo.trim() || "" }];
+  async function handleFile(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    setPending(null);
+    try {
+      const url = await uploadFile(file, 'team-assets');
+      if (!url) { showToast("Upload failed.", "#ef4444"); setUploading(false); return; }
+      const reader = new FileReader();
+      reader.onload = async (ev) => {
+        const base64 = ev.target.result.split(',')[1];
+        const r = await fetch("/api/extract-brands", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ imageBase64: base64, mimeType: file.type }),
+        });
+        if (!r.ok) { showToast("AI extraction failed.", "#ef4444"); setUploading(false); return; }
+        const data = await r.json();
+        const name = data.brands?.[0] || file.name.replace(/\.[^.]+$/, '').replace(/[-_]/g, ' ');
+        setPending({ company: name, logo_url: url });
+        setUploading(false);
+      };
+      reader.readAsDataURL(file);
+    } catch { showToast("Error processing image.", "#ef4444"); setUploading(false); }
+  }
+
+  function confirmAdd() {
+    if (!pending) return;
+    const updated = [...ribbonItems, pending];
     setRibbonItems(updated);
     setVals({ ...vals, sponsor_ribbon_items: JSON.stringify(updated) });
-    setNewCompany(""); setNewLogo("");
-    showToast("✅ Added to ribbon.");
+    setPending(null);
+    showToast("Added to ribbon.");
   }
 
   function removeItem(idx) {
@@ -1090,7 +1117,22 @@ function SponsorRibbonManager({ vals, setVals, saveKey, isMobile, showToast }) {
         </label>
         <button onClick={() => saveKey("sponsor_bar_enabled")} style={{ ...S.btnGhost, width: isMobile ? '100%' : undefined }}>Save Toggle</button>
       </div>
-      <div style={{ fontSize: 12, color: "#94a3b8", fontFamily: "monospace", marginBottom: 10 }}>Ribbon sponsors (separate from Sponsor Tracker):</div>
+      <div style={{ fontSize: 12, color: "#94a3b8", fontFamily: "monospace", marginBottom: 10 }}>Upload a sponsor logo image — AI will detect the company name automatically:</div>
+      <div style={{ display: "flex", gap: 8, marginBottom: 12, alignItems: "center", flexWrap: "wrap" }}>
+        <button onClick={() => fileRef.current?.click()} style={{ ...S.btnPrimary, width: isMobile ? '100%' : undefined }}>{uploading ? "Uploading..." : "Upload Logo Image"}</button>
+        <input ref={fileRef} type="file" accept="image/*" style={{ display: "none" }} onChange={handleFile} />
+        {uploading && <span style={{ fontSize: 12, color: "#a78bfa", fontFamily: "monospace" }}>Uploading & identifying...</span>}
+      </div>
+      {pending && (
+        <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", background: "rgba(34,197,94,0.1)", border: "1px solid rgba(34,197,94,0.3)", borderRadius: 8, marginBottom: 12, flexWrap: "wrap" }}>
+          <img src={pending.logo_url} alt="" style={{ width: 32, height: 32, borderRadius: 4, objectFit: "contain", background: "rgba(255,255,255,0.05)" }} />
+          <span style={{ flex: 1, fontSize: 13, color: "#e2e8f0" }}>Detected: <strong>{pending.company}</strong></span>
+          <button onClick={confirmAdd} style={S.btnPrimary}>Add to Ribbon</button>
+          <button onClick={() => setPending(null)} style={S.btnGhost}>Cancel</button>
+        </div>
+      )}
+      <div style={{ fontSize: 12, color: "#94a3b8", fontFamily: "monospace", marginBottom: 10 }}>Current ribbon sponsors:</div>
+      {ribbonItems.length === 0 && <div style={{ fontSize: 12, color: "#475569", fontFamily: "monospace", marginBottom: 10 }}>No sponsors in ribbon yet.</div>}
       {ribbonItems.length > 0 && (
         <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 12 }}>
           {ribbonItems.map((item, i) => (
@@ -1103,11 +1145,6 @@ function SponsorRibbonManager({ vals, setVals, saveKey, isMobile, showToast }) {
           <button onClick={() => { setVals({ ...vals, sponsor_ribbon_items: JSON.stringify(ribbonItems) }); saveKey("sponsor_ribbon_items"); }} style={{ ...S.btnGhost, alignSelf: 'flex-start' }}>Save Ribbon</button>
         </div>
       )}
-      <div style={{ display: "flex", flexDirection: isMobile ? 'column' : 'row', gap: 8, alignItems: isMobile ? 'stretch' : 'center' }}>
-        <input placeholder="Company name" value={newCompany} onChange={e => setNewCompany(e.target.value)} style={{ ...S.input, flex: 1, marginBottom: 0 }} />
-        <input placeholder="Logo URL (optional)" value={newLogo} onChange={e => setNewLogo(e.target.value)} style={{ ...S.input, flex: 1, marginBottom: 0 }} />
-        <button onClick={addItem} style={{ ...S.btnPrimary, width: isMobile ? '100%' : undefined }}>+ Add</button>
-      </div>
     </div>
   );
 }
