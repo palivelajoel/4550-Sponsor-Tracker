@@ -296,7 +296,7 @@ export default function HubTasks() {
                 <div style={{ fontSize: 11, color: C.dim, fontFamily: "monospace", marginBottom: 10 }}>
                   Paste CSV or upload a file. AI will parse and map columns automatically.
                 </div>
-                <textarea value={importCsv} onChange={e => setImportCsv(e.target.value)} placeholder={`title,description,status,priority,start_date,due_date,due_time,assigned_name,subteam\nDesign arm,Create CAD model,To Do,High,2026-06-01,2026-06-10,17:00,John Doe,Build"`
+                <textarea value={importCsv} onChange={e => setImportCsv(e.target.value)} placeholder={`title,description,status,priority,start_date,start_time,due_date,due_time,assigned_name,subteam\nDesign arm,Create CAD model,To Do,High,2026-06-01,,2026-06-10,17:00,John Doe,Build`}
                   style={{ ...inputStyle, minHeight: 140, resize: "vertical", fontFamily: "monospace", fontSize: 11, marginBottom: 8 }} />
                 <div style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 14 }}>
                   <button onClick={() => document.getElementById("tasks-csv-file")?.click()} style={ghostBtn}>Choose File</button>
