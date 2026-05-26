@@ -1049,7 +1049,6 @@ function SiteConfig({ config, logoUrl, setLogoUrl, reload, showToast, isMobile }
         ))}
       </div>
       <SponsorRibbonManager vals={vals} setVals={setVals} saveKey={saveKey} isMobile={isMobile} showToast={showToast} />
-      </div>
     </div>
   );
 }
