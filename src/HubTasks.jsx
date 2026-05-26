@@ -72,6 +72,8 @@ export default function HubTasks() {
     setSaving(true);
     const member = members.find(m => m.id === form.assigned_to);
     const payload = { ...form, assigned_name: member ? member.full_name || member.username : form.assigned_name };
+    if (!payload.start_date) { payload.start_date = null; delete payload.start_date; }
+    if (!payload.due_date) { payload.due_date = null; delete payload.due_date; }
     try {
       if (modal.mode === "add") {
         await hubProxy("hub_tasks", "insert", payload);
