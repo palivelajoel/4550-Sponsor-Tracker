@@ -547,8 +547,9 @@ export default function Landing() {
           <a href="/privacy" style={{ color: "#475569", textDecoration: "none" }}>Privacy Policy</a>
           <span style={{ color: "#334155" }}> &middot; </span>
           <a href="/terms" style={{ color: "#475569", textDecoration: "none" }}>Terms &amp; Conditions</a>
-          <br />
-          &copy; {new Date().getFullYear()} FRC Team 4550 Something's Bruin &middot; Built by Palivela_Joel
+          <div style={{ marginTop: 10 }}>
+            &copy; {new Date().getFullYear()} FRC Team 4550 Something's Bruin &middot; Built by Palivela_Joel
+          </div>
         </div>
       </footer>
     </div>
