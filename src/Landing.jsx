@@ -133,8 +133,13 @@ function SponsorBar({ sponsors = [], isMobile }) {
   const duped = [...items, ...items, ...items];
   const speed = Math.max(20, items.length * 3);
   return (
-    <div style={{ width: "100%", overflow: "hidden", background: "rgba(8,10,15,0.85)", backdropFilter: "blur(10px)", WebkitBackdropFilter: "blur(10px)", borderTop: "1px solid rgba(255,255,255,0.05)", borderBottom: "1px solid rgba(255,255,255,0.05)", padding: "80px 0", position: "relative" }}>
+    <div style={{ width: "100%", background: "rgba(8,10,15,0.85)", backdropFilter: "blur(10px)", WebkitBackdropFilter: "blur(10px)", borderTop: "1px solid rgba(255,255,255,0.05)", borderBottom: "1px solid rgba(255,255,255,0.05)", padding: "80px 0", position: "relative" }}>
       <style>{`@keyframes sponsorCardMarquee{0%{transform:translate3d(0,0,0)}100%{transform:translate3d(-33.333%,0,0)}}`}</style>
+      <div style={{ maxWidth: 1100, margin: "0 auto 40px", padding: "0 24px", textAlign: "center" }}>
+        <Eyebrow>// OUR PARTNERS</Eyebrow>
+        <SectionTitle>Our Sponsors</SectionTitle>
+      </div>
+      <div style={{ overflow: "hidden" }}>
       <div style={{ display: "flex", gap: 16, willChange: "transform", animation: `sponsorCardMarquee ${speed}s linear infinite`, width: "max-content" }}
         onMouseEnter={e => { e.currentTarget.style.transition = "opacity 0.3s ease"; e.currentTarget.style.opacity = "0.5"; }}
         onMouseLeave={e => { e.currentTarget.style.opacity = "1"; }}>
