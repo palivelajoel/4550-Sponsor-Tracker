@@ -144,12 +144,12 @@ function SponsorBar({ sponsors = [], isMobile }) {
         onMouseEnter={e => { e.currentTarget.style.transition = "opacity 0.3s ease"; e.currentTarget.style.opacity = "0.5"; }}
         onMouseLeave={e => { e.currentTarget.style.opacity = "1"; }}>
         {duped.map((s, i) => (
-          <div key={i} style={{ width: isMobile ? 200 : 280, flexShrink: 0, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 10, padding: isMobile ? "24px 16px" : "32px 24px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 10, minHeight: isMobile ? 160 : 200 }}>
+          <div key={i} style={{ flexShrink: 0, maxWidth: isMobile ? 260 : 360, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 10, padding: isMobile ? "24px 16px" : "32px 24px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 10, minHeight: isMobile ? 180 : 220 }}>
             {s.logo_url ? (
-              <img src={s.logo_url} alt="" style={{ width: isMobile ? 100 : 140, height: isMobile ? 100 : 140, objectFit: "contain", borderRadius: 6, background: "rgba(255,255,255,0.05)" }}
+              <img src={s.logo_url} alt="" style={{ height: isMobile ? 120 : 160, width: "auto", maxWidth: "100%", objectFit: "contain", borderRadius: 12, background: "rgba(255,255,255,0.05)" }}
                 onError={e => { e.target.style.display = "none"; }} />
             ) : (
-              <div style={{ width: isMobile ? 100 : 140, height: isMobile ? 100 : 140, borderRadius: 6, background: "rgba(255,255,255,0.05)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, color: "#475569" }}>🏢</div>
+              <div style={{ width: isMobile ? 120 : 160, height: isMobile ? 120 : 160, borderRadius: 12, background: "rgba(255,255,255,0.05)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, color: "#475569" }}>🏢</div>
             )}
           </div>
         ))}
