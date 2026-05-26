@@ -1098,7 +1098,7 @@ function SponsorRibbonManager({ vals, setVals, saveKey, isMobile, showToast }) {
             <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 10px", background: "rgba(255,255,255,0.03)", borderRadius: 8, border: "1px solid rgba(255,255,255,0.06)" }}>
               {item.logo_url ? <img src={item.logo_url} alt="" style={{ width: 28, height: 28, borderRadius: 4, objectFit: "contain", background: "rgba(255,255,255,0.05)" }} /> : <span style={{ fontSize: 18 }}>🏢</span>}
               <span style={{ flex: 1, fontSize: 13, color: "#e2e8f0" }}>{item.company}</span>
-              <button onClick={() => removeItem(i)} style={{ background: "transparent", border: "none", color: "#ef4444", cursor: "pointer", fontSize: 16 }}>✕</button>
+              <button onClick={() => removeItem(i)} style={{ background: "transparent", border: "none", color: "#ef4444", cursor: "pointer", fontSize: 16 }}>&times;</button>
             </div>
           ))}
           <button onClick={() => { setVals({ ...vals, sponsor_ribbon_items: JSON.stringify(ribbonItems) }); saveKey("sponsor_ribbon_items"); }} style={{ ...S.btnGhost, alignSelf: 'flex-start' }}>Save Ribbon</button>
