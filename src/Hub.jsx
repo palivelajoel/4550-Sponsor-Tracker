@@ -291,8 +291,12 @@ export default function Hub() {
         </div>
       </main>
 
-      <div style={{ textAlign:"center", padding:"20px 14px", color:"#1e293b", fontSize:11, fontFamily:"monospace", letterSpacing:2 }}>
+      <div style={{ textAlign:"center", padding:"20px 14px 4px", color:"#1e293b", fontSize:11, fontFamily:"monospace", letterSpacing:2 }}>
         BUILT BY PALIVELA_JOEL · FRC TEAM 4550
+      </div>
+      <div style={{ textAlign:"center", padding:"0 14px 20px", display:"flex", gap:16, justifyContent:"center", flexWrap:"wrap", fontSize:11, fontFamily:"monospace", color:"#334155" }}>
+        <a href="/privacy" style={{ color:"#334155", textDecoration:"none" }}>Privacy Policy</a>
+        <a href="/terms" style={{ color:"#334155", textDecoration:"none" }}>Terms &amp; Conditions</a>
       </div>
     </div>
   );

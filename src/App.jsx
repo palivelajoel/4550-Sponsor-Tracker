@@ -632,8 +632,12 @@ export default function App() {
           </div>
         )}
         <SuggestionsBox showToast={showToast} />
-        <div style={{ textAlign: 'center', padding: '24px', fontSize: '11px', color: '#334155', fontFamily: "'Share Tech Mono', monospace", letterSpacing: '2px', borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '40px' }}>
+        <div style={{ textAlign: 'center', padding: '24px 24px 8px', fontSize: '11px', color: '#334155', fontFamily: "'Share Tech Mono', monospace", letterSpacing: '2px', borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '40px' }}>
           BUILT BY PALIVELA_JOEL · FRC TEAM 4550
+        </div>
+        <div style={{ textAlign: 'center', padding: '0 24px 24px', fontSize: '11px', color: '#475569', fontFamily: "'Share Tech Mono', monospace", display: 'flex', gap: 16, justifyContent: 'center', flexWrap: 'wrap' }}>
+          <a href="/privacy" style={{ color: '#475569', textDecoration: 'none' }}>Privacy Policy</a>
+          <a href="/terms" style={{ color: '#475569', textDecoration: 'none' }}>Terms &amp; Conditions</a>
         </div>
       </div>
 
