@@ -1138,7 +1138,7 @@ function SponsorRibbonManager({ vals, setVals, saveKey, isMobile, showToast }) {
               <button onClick={() => removeItem(i)} style={{ background: "transparent", border: "none", color: "#ef4444", cursor: "pointer", fontSize: 16 }}>&times;</button>
             </div>
           ))}
-          <button onClick={async () => { try { const json = JSON.stringify(ribbonItems); await adminProxy('site_config', 'upsert', { key: "sponsor_ribbon_items", value: json }); setVals(v => ({ ...v, sponsor_ribbon_items: json })); showToast("Ribbon saved."); } catch (e) { showToast("Save failed: " + (e.message || e), "#ef4444"); } }} style={{ ...S.btnGhost, alignSelf: 'flex-start' }}>Save Ribbon</button>
+          <button onClick={async () => { try { await saveKey("sponsor_ribbon_items", JSON.stringify(ribbonItems)); } catch (e) { showToast("Save failed: " + (e.message || e), "#ef4444"); } }} style={{ ...S.btnGhost, alignSelf: 'flex-start' }}>Save Ribbon</button>
         </div>
       )}
     </div>
