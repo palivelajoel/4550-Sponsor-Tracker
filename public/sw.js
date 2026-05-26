@@ -1,14 +1,6 @@
-const CACHE = 'team4550-v1';
-const ASSETS = [
-  '/',
-  '/index.html',
-  '/logo.jpg',
-];
+const CACHE = 'team4550-v2';
 
-self.addEventListener('install', event => {
-  event.waitUntil(
-    caches.open(CACHE).then(cache => cache.addAll(ASSETS))
-  );
+self.addEventListener('install', () => {
   self.skipWaiting();
 });
 
@@ -23,24 +15,30 @@ self.addEventListener('fetch', event => {
   const { request } = event;
   const url = new URL(request.url);
 
-  // Supabase API — Network first, fallback to cache
-  if (/\.supabase\.co\/rest\/v1\//.test(url.href)) {
+  // Navigations — Network always (never cache HTML)
+  if (request.mode === 'navigate') {
+    event.respondWith(fetch(request));
+    return;
+  }
+
+  // Vite hashed assets — Cache first with hash-based immutability
+  if (/\/assets\/.*\.[a-f0-9]{8}\./.test(url.pathname)) {
     event.respondWith(
-      fetch(request).then(res => {
+      caches.match(request).then(cached => cached || fetch(request).then(res => {
         const copy = res.clone();
         caches.open(CACHE).then(cache => cache.put(request, copy));
         return res;
-      }).catch(() => caches.match(request))
+      }))
     );
     return;
   }
 
-  // Assets — Cache first
+  // Everything else — Network first
   event.respondWith(
-    caches.match(request).then(cached => cached || fetch(request).then(res => {
+    fetch(request).then(res => {
       const copy = res.clone();
       caches.open(CACHE).then(cache => cache.put(request, copy));
       return res;
-    }))
+    }).catch(() => caches.match(request))
   );
 });
