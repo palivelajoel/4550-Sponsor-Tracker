@@ -14,6 +14,8 @@ import HubScouting from './HubScouting.jsx'
 import HubInventory from './HubInventory.jsx'
 import ScoutMapTab from './ScoutMapTab.jsx'
 import PublicMedia from './PublicMedia.jsx'
+import Privacy from './Privacy.jsx'
+import Terms from './Terms.jsx'
 
 const path = window.location.pathname
 
@@ -30,6 +32,8 @@ const Page =
   : path === '/member-hub/scout-map'           ? ScoutMapTab
   : path === '/member-hub/inventory'           ? HubInventory
   : path === '/media'                          ? PublicMedia
+  : path === '/privacy'                        ? Privacy
+  : path === '/terms'                          ? Terms
   : Landing
 
 createRoot(document.getElementById('root')).render(

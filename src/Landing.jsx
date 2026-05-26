@@ -542,10 +542,12 @@ export default function Landing() {
           <div className="footer-links">
             {navItems.map(l => <a key={l} href={`#${l.toLowerCase().replace(/\s/g,"-")}`} style={{ color: "#64748b", textDecoration: "none", fontSize: 12, fontFamily: "'Share Tech Mono', monospace" }}>{l}</a>)}
             <a href="/member-hub" style={{ color: "#64748b", textDecoration: "none", fontSize: 12, fontFamily: "'Share Tech Mono', monospace" }}>Member Hub</a>
+            <a href="/privacy" style={{ color: "#64748b", textDecoration: "none", fontSize: 12, fontFamily: "'Share Tech Mono', monospace" }}>Privacy Policy</a>
+            <a href="/terms" style={{ color: "#64748b", textDecoration: "none", fontSize: 12, fontFamily: "'Share Tech Mono', monospace" }}>Terms &amp; Conditions</a>
           </div>
         </div>
         <div style={{ textAlign: "center", color: "#334155", fontSize: 11, fontFamily: "'Share Tech Mono', monospace", borderTop: "1px solid rgba(255,255,255,0.04)", paddingTop: 18 }}>
-          © {new Date().getFullYear()} FRC Team 4550 Something's Bruin · Built by Palivela_Joel
+          &copy; {new Date().getFullYear()} FRC Team 4550 Something's Bruin &middot; Built by Palivela_Joel
         </div>
       </footer>
     </div>
