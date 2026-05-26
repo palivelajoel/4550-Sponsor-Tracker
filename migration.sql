@@ -62,8 +62,11 @@ CREATE TABLE IF NOT EXISTS public.hub_tasks (
     assigned_name TEXT,
     subteam TEXT,
     due_date DATE,
+    start_date DATE,
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+ALTER TABLE public.hub_tasks ADD COLUMN IF NOT EXISTS start_date DATE;
 
 ALTER TABLE public.hub_tasks ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Public select hub_tasks" ON public.hub_tasks;
@@ -79,9 +82,12 @@ CREATE TABLE IF NOT EXISTS public.hub_calendar (
     date DATE NOT NULL,
     end_date DATE,
     time TIME,
+    end_time TIME,
     description TEXT,
     all_day BOOLEAN DEFAULT true
 );
+
+ALTER TABLE public.hub_calendar ADD COLUMN IF NOT EXISTS end_time TIME;
 
 ALTER TABLE public.hub_calendar ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Public select hub_calendar" ON public.hub_calendar;
