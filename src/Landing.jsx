@@ -135,7 +135,7 @@ function SponsorBar({ sponsors = [], isMobile }) {
   return (
     <div style={{ width: "100%", background: "rgba(8,10,15,0.85)", backdropFilter: "blur(10px)", WebkitBackdropFilter: "blur(10px)", borderTop: "1px solid rgba(255,255,255,0.05)", borderBottom: "1px solid rgba(255,255,255,0.05)", padding: "80px 0", position: "relative" }}>
       <style>{`@keyframes sponsorCardMarquee{0%{transform:translate3d(0,0,0)}100%{transform:translate3d(-33.333%,0,0)}}`}</style>
-      <div style={{ maxWidth: 1100, margin: "0 auto 40px", padding: "0 24px", textAlign: "center" }}>
+      <div style={{ maxWidth: 1100, margin: "0 auto 40px", padding: "0 24px", textAlign: "left" }}>
         <Eyebrow>// OUR PARTNERS</Eyebrow>
         <SectionTitle>Our Sponsors</SectionTitle>
       </div>
@@ -461,7 +461,7 @@ export default function Landing() {
       </div></section>
 
       {/* SOCIAL MEDIA */}
-      <section id="media" style={{ background: "rgba(8,10,15,0.55)", backdropFilter: "blur(10px)", WebkitBackdropFilter: "blur(10px)" }}><div className="sec">
+      <section id="media" style={{ background: "rgba(255,255,255,0.015)" }}><div className="sec">
         
           <FadeSection>
             <Eyebrow>// FOLLOW ALONG</Eyebrow>
