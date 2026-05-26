@@ -492,7 +492,7 @@ export default function HubInventory() {
       {modal === "add" || modal === "edit" ? (
         <div style={overlayStyle} onClick={() => { stopScanner(); setModal(null); }}>
           <div style={{ ...modalStyle, maxWidth: 580 }} onClick={e => e.stopPropagation()}>
-            <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 14, fontWeight: 700, color: C.red, marginBottom: 16, letterSpacing: 2 }}>{modal === "add" ? "ADD ITEM" : "EDIT ITEM"}</div>
+            <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 14, fontWeight: 700, color: C.text, marginBottom: 16, letterSpacing: 2 }}>{modal === "add" ? "Add Item" : "Edit Item"}</div>
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               <div style={{ display: "flex", gap: 10 }}>
                 <input placeholder="Item name *" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} style={{ ...inputStyle, flex: 1 }} />
@@ -549,7 +549,7 @@ export default function HubInventory() {
       {modal === "qty" ? (
         <div style={overlayStyle} onClick={() => setModal(null)}>
           <div style={{ ...modalStyle, maxWidth: 400 }} onClick={e => e.stopPropagation()}>
-            <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 14, fontWeight: 700, color: C.green, marginBottom: 16, letterSpacing: 2 }}>UPDATE QUANTITY — {form.name}</div>
+            <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 14, fontWeight: 700, color: C.text, marginBottom: 16, letterSpacing: 2 }}>Update Quantity — {form.name}</div>
             <div style={{ fontSize: 13, color: C.muted, fontFamily: "monospace", marginBottom: 12 }}>Current: {form.quantity ?? 0}</div>
             <div style={{ display: "flex", gap: 10, marginBottom: 10 }}>
               <input type="number" placeholder="Change (+ or -)" value={form.qtyChange} onChange={e => setForm({ ...form, qtyChange: e.target.value })} style={inputStyle} />

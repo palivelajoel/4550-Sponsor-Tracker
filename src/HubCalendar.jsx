@@ -263,7 +263,7 @@ export default function HubCalendar() {
         <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 13, fontWeight: 700, color: C.text, marginRight: 12 }}>{todayLabel()}</div>
         <div style={{ display: "flex", gap: 4, marginLeft: "auto" }}>
           {["month", "week", "day", "events"].map(v => (
-            <button key={v} onClick={() => setView(v)} style={viewBtn(v)}>{v}</button>
+            <button key={v} onClick={() => setView(v)} style={viewBtn(v)}>{v.charAt(0).toUpperCase() + v.slice(1)}</button>
           ))}
         </div>
         {canEdit && <button onClick={() => openAdd(cursor)} style={{ ...addBtnStyle, fontSize: 10, padding: "5px 10px" }}>+ Add</button>}
@@ -299,7 +299,7 @@ export default function HubCalendar() {
               </div>
               <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: C.muted, cursor: "pointer" }}>
                 <input type="checkbox" checked={form.all_day} onChange={e => setForm({ ...form, all_day: e.target.checked })} />
-                All day
+                All Day
               </label>
               {!form.all_day && (
                 <div style={{ display: "flex", gap: 10 }}>
