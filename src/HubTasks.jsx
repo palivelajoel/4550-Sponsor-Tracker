@@ -19,7 +19,7 @@ export default function HubTasks() {
   const [filterTeam, setFilterTeam] = useState("All");
   const [filterMember, setFilterMember] = useState("");
   const [viewMode, setViewMode] = useState("board");
-  const [form, setForm] = useState({ title: "", description: "", subteam: "All", assigned_to: "", assigned_name: "", start_date: "", due_date: "", priority: "Medium", status: "To Do" });
+  const [form, setForm] = useState({ title: "", description: "", subteam: "All", assigned_to: "", assigned_name: "", start_date: "", start_time: "", due_date: "", due_time: "", priority: "Medium", status: "To Do" });
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState("");
   const [dragId, setDragId] = useState(null);
@@ -58,12 +58,12 @@ export default function HubTasks() {
     if (m) setMembers(m);
   }
 
-  function openAdd(status = "To Do") {    if (!canEdit) return;    setForm({ title: "", description: "", subteam: "All", assigned_to: "", assigned_name: "", start_date: "", due_date: "", priority: "Medium", status });
+  function openAdd(status = "To Do") {    if (!canEdit) return;    setForm({ title: "", description: "", subteam: "All", assigned_to: "", assigned_name: "", start_date: "", start_time: "", due_date: "", due_time: "", priority: "Medium", status });
     setModal({ mode: "add" });
   }
 
   function openEdit(task) {
-    setForm({ title: task.title, description: task.description || "", subteam: task.subteam || "All", assigned_to: task.assigned_to || "", assigned_name: task.assigned_name || "", start_date: task.start_date || "", due_date: task.due_date || "", priority: task.priority, status: task.status });
+    setForm({ title: task.title, description: task.description || "", subteam: task.subteam || "All", assigned_to: task.assigned_to || "", assigned_name: task.assigned_name || "", start_date: task.start_date || "", start_time: task.start_time || "", due_date: task.due_date || "", due_time: task.due_time || "", priority: task.priority, status: task.status });
     setModal({ mode: "edit", task });
   }
 
@@ -72,8 +72,10 @@ export default function HubTasks() {
     setSaving(true);
     const member = members.find(m => m.id === form.assigned_to);
     const payload = { ...form, assigned_name: member ? member.full_name || member.username : form.assigned_name };
-    if (!payload.start_date) { payload.start_date = null; delete payload.start_date; }
-    if (!payload.due_date) { payload.due_date = null; delete payload.due_date; }
+    if (!payload.start_date) { payload.start_date = null; delete payload.start_date; payload.start_time = null; delete payload.start_time; }
+    if (!payload.due_date) { payload.due_date = null; delete payload.due_date; payload.due_time = null; delete payload.due_time; }
+    if (!payload.start_time) delete payload.start_time;
+    if (!payload.due_time) delete payload.due_time;
     try {
       if (modal.mode === "add") {
         await hubProxy("hub_tasks", "insert", payload);
@@ -248,10 +250,12 @@ export default function HubTasks() {
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: 10, color: C.dim, marginBottom: 3, fontFamily: "monospace" }}>Start Date</div>
                   <input type="date" value={form.start_date} onChange={e => setForm({ ...form, start_date: e.target.value })} style={inputStyle} />
+                  <input type="time" value={form.start_time} onChange={e => setForm({ ...form, start_time: e.target.value })} style={{ ...inputStyle, marginTop: 4 }} />
                 </div>
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: 10, color: C.dim, marginBottom: 3, fontFamily: "monospace" }}>Due Date</div>
                   <input type="date" value={form.due_date} onChange={e => setForm({ ...form, due_date: e.target.value })} style={inputStyle} />
+                  <input type="time" value={form.due_time} onChange={e => setForm({ ...form, due_time: e.target.value })} style={{ ...inputStyle, marginTop: 4 }} />
                 </div>
               </div>
               <div style={{ display: "flex", gap: 10, marginTop: 4 }}>
@@ -370,7 +374,8 @@ function GanttChart({ tasks, priorityColor, statusColor, openEdit, isOverdue }) 
                     borderLeft: `3px solid ${isOverdue(task) ? C.red : priorityColor[task.priority] || "#64748b"}`,
                   }}>
                     <div style={{ fontSize: 9, color: C.text, padding: "3px 6px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                      {task.start_date ? task.start_date.slice(5) : ""} – {task.due_date ? task.due_date.slice(5) : ""}
+                      {task.start_date ? task.start_date.slice(5) + (task.start_time ? ' ' + task.start_time.slice(0,5) : '') : ''}
+                      {task.due_date ? ' – ' + task.due_date.slice(5) + (task.due_time ? ' ' + task.due_time.slice(0,5) : '') : ''}
                     </div>
                   </div>
                 </div>
@@ -427,7 +432,7 @@ function TaskCard({ task, isOverdue, onClick, onDragStart }) {
         )}
         {task.due_date && (
           <span style={{ fontSize: 10, color: isOverdue ? C.red : C.dim, fontFamily: "monospace", marginLeft: "auto" }}>
-            {isOverdue ? "⚠️ " : "📅 "}{task.due_date}
+            {isOverdue ? "⚠️ " : "📅 "}{task.due_date}{task.due_time ? ' ' + task.due_time.slice(0,5) : ''}
           </span>
         )}
       </div>

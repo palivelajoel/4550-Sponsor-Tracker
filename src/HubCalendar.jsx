@@ -53,7 +53,7 @@ export default function HubCalendar() {
   async function loadData() {
     const [evRes, taskRes] = await Promise.all([
       sbFetch("hub_calendar?select=*&order=date.asc"),
-      sbFetch("hub_tasks?select=id,title,status,priority,due_date,start_date,assigned_name,subteam&order=due_date.asc¬=due_date.is.null"),
+      sbFetch("hub_tasks?select=id,title,status,priority,due_date,due_time,start_date,start_time,assigned_name,subteam&order=due_date.asc¬=due_date.is.null"),
     ]);
     if (evRes) setRawEvents(evRes);
     if (taskRes) setTasks(taskRes);
@@ -64,8 +64,10 @@ export default function HubCalendar() {
     const evs = rawEvents.map(e => ({ ...e, kind: "event" }));
     const ts = tasks.filter(t => t.due_date).map(t => ({
       id: t.id, title: t.title, kind: "task", type: "deadline",
-      date: t.due_date, end_date: t.due_date, all_day: true,
-      time: null, end_time: null, description: "",
+      date: t.due_date, end_date: t.due_date,
+      all_day: !t.due_time,
+      time: t.due_time || null, end_time: null,
+      description: "",
       priority: t.priority, status: t.status,
       assigned_name: t.assigned_name, subteam: t.subteam,
     }));

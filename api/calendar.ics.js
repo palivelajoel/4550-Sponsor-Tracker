@@ -49,14 +49,16 @@ function buildICS(events, tasks) {
 
   for (const task of tasks) {
     const uid = `task-${task.id}@frc4550`;
-    const start = formatDate(task.due_date, true);
-    const end = formatDate(task.due_date, true);
+    const hasTime = !!task.due_time;
+    const startDate = task.due_date;
+    const start = hasTime ? `${formatDate(startDate, false).slice(0,9)}T${task.due_time.replace(':', '')}00` : formatDate(startDate, true);
+    const end = hasTime ? `${formatDate(startDate, false).slice(0,9)}T${(task.due_time.slice(0,2) * 1 + 1).toString().padStart(2,'0')}${task.due_time.slice(2)}` : formatDate(startDate, true);
     const desc = `Status: ${task.status}\nPriority: ${task.priority}${task.assigned_name ? `\nAssigned to: ${task.assigned_name}` : ''}${task.subteam && task.subteam !== 'All' ? `\nSubteam: ${task.subteam}` : ''}${task.description ? `\n\n${task.description}` : ''}`;
     lines.push(
       'BEGIN:VEVENT',
       `UID:${uid}`,
-      `DTSTART;VALUE=DATE:${start}`,
-      `DTEND;VALUE=DATE:${end}`,
+      hasTime ? `DTSTART:${start}` : `DTSTART;VALUE=DATE:${start}`,
+      hasTime ? `DTEND:${end}` : `DTEND;VALUE=DATE:${end}`,
       `SUMMARY:${icalEscape(task.title)}`,
       `DESCRIPTION:${icalEscape(desc)}`,
       'CATEGORIES:Task',
@@ -73,7 +75,7 @@ export default async function handler(req, res) {
   try {
     const [evRes, taskRes] = await Promise.all([
       supabase.from('hub_calendar').select('*').order('date', { ascending: true }),
-      supabase.from('hub_tasks').select('*').not('due_date', 'is', null).order('due_date', { ascending: true }),
+      supabase.from('hub_tasks').select('id,title,description,status,priority,due_date,due_time,start_date,start_time,assigned_name,subteam').not('due_date', 'is', null).order('due_date', { ascending: true }),
     ]);
 
     const events = evRes.data || [];
