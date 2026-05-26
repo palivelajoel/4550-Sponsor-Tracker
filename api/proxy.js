@@ -41,7 +41,7 @@ export default async function handler(req, res) {
       return res.status(200).json({ data: upData });
     }
 
-    if (!['insert', 'update', 'delete'].includes(action)) return res.status(400).json({ error: 'Invalid action' });
+    if (!['insert', 'update', 'delete', 'upsert'].includes(action)) return res.status(400).json({ error: 'Invalid action' });
 
     if (action === 'insert') {
       let dataPayload = bodyPayload;
@@ -69,6 +69,20 @@ export default async function handler(req, res) {
       const { id } = bodyPayload || {};
       if (!id) return res.status(400).json({ error: 'Missing id' });
       const { data, error } = await supabase.from(table).delete().eq('id', id).select();
+      if (error) return res.status(500).json({ error: error.message });
+      return res.status(200).json({ data });
+    }
+
+    if (action === 'upsert') {
+      const { key, value } = bodyPayload || {};
+      if (!key) return res.status(400).json({ error: 'Missing key' });
+      const { data: existing } = await supabase.from(table).select('id').eq('key', key).maybeSingle();
+      if (existing) {
+        const { data, error } = await supabase.from(table).update({ value }).eq('id', existing.id).select();
+        if (error) return res.status(500).json({ error: error.message });
+        return res.status(200).json({ data });
+      }
+      const { data, error } = await supabase.from(table).insert({ key, value }).select();
       if (error) return res.status(500).json({ error: error.message });
       return res.status(200).json({ data });
     }

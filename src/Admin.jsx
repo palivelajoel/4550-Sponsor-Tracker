@@ -953,12 +953,7 @@ function SiteConfig({ config, logoUrl, setLogoUrl, reload, showToast, isMobile }
 
   async function saveKey(key, overrideVal) {
     const val = overrideVal !== undefined ? overrideVal : vals[key];
-    const existing = (await sbFetch(`site_config?key=eq.${key}&select=key`)) || [];
-    if (existing?.length) {
-      await adminProxy('site_config', 'update', { id: existing[0].id, updates: { value: val } });
-    } else {
-      await adminProxy('site_config', 'insert', { key, value: val });
-    }
+    await adminProxy('site_config', 'upsert', { key, value: val });
     reload(); showToast(`✅ Saved: ${key}`);
   }
 
@@ -1143,7 +1138,7 @@ function SponsorRibbonManager({ vals, setVals, saveKey, isMobile, showToast }) {
               <button onClick={() => removeItem(i)} style={{ background: "transparent", border: "none", color: "#ef4444", cursor: "pointer", fontSize: 16 }}>&times;</button>
             </div>
           ))}
-          <button onClick={() => { setVals(v => ({ ...v, sponsor_ribbon_items: JSON.stringify(ribbonItems) })); saveKey("sponsor_ribbon_items", JSON.stringify(ribbonItems)); }} style={{ ...S.btnGhost, alignSelf: 'flex-start' }}>Save Ribbon</button>
+          <button onClick={async () => { try { const json = JSON.stringify(ribbonItems); await adminProxy('site_config', 'upsert', { key: "sponsor_ribbon_items", value: json }); setVals(v => ({ ...v, sponsor_ribbon_items: json })); showToast("Ribbon saved."); } catch (e) { showToast("Save failed: " + (e.message || e), "#ef4444"); } }} style={{ ...S.btnGhost, alignSelf: 'flex-start' }}>Save Ribbon</button>
         </div>
       )}
     </div>
