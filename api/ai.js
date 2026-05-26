@@ -143,6 +143,45 @@ async function tracePitMap(req, res) {
   return res.status(200).json({ pits });
 }
 
+async function parseCSV(req, res) {
+  const { csv, type } = req.body || {};
+  if (!csv) return res.status(400).json({ error: 'CSV content required' });
+
+  const calendarSchema = 'title (required), type (event/deadline/meeting/competition/other), date (YYYY-MM-DD required), end_date, time (HH:MM), end_time, description, all_day (true/false)';
+  const tasksSchema = 'title (required), description, status (Backlog/To Do/In Progress/Review/Done), priority (Low/Medium/High/Critical), start_date (YYYY-MM-DD), start_time (HH:MM), due_date (YYYY-MM-DD), due_time (HH:MM), assigned_name, subteam';
+
+  const schema = type === 'calendar' ? calendarSchema : tasksSchema;
+  const systemPrompt = `You parse CSV data into FRC team management tool JSON. Return ONLY a JSON array of objects. Schema: ${schema}. Parse the CSV headers and map each row. Correct any common issues: "todo" → "To Do", "inprogress" → "In Progress", "high priority" → "High", date formats like "5/24/2026" → "2026-05-24". Skip malformed rows. No markdown, no backticks, just raw JSON array.`;
+
+  const apiKey = process.env.GROQ_API_KEY;
+  if (!apiKey) return res.status(500).json({ error: 'GROQ_API_KEY not configured' });
+
+  const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: 'llama-3.3-70b-versatile',
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: `Parse this CSV into JSON:\n\n${csv}` }
+      ],
+      temperature: 0.1,
+      max_tokens: 2000,
+      response_format: { type: 'json_object' },
+    }),
+  });
+
+  const data = await response.json();
+  if (!response.ok) return res.status(500).json({ error: `Groq error: ${data?.error?.message}` });
+
+  const content = data.choices?.[0]?.message?.content;
+  if (!content) return res.status(500).json({ error: 'AI returned empty' });
+
+  const parsed = JSON.parse(content);
+  const items = Array.isArray(parsed) ? parsed : (parsed.items || parsed.events || parsed.tasks || []);
+  return res.status(200).json({ items });
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
@@ -154,6 +193,7 @@ export default async function handler(req, res) {
       case 'extract-brands': return await extractBrands(req, res);
       case 'lookup': return await lookupSponsor(req, res);
       case 'trace-pit-map': return await tracePitMap(req, res);
+      case 'parse-csv': return await parseCSV(req, res);
       default: return res.status(404).json({ error: 'Unknown AI endpoint' });
     }
   } catch (err) {

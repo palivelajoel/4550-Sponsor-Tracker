@@ -169,6 +169,67 @@ export default function HubCalendar() {
     showToast("Deleted."); loadData(); setSelectedDay(null);
   }
 
+  // ── Import / Export ──
+  const [importModal, setImportModal] = useState(null);
+  const [importCsv, setImportCsv] = useState("");
+  const [importParsed, setImportParsed] = useState([]);
+  const [importing, setImporting] = useState(false);
+
+  function exportCSV() {
+    const headers = "title,type,date,end_date,time,end_time,description,all_day";
+    const rows = rawEvents.map(e =>
+      `"${(e.title||'').replace(/"/g,'""')}","${e.type||'event'}","${e.date||''}","${e.end_date||''}","${e.time||''}","${e.end_time||''}","${(e.description||'').replace(/"/g,'""')}","${e.all_day!==false}"`
+    );
+    const blob = new Blob([headers + "\n" + rows.join("\n")], { type: "text/csv" });
+    const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "calendar-export.csv"; a.click();
+    URL.revokeObjectURL(a.href);
+  }
+
+  async function parseAndPreview() {
+    if (!importCsv.trim()) return showToast("Paste CSV or pick a file.");
+    setImporting(true);
+    try {
+      const token = localStorage.getItem("hub_token");
+      const r = await fetch("/api/parse-csv", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ csv: importCsv, type: "calendar" }),
+      });
+      if (!r.ok) { const e = await r.text(); showToast("Parse error: " + e); return; }
+      const data = await r.json();
+      if (!data.items?.length) return showToast("No events parsed from CSV.");
+      setImportParsed(data.items);
+    } catch (e) { showToast("Parse failed: " + (e.message || e)); }
+    setImporting(false);
+  }
+
+  async function confirmImport() {
+    setImporting(true);
+    let count = 0;
+    for (const item of importParsed) {
+      try {
+        const payload = { ...item };
+        if (!payload.end_date) delete payload.end_date;
+        if (!payload.time) delete payload.time;
+        if (!payload.end_time) delete payload.end_time;
+        if (!payload.description) delete payload.description;
+        await sbFetch("hub_calendar", { method: "POST", body: JSON.stringify(payload) });
+        count++;
+      } catch {}
+    }
+    showToast(`Imported ${count} events.`);
+    setImportModal(null); setImportParsed([]); setImportCsv(""); setImporting(false);
+    loadData();
+  }
+
+  function handleFileUpload(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => setImportCsv(reader.result);
+    reader.readAsText(file);
+  }
+
   // ── Render helpers ──
   const tabBtn = (v) => ({
     padding: "7px 14px", cursor: "pointer", fontFamily: "'Orbitron',sans-serif",
@@ -206,6 +267,8 @@ export default function HubCalendar() {
           ))}
         </div>
         {canEdit && <button onClick={() => openAdd(cursor)} style={{ ...addBtnStyle, fontSize: 10, padding: "5px 10px" }}>+ Add</button>}
+        <button onClick={exportCSV} style={{ ...ghostBtn, fontSize: 10, padding: "5px 8px" }}>Export</button>
+        {canEdit && <button onClick={() => { setImportModal("upload"); setImportCsv(""); setImportParsed([]); }} style={{ ...ghostBtn, fontSize: 10, padding: "5px 8px" }}>Import</button>}
       </div>
 
       <div style={{ position: "relative", zIndex: 1 }}>
@@ -261,6 +324,54 @@ export default function HubCalendar() {
                 {modal.mode === "edit" && <button onClick={() => { deleteEvent(modal.event.id); setModal(null); }} style={dangerBtn}>Delete</button>}
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Import modal */}
+      {importModal && (
+        <div style={overlayStyle} onClick={e => { if (e.target === e.currentTarget) { setImportModal(null); setImportParsed([]); } }}>
+          <div style={{ ...modalStyle, maxWidth: 560 }} onClick={e => e.stopPropagation()}>
+            <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 15, fontWeight: 700, color: C.text, marginBottom: 16 }}>Import Calendar Events</div>
+            {importParsed.length === 0 ? (
+              <>
+                <div style={{ fontSize: 11, color: C.dim, fontFamily: "monospace", marginBottom: 10 }}>
+                  Paste CSV below or upload a file. AI will parse and map columns automatically.
+                </div>
+                <textarea value={importCsv} onChange={e => setImportCsv(e.target.value)} placeholder={`title,type,date,end_date,time,end_time,description,all_day\nWorkshop,event,2026-06-01,2026-06-03,09:00,17:00,Build season prep,false`}
+                  style={{ ...inputStyle, minHeight: 140, resize: "vertical", fontFamily: "monospace", fontSize: 11, marginBottom: 8 }} />
+                <div style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 14 }}>
+                  <button onClick={() => document.getElementById("csv-file-input")?.click()} style={ghostBtn}>Choose File</button>
+                  <input id="csv-file-input" type="file" accept=".csv" style={{ display: "none" }} onChange={handleFileUpload} />
+                  <span style={{ fontSize: 10, color: C.dim, fontFamily: "monospace" }}>.csv file</span>
+                </div>
+                <div style={{ display: "flex", gap: 10 }}>
+                  <button onClick={parseAndPreview} disabled={importing} style={{ ...addBtnStyle, flex: 1 }}>{importing ? "Parsing..." : "Parse & Preview"}</button>
+                  <button onClick={() => { setImportModal(null); setImportParsed([]); }} style={{ ...ghostBtn, flex: 1 }}>Cancel</button>
+                </div>
+              </>
+            ) : (
+              <>
+                <div style={{ fontSize: 11, color: C.green, fontFamily: "monospace", marginBottom: 10 }}>
+                  ✓ {importParsed.length} events parsed. Review and confirm to import.
+                </div>
+                <div style={{ maxHeight: 260, overflowY: "auto", marginBottom: 12 }}>
+                  {importParsed.map((item, i) => (
+                    <div key={i} style={{ display: "flex", gap: 8, padding: "6px 8px", background: i % 2 === 0 ? "rgba(255,255,255,0.02)" : "transparent", borderRadius: 4, fontSize: 11, color: C.text, fontFamily: "monospace" }}>
+                      <span style={{ color: C.dim, width: 24, flexShrink: 0 }}>{i + 1}.</span>
+                      <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.title}</span>
+                      <span style={{ color: C.muted, width: 100, flexShrink: 0 }}>{item.date}{item.time ? ' ' + item.time : ''}</span>
+                      <span style={{ color: item.type === 'deadline' ? C.red : C.blue, width: 80, flexShrink: 0 }}>{item.type || 'event'}</span>
+                    </div>
+                  ))}
+                </div>
+                <div style={{ display: "flex", gap: 10 }}>
+                  <button onClick={confirmImport} disabled={importing} style={{ ...addBtnStyle, flex: 1 }}>{importing ? "Importing..." : "Confirm Import"}</button>
+                  <button onClick={() => setImportParsed([])} style={ghostBtn}>Back</button>
+                  <button onClick={() => { setImportModal(null); setImportParsed([]); }} style={ghostBtn}>Cancel</button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}

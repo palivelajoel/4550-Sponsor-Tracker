@@ -23,6 +23,10 @@ export default function HubTasks() {
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState("");
   const [dragId, setDragId] = useState(null);
+  const [importModal, setImportModal] = useState(null);
+  const [importCsv, setImportCsv] = useState("");
+  const [importParsed, setImportParsed] = useState([]);
+  const [importing, setImporting] = useState(false);
 
   useEffect(() => {
     if (!authed) { window.location.href = "/member-hub"; return; }
@@ -140,6 +144,64 @@ export default function HubTasks() {
 
   const isOverdue = t => t.due_date && t.status !== "Done" && new Date(t.due_date) < new Date();
 
+  // ── Import / Export ──
+  function exportCSV() {
+    const headers = "title,description,status,priority,start_date,start_time,due_date,due_time,assigned_name,subteam";
+    const rows = tasks.map(t =>
+      `"${(t.title||'').replace(/"/g,'""')}","${(t.description||'').replace(/"/g,'""')}","${t.status||'To Do'}","${t.priority||'Medium'}","${t.start_date||''}","${t.start_time||''}","${t.due_date||''}","${t.due_time||''}","${(t.assigned_name||'').replace(/"/g,'""')}","${t.subteam||'All'}"`
+    );
+    const blob = new Blob([headers + "\n" + rows.join("\n")], { type: "text/csv" });
+    const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "tasks-export.csv"; a.click();
+    URL.revokeObjectURL(a.href);
+  }
+
+  async function parseAndPreview() {
+    if (!importCsv.trim()) return showToast("Paste CSV or pick a file.");
+    setImporting(true);
+    try {
+      const token = localStorage.getItem("hub_token");
+      const r = await fetch("/api/parse-csv", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ csv: importCsv, type: "tasks" }),
+      });
+      if (!r.ok) { const e = await r.text(); showToast("Parse error: " + e); return; }
+      const data = await r.json();
+      if (!data.items?.length) return showToast("No tasks parsed from CSV.");
+      setImportParsed(data.items);
+    } catch (e) { showToast("Parse failed: " + (e.message || e)); }
+    setImporting(false);
+  }
+
+  async function confirmImport() {
+    setImporting(true);
+    let count = 0;
+    for (const item of importParsed) {
+      try {
+        const payload = { ...item };
+        if (!payload.start_date) { payload.start_date = null; delete payload.start_date; payload.start_time = null; delete payload.start_time; }
+        if (!payload.due_date) { payload.due_date = null; delete payload.due_date; payload.due_time = null; delete payload.due_time; }
+        if (!payload.start_time) delete payload.start_time;
+        if (!payload.due_time) delete payload.due_time;
+        if (!payload.description) delete payload.description;
+        delete payload.id;
+        await hubProxy("hub_tasks", "insert", payload);
+        count++;
+      } catch {}
+    }
+    showToast(`Imported ${count} tasks.`);
+    setImportModal(null); setImportParsed([]); setImportCsv(""); setImporting(false);
+    load();
+  }
+
+  function handleFileUpload(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => setImportCsv(reader.result);
+    reader.readAsText(file);
+  }
+
   if (!authed) return null;
 
   return (
@@ -168,8 +230,12 @@ export default function HubTasks() {
           <option value="">All Members</option>
           {members.map(m => <option key={m.id} value={m.id}>{m.full_name || m.username}</option>)}
         </select>
-        <div style={{ marginLeft: "auto", fontSize: 12, color: C.dim, fontFamily: "monospace" }}>
-          {tasks.filter(t => t.status !== "Done").length} open · {tasks.filter(t => t.status === "Done").length} done
+        <div style={{ marginLeft: "auto", display: "flex", gap: 8, alignItems: "center" }}>
+          <button onClick={exportCSV} style={{ ...ghostBtn, fontSize: 10, padding: "4px 8px" }}>Export</button>
+          {canEdit && <button onClick={() => { setImportModal("upload"); setImportCsv(""); setImportParsed([]); }} style={{ ...ghostBtn, fontSize: 10, padding: "4px 8px" }}>Import</button>}
+          <span style={{ fontSize: 12, color: C.dim, fontFamily: "monospace" }}>
+            {tasks.filter(t => t.status !== "Done").length} open · {tasks.filter(t => t.status === "Done").length} done
+          </span>
         </div>
       </div>
 
@@ -218,6 +284,54 @@ export default function HubTasks() {
           })}
         </div>
       </div>
+      )}
+
+      {/* Import modal */}
+      {importModal && (
+        <div style={overlayStyle} onClick={e => { if (e.target === e.currentTarget) { setImportModal(null); setImportParsed([]); } }}>
+          <div style={{ ...modalStyle, maxWidth: 560 }} onClick={e => e.stopPropagation()}>
+            <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 15, fontWeight: 700, color: C.text, marginBottom: 16 }}>Import Tasks</div>
+            {importParsed.length === 0 ? (
+              <>
+                <div style={{ fontSize: 11, color: C.dim, fontFamily: "monospace", marginBottom: 10 }}>
+                  Paste CSV or upload a file. AI will parse and map columns automatically.
+                </div>
+                <textarea value={importCsv} onChange={e => setImportCsv(e.target.value)} placeholder={`title,description,status,priority,start_date,due_date,due_time,assigned_name,subteam\nDesign arm,Create CAD model,To Do,High,2026-06-01,2026-06-10,17:00,John Doe,Build"`
+                  style={{ ...inputStyle, minHeight: 140, resize: "vertical", fontFamily: "monospace", fontSize: 11, marginBottom: 8 }} />
+                <div style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 14 }}>
+                  <button onClick={() => document.getElementById("tasks-csv-file")?.click()} style={ghostBtn}>Choose File</button>
+                  <input id="tasks-csv-file" type="file" accept=".csv" style={{ display: "none" }} onChange={handleFileUpload} />
+                  <span style={{ fontSize: 10, color: C.dim, fontFamily: "monospace" }}>.csv file</span>
+                </div>
+                <div style={{ display: "flex", gap: 10 }}>
+                  <button onClick={parseAndPreview} disabled={importing} style={{ ...addBtnStyle, flex: 1 }}>{importing ? "Parsing..." : "Parse & Preview"}</button>
+                  <button onClick={() => { setImportModal(null); setImportParsed([]); }} style={{ ...ghostBtn, flex: 1 }}>Cancel</button>
+                </div>
+              </>
+            ) : (
+              <>
+                <div style={{ fontSize: 11, color: C.green, fontFamily: "monospace", marginBottom: 10 }}>
+                  ✓ {importParsed.length} tasks parsed. Review and confirm.
+                </div>
+                <div style={{ maxHeight: 260, overflowY: "auto", marginBottom: 12 }}>
+                  {importParsed.map((item, i) => (
+                    <div key={i} style={{ display: "flex", gap: 8, padding: "6px 8px", background: i % 2 === 0 ? "rgba(255,255,255,0.02)" : "transparent", borderRadius: 4, fontSize: 11, color: C.text, fontFamily: "monospace" }}>
+                      <span style={{ color: C.dim, width: 24, flexShrink: 0 }}>{i + 1}.</span>
+                      <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.title}</span>
+                      <span style={{ color: item.priority === "Critical" ? C.red : item.priority === "High" ? "#f59e0b" : C.dim, width: 60, flexShrink: 0 }}>{item.priority || 'Medium'}</span>
+                      <span style={{ color: item.due_date ? C.muted : C.dim, width: 90, flexShrink: 0 }}>{item.due_date || '—'}</span>
+                    </div>
+                  ))}
+                </div>
+                <div style={{ display: "flex", gap: 10 }}>
+                  <button onClick={confirmImport} disabled={importing} style={{ ...addBtnStyle, flex: 1 }}>{importing ? "Importing..." : "Confirm Import"}</button>
+                  <button onClick={() => setImportParsed([])} style={ghostBtn}>Back</button>
+                  <button onClick={() => { setImportModal(null); setImportParsed([]); }} style={ghostBtn}>Cancel</button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
       )}
 
       {/* Modal */}
