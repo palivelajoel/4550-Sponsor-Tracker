@@ -477,7 +477,7 @@ export default function Landing() {
         
       </div></section>
 
-      {config.sponsor_bar_enabled !== "false" && <SponsorBar sponsors={sponsors} isMobile={isMobile} />}
+      {config.sponsor_bar_enabled !== "false" && (() => { try { const items = JSON.parse(config.sponsor_ribbon_items || "[]"); return <SponsorBar sponsors={items} isMobile={isMobile} />; } catch { return null; } })()}
 
       {/* SPONSORS */}
       <section id="sponsors" style={{ background: "rgba(255,255,255,0.015)" }}><div className="sec">

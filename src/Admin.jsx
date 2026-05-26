@@ -1047,14 +1047,67 @@ function SiteConfig({ config, logoUrl, setLogoUrl, reload, showToast, isMobile }
             <button onClick={() => saveKey(f.key)} style={{ ...S.btnGhost, width: isMobile ? '100%' : undefined }}>Save</button>
           </div>
         ))}
-        <div style={{ display: "flex", flexDirection: isMobile ? 'column' : 'row', gap: isMobile ? 6 : 10, marginTop: 4, alignItems: isMobile ? 'stretch' : 'center' }}>
-          <label style={{ color: "#94a3b8", fontSize: 12, minWidth: isMobile ? 0 : 120, fontFamily: "monospace" }}>Sponsor Bar</label>
-          <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: 13, color: "#e2e8f0" }}>
-            <input type="checkbox" checked={vals.sponsor_bar_enabled !== "false"} onChange={e => setVals({ ...vals, sponsor_bar_enabled: e.target.checked ? "true" : "false" })} style={{ width: 16, height: 16, cursor: "pointer" }} />
-            Show sponsor ribbon on homepage
-          </label>
-          <button onClick={() => saveKey("sponsor_bar_enabled")} style={{ ...S.btnGhost, width: isMobile ? '100%' : undefined }}>Save</button>
+      </div>
+      <SponsorRibbonManager vals={vals} setVals={setVals} saveKey={saveKey} isMobile={isMobile} showToast={showToast} />
+      </div>
+    </div>
+  );
+}
+
+// ── SPONSOR RIBBON MANAGER ────────────────────────────────
+function SponsorRibbonManager({ vals, setVals, saveKey, isMobile, showToast }) {
+  const [ribbonItems, setRibbonItems] = useState(() => {
+    try { return JSON.parse(vals.sponsor_ribbon_items || "[]"); } catch { return []; }
+  });
+  const [newCompany, setNewCompany] = useState("");
+  const [newLogo, setNewLogo] = useState("");
+
+  useEffect(() => {
+    try { setRibbonItems(JSON.parse(vals.sponsor_ribbon_items || "[]")); } catch { setRibbonItems([]); }
+  }, [vals.sponsor_ribbon_items]);
+
+  function addItem() {
+    if (!newCompany.trim()) return;
+    const updated = [...ribbonItems, { company: newCompany.trim(), logo_url: newLogo.trim() || "" }];
+    setRibbonItems(updated);
+    setVals({ ...vals, sponsor_ribbon_items: JSON.stringify(updated) });
+    setNewCompany(""); setNewLogo("");
+    showToast("✅ Added to ribbon.");
+  }
+
+  function removeItem(idx) {
+    const updated = ribbonItems.filter((_, i) => i !== idx);
+    setRibbonItems(updated);
+    setVals({ ...vals, sponsor_ribbon_items: JSON.stringify(updated) });
+  }
+
+  return (
+    <div style={{ ...S.card, marginTop: 16 }}>
+      <div style={S.cardTitle}>Sponsor Ribbon</div>
+      <div style={{ display: "flex", flexDirection: isMobile ? 'column' : 'row', gap: isMobile ? 6 : 10, marginBottom: 12, alignItems: isMobile ? 'stretch' : 'center' }}>
+        <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: 13, color: "#e2e8f0", flexShrink: 0 }}>
+          <input type="checkbox" checked={vals.sponsor_bar_enabled !== "false"} onChange={e => setVals({ ...vals, sponsor_bar_enabled: e.target.checked ? "true" : "false" })} style={{ width: 16, height: 16, cursor: "pointer" }} />
+          Show on homepage
+        </label>
+        <button onClick={() => saveKey("sponsor_bar_enabled")} style={{ ...S.btnGhost, width: isMobile ? '100%' : undefined }}>Save Toggle</button>
+      </div>
+      <div style={{ fontSize: 12, color: "#94a3b8", fontFamily: "monospace", marginBottom: 10 }}>Ribbon sponsors (separate from Sponsor Tracker):</div>
+      {ribbonItems.length > 0 && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 12 }}>
+          {ribbonItems.map((item, i) => (
+            <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 10px", background: "rgba(255,255,255,0.03)", borderRadius: 8, border: "1px solid rgba(255,255,255,0.06)" }}>
+              {item.logo_url ? <img src={item.logo_url} alt="" style={{ width: 28, height: 28, borderRadius: 4, objectFit: "contain", background: "rgba(255,255,255,0.05)" }} /> : <span style={{ fontSize: 18 }}>🏢</span>}
+              <span style={{ flex: 1, fontSize: 13, color: "#e2e8f0" }}>{item.company}</span>
+              <button onClick={() => removeItem(i)} style={{ background: "transparent", border: "none", color: "#ef4444", cursor: "pointer", fontSize: 16 }}>✕</button>
+            </div>
+          ))}
+          <button onClick={() => { setVals({ ...vals, sponsor_ribbon_items: JSON.stringify(ribbonItems) }); saveKey("sponsor_ribbon_items"); }} style={{ ...S.btnGhost, alignSelf: 'flex-start' }}>Save Ribbon</button>
         </div>
+      )}
+      <div style={{ display: "flex", flexDirection: isMobile ? 'column' : 'row', gap: 8, alignItems: isMobile ? 'stretch' : 'center' }}>
+        <input placeholder="Company name" value={newCompany} onChange={e => setNewCompany(e.target.value)} style={{ ...S.input, flex: 1, marginBottom: 0 }} />
+        <input placeholder="Logo URL (optional)" value={newLogo} onChange={e => setNewLogo(e.target.value)} style={{ ...S.input, flex: 1, marginBottom: 0 }} />
+        <button onClick={addItem} style={{ ...S.btnPrimary, width: isMobile ? '100%' : undefined }}>+ Add</button>
       </div>
     </div>
   );
