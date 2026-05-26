@@ -28,6 +28,9 @@
     { "source": "/api/calendar.ics", "destination": "/api/calendar.ics" },
     { "source": "/api/announce-to-discord", "destination": "/api/discord/announce-to-discord" },
     { "source": "/api/discord-to-announcement", "destination": "/api/discord/discord-to-announcement" },
-    { "source": "/((?!sw\\.js$|registerSW\\.js$|workbox-.*\\.js$).*)", "destination": "/index.html" }
+    { "source": "/llms.txt", "destination": "/llms.txt" },
+    { "source": "/sitemap.xml", "destination": "/sitemap.xml" },
+    { "source": "/mirror/:path*", "destination": "/mirror/:path*" },
+    { "source": "/((?!sw\\.js$|registerSW\\.js$|workbox-.*\\.js$|llms\\.txt$|sitemap\\.xml$|mirror/.*).*)", "destination": "/index.html" }
   ]
 }

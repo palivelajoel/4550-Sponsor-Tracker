@@ -62,7 +62,41 @@ export default function Privacy() {
           <li>To comply with legal obligations</li>
         </ul>
 
-        <h2>3. Legal Basis for Processing (GDPR)</h2>
+        <h2>3. Data Inventory</h2>
+        <p>The following table details every data point collected by our Site and services:</p>
+        <div style={{ overflowX: "auto", marginBottom: 16 }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12, color: "#cbd5e1", fontFamily: "'Share Tech Mono', monospace" }}>
+            <thead>
+              <tr style={{ background: "rgba(255,255,255,0.05)", borderBottom: "1px solid rgba(255,255,255,0.1)" }}>
+                <th style={{ padding: "10px 12px", textAlign: "left", color: "#f1f5f9" }}>Data Point</th>
+                <th style={{ padding: "10px 12px", textAlign: "left", color: "#f1f5f9" }}>Purpose</th>
+                <th style={{ padding: "10px 12px", textAlign: "left", color: "#f1f5f9" }}>Storage</th>
+                <th style={{ padding: "10px 12px", textAlign: "left", color: "#f1f5f9" }}>Retention</th>
+                <th style={{ padding: "10px 12px", textAlign: "left", color: "#f1f5f9" }}>Shared With</th>
+              </tr>
+            </thead>
+            <tbody>
+              {[
+                ["Name / Username", "Member Hub identification", "Supabase", "Until deactivation", "Never sold"],
+                ["Email address", "Communication, login", "Supabase", "Until deactivation", "Never sold"],
+                ["Phone number", "Sponsor outreach", "Supabase", "Until requested deletion", "Never sold"],
+                ["Task assignments", "Team coordination", "Supabase", "Until deleted by user", "Never sold"],
+                ["Calendar events", "Team scheduling", "Supabase", "Until deleted by user", "Never sold"],
+                ["Media uploads", "Team gallery", "Supabase Storage", "Until deleted by user", "Never sold"],
+                ["Suggestions / Feedback", "Team improvement", "Supabase", "Indefinite (anonymized)", "Never sold"],
+                ["IP address", "Analytics, security", "Vercel logs", "30 days", "Vercel (processor)"],
+                ["Login sessions", "Authentication", "LocalStorage", "Until logout", "Never"],
+                ["Camera / Photos", "Inventory AI identification", "Supabase Storage", "Until deleted by user", "None (AI in-memory only)"],
+              ].map((row, i) => (
+                <tr key={i} style={{ borderBottom: "1px solid rgba(255,255,255,0.05)", background: i % 2 === 0 ? "transparent" : "rgba(255,255,255,0.02)" }}>
+                  {row.map((cell, j) => <td key={j} style={{ padding: "8px 12px" }}>{cell}</td>)}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        <h2>4. Legal Basis for Processing (GDPR)</h2>
         <p>While we are based in the United States, if you are accessing our Site from the European Economic Area (EEA), our legal basis for collecting and using your information depends on the specific data concerned and the context in which we collect it. We typically process your information on the following grounds:</p>
         <ul>
           <li><strong>Consent:</strong> Where you have given us explicit permission.</li>
@@ -70,7 +104,7 @@ export default function Privacy() {
           <li><strong>Legal Obligation:</strong> Where required by applicable law.</li>
         </ul>
 
-        <h2>4. Data Sharing and Disclosure</h2>
+        <h2>5. Data Sharing and Disclosure</h2>
         <p>We do not sell your personal information to third parties. We may share your information in the following circumstances:</p>
         <ul>
           <li><strong>Service Providers:</strong> With Vercel (hosting), Supabase (database & authentication), and other service providers who help us operate the Site.</li>
@@ -79,13 +113,13 @@ export default function Privacy() {
           <li><strong>School District:</strong> Cherry Creek School District may have access to certain information as part of oversight of the team as a school-affiliated organization.</li>
         </ul>
 
-        <h2>5. Data Security</h2>
+        <h2>6. Data Security</h2>
         <p>We implement appropriate technical and organizational security measures to protect your information, including encryption in transit (HTTPS), secure authentication for the Member Hub, and restricted database access. However, no method of transmission or storage is 100% secure, and we cannot guarantee absolute security.</p>
 
-        <h2>6. Data Retention</h2>
+        <h2>7. Data Retention</h2>
         <p>We retain your information for as long as necessary to fulfill the purposes described in this Privacy Policy, or as required by applicable law. Member Hub accounts may be deactivated upon request. Completed tasks older than 24 hours are automatically deleted.</p>
 
-        <h2>7. Your Rights</h2>
+        <h2>8. Your Rights</h2>
         <p>Depending on your jurisdiction, you may have the following rights regarding your personal information:</p>
         <ul>
           <li><strong>Access:</strong> Request a copy of the information we hold about you.</li>
@@ -96,7 +130,7 @@ export default function Privacy() {
         </ul>
         <p>To exercise any of these rights, please contact us at <a href="mailto:team4550frc@gmail.com">team4550frc@gmail.com</a>.</p>
 
-        <h2>8. California Privacy Rights (CCPA)</h2>
+        <h2>9. California Privacy Rights (CCPA)</h2>
         <p>If you are a California resident, the California Consumer Privacy Act (CCPA) provides you with additional rights regarding your personal information:</p>
         <ul>
           <li>You have the right to know what personal information we collect, use, disclose, and sell.</li>
@@ -106,16 +140,16 @@ export default function Privacy() {
         </ul>
         <p>To make a CCPA request, please contact us at <a href="mailto:team4550frc@gmail.com">team4550frc@gmail.com</a>.</p>
 
-        <h2>9. Children's Privacy (COPPA)</h2>
+        <h2>10. Children's Privacy (COPPA)</h2>
         <p>Our Site is intended for general audiences. The Member Hub is restricted to team members and authorized personnel. We do not knowingly collect personal information from children under 13 without parental consent. If we become aware that a child under 13 has provided us with personal information, we will take steps to delete such information. If you believe a child under 13 has provided us with personal information, please contact us immediately.</p>
 
-        <h2>10. Third-Party Links</h2>
+        <h2>11. Third-Party Links</h2>
         <p>Our Site may contain links to third-party websites, including YouTube, Instagram, and donation platforms. We are not responsible for the privacy practices of these third parties. We encourage you to review their privacy policies before providing any information.</p>
 
-        <h2>11. Changes to This Privacy Policy</h2>
+        <h2>12. Changes to This Privacy Policy</h2>
         <p>We may update this Privacy Policy from time to time. We will notify users of material changes by posting the updated policy on this page with a new "Last Updated" date. Continued use of the Site after changes constitutes acceptance of the updated policy.</p>
 
-        <h2>12. Contact Us</h2>
+        <h2>13. Contact Us</h2>
         <p>If you have questions, concerns, or requests regarding this Privacy Policy, please contact us at:</p>
         <p>
           FRC Team 4550 "Something's Bruin"<br />
