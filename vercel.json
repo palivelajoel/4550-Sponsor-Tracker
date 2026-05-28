@@ -37,6 +37,6 @@
     { "source": "/llms.txt", "destination": "/llms.txt" },
     { "source": "/sitemap.xml", "destination": "/sitemap.xml" },
     { "source": "/mirror/:path*", "destination": "/mirror/:path*" },
-    { "source": "/((?!sw\\.js$|registerSW\\.js$|workbox-.*\\.js$|llms\\.txt$|sitemap\\.xml$|mirror/.*).*)", "destination": "/index.html" }
+    { "source": "/((?!sw\\.js$|registerSW\\.js$|workbox-.*\\.js$|llms\\.txt$|sitemap\\.xml$|mirror/.*|googleea9a57ee0e3bd984\\.html).*)", "destination": "/index.html" }
   ]
 }
