@@ -1,5 +1,6 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
+import { SpeedInsights } from '@vercel/speed-insights/react'
 import App from './App.jsx'
 import Admin from './Admin.jsx'
 import Landing from './Landing.jsx'
@@ -39,5 +40,6 @@ const Page =
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <Page />
+    <SpeedInsights />
   </StrictMode>
 )
