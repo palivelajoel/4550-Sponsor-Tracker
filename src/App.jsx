@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { createClient } from '@supabase/supabase-js'
 import Starfield from './Starfield.jsx'
-import { uploadFile, FONTS, hubProxy } from './hubUtils.jsx'
+import { FONTS, hubProxy } from './hubUtils.jsx'
 
 const supabase = createClient(
   import.meta.env.VITE_SUPABASE_URL,
@@ -205,19 +205,9 @@ function NotesModal({ sponsor, onClose }) {
 }
 
 function Modal({ sponsor, onClose, onSave }) {
-  const [form, setForm] = useState(sponsor || { company: '', email: '', phone: '', notes: '', logo_url: '', status: 'Not Contacted', tier: 'None', follow_up_date: '' })
+  const [form, setForm] = useState(sponsor || { company: '', email: '', phone: '', notes: '', status: 'Not Contacted', tier: 'None', follow_up_date: '' })
   const [looking, setLooking] = useState(false)
-  const [logoUploading, setLogoUploading] = useState(false)
-  const logoFileRef = useRef(null)
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
-
-  const uploadLogo = async (file) => {
-    if (!file) return
-    setLogoUploading(true)
-    const url = await uploadFile(file, 'team-assets')
-    if (url) { set('logo_url', url) }
-    setLogoUploading(false)
-  }
 
   const lookup = async () => {
     if (!form.company.trim()) return
@@ -248,17 +238,6 @@ function Modal({ sponsor, onClose, onSave }) {
             <input style={styles.modalInput} value={form[k] || ''} onChange={e => set(k, e.target.value)} placeholder={k === 'email' ? 'contact@company.com' : k === 'phone' ? '(555) 000-0000' : ''} />
           </div>
         ))}
-        <div style={styles.field}>
-          <label style={styles.label}>LOGO URL</label>
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-            <input style={{ ...styles.modalInput, flex: 1 }} value={form.logo_url || ''} onChange={e => set('logo_url', e.target.value)} placeholder="https://..." />
-            <button type="button" onClick={() => logoFileRef.current?.click()} style={{ ...styles.lookupBtn, fontSize: 16 }}>{logoUploading ? '⏳' : '📸'}</button>
-            <input ref={logoFileRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={e => { if (e.target.files[0]) uploadLogo(e.target.files[0]) }} />
-          </div>
-          {form.logo_url && (
-            <img src={form.logo_url} alt="logo preview" style={{ height: 40, marginTop: 8, borderRadius: 6, objectFit: 'contain', background: 'rgba(255,255,255,0.05)' }} onError={e => { e.target.style.display = 'none' }} />
-          )}
-        </div>
         <div style={styles.field}>
           <label style={styles.label}>STATUS</label>
           <select style={{ ...styles.modalInput, cursor: 'pointer' }} value={form.status} onChange={e => set('status', e.target.value)}>
