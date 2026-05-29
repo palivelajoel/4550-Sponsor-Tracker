@@ -1,17 +1,14 @@
 import { createClient } from '@supabase/supabase-js';
-import { verifyToken, getTokenFromRequest } from './_shared.js';
+import { verifyToken } from './_shared.js';
 
 export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  const teamPassword = req.headers['x-team-password'];
-  const token = getTokenFromRequest(req);
-  const isAuthed = (token && verifyToken(token)) || (teamPassword && teamPassword === process.env.VITE_TEAM_PASSWORD);
-  if (!isAuthed) return res.status(401).json({ error: 'Unauthorized' });
+  const { table = 'sponsors', action, payload, token } = req.body || {};
+  if (!token || !verifyToken(token)) return res.status(401).json({ error: 'Unauthorized' });
 
   const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE);
-  const { table = 'sponsors', action, payload } = req.body || {};
 
   if (!['sponsors', 'sponsor_notes'].includes(table)) return res.status(400).json({ error: 'Invalid table' });
 
