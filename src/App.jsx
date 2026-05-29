@@ -617,7 +617,7 @@ export default function App() {
 
         {loading ? (
           <div style={styles.grid}>
-            {[1,2,3,4,5,6].map(i => (
+            {[1,2,3,4,5,6,7,8].map(i => (
               <div key={i} style={{ ...styles.card, padding: '20px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '14px', gap: '12px' }}>
                   <div style={{ flex: 1 }}>
