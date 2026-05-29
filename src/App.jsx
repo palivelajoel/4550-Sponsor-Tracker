@@ -391,7 +391,7 @@ export default function App() {
   const [search, setSearch] = useState('')
   const [filterStatus, setFilterStatus] = useState('All')
   const [filterTier, setFilterTier] = useState('All')
-  const [sortBy, setSortBy] = useState('date')
+  const [sortBy, setSortBy] = useState(() => localStorage.getItem('sponsor_sort') || 'date')
   const [modal, setModal] = useState(null)
   const [showImport, setShowImport] = useState(false)
   const [emailModal, setEmailModal] = useState(null)
@@ -419,6 +419,8 @@ export default function App() {
   useEffect(() => {
     if (localStorage.getItem('hub_authed') !== 'true') window.location.href = '/member-hub'
   }, [])
+
+  useEffect(() => { localStorage.setItem('sponsor_sort', sortBy) }, [sortBy])
 
   const save = async (form) => {
     if (!form.company.trim()) return
