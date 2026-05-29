@@ -21,7 +21,7 @@ const path = window.location.pathname
 
 const Page =
   path === '/admin'                            ? Admin
-  : path === '/login' || path === '/dashboard' ? App
+  : path === '/member-hub/sponsors'              ? App
   : path === '/member-hub'                     ? Hub
   : path === '/member-hub/calendar'            ? HubCalendar
   : path === '/member-hub/tasks'               ? HubTasks

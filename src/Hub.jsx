@@ -155,7 +155,7 @@ export default function Hub() {
     { id:"media", icon:"📸", label:"Media Gallery", description:"Photos and videos from competitions and events.", href:"/member-hub/media", accent:"#ec4899" },
     { id:"resources", icon:"📁", label:"Resources", description:"CAD files, documents, and team guides.", href:"/member-hub/resources", accent:"#64748b" },
     { id:"inventory", icon:"📦", label:"Inventory", description:"Track parts, tools, and supplies with AI identification.", href:"/member-hub/inventory", accent:"#22d3ee" },
-    { id:"sponsor-tracker", icon:"🤝", label:"Sponsor Tracker", description:"Manage sponsors, contact info, and outreach status.", href:"/dashboard", accent:"#0ea5e9" },
+    { id:"sponsor-tracker", icon:"🤝", label:"Sponsor Tracker", description:"Manage sponsors, contact info, and outreach status.", href:"/member-hub/sponsors", accent:"#0ea5e9" },
   ];
 
   // ── LOGIN ───────────────────────────────────────────────
@@ -306,7 +306,7 @@ function FeatureCard({ feature, index, isMobile }) {
   const [hovered, setHovered] = useState(false);
   return (
     <div className="feat-card"
-      onClick={() => { if (feature.href === "/dashboard") localStorage.setItem("sb_authed","true"); window.location.href = feature.href; }}
+      onClick={() => { window.location.href = feature.href; }}
       onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}
       style={{ background: hovered ? `${feature.accent}10` : C.surface, border:`1px solid ${hovered ? feature.accent+"88" : C.border}`, borderRadius:12, padding: isMobile ? "16px 12px" : "22px 20px", cursor:"pointer", boxShadow: hovered ? `0 0 28px ${feature.accent}22` : "none", animation:`fadeUp 0.4s ease both`, animationDelay:`${index * 0.04}s`, userSelect:"none" }}>
       <div className="feat-icon" style={{ fontSize:isMobile?22:28, marginBottom:isMobile?8:12 }}>{feature.icon}</div>

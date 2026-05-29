@@ -3,6 +3,17 @@ import { createClient } from '@supabase/supabase-js'
 import Starfield from './Starfield.jsx'
 import { uploadFile, FONTS } from './hubUtils.jsx'
 
+const sponsorProxy = async (action, payload, table = 'sponsors') => {
+  const pw = import.meta.env.VITE_TEAM_PASSWORD
+  const res = await fetch('/api/sponsor-proxy', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'x-team-password': pw },
+    body: JSON.stringify({ table, action, payload }),
+  })
+  if (!res.ok) { const err = await res.json().catch(() => ({ error: 'Request failed' })); throw new Error(err.error || `Proxy error ${res.status}`) }
+  return res.json()
+}
+
 const supabase = createClient(
   import.meta.env.VITE_SUPABASE_URL,
   import.meta.env.VITE_SUPABASE_ANON_KEY
@@ -159,14 +170,18 @@ function NotesModal({ sponsor, onClose }) {
 
   const addNote = async () => {
     if (!newNote.trim()) return
-    const { data } = await supabase.from('sponsor_notes').insert([{ sponsor_id: sponsor.id, note: newNote.trim() }]).select()
-    if (data) setNotes(n => [data[0], ...n])
-    setNewNote('')
+    try {
+      const { data } = await sponsorProxy('insert', [{ sponsor_id: sponsor.id, note: newNote.trim() }], 'sponsor_notes')
+      if (data) setNotes(n => [data[0], ...n])
+      setNewNote('')
+    } catch (e) { console.error(e) }
   }
 
   const deleteNote = async (id) => {
-    await supabase.from('sponsor_notes').delete().eq('id', id)
-    setNotes(n => n.filter(x => x.id !== id))
+    try {
+      await sponsorProxy('delete', { id }, 'sponsor_notes')
+      setNotes(n => n.filter(x => x.id !== id))
+    } catch (e) { console.error(e) }
   }
 
   return (
@@ -383,9 +398,6 @@ function ImportModal({ onClose, onImport, existingSponsors }) {
 }
 
 export default function App() {
-  const [authed, setAuthed] = useState(() => localStorage.getItem('sb_authed') === 'true')
-  const [pwInput, setPwInput] = useState('')
-  const [pwError, setPwError] = useState(false)
   const [sponsors, setSponsors] = useState([])
   const [search, setSearch] = useState('')
   const [filterStatus, setFilterStatus] = useState('All')
@@ -408,49 +420,61 @@ export default function App() {
   }, [])
 
   useEffect(() => {
-    if (!authed) return
     fetchSponsors()
     const channel = supabase.channel('sponsors-realtime')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'sponsors' }, () => { fetchSponsors(); showToast('🔄 List updated by a teammate') })
       .subscribe()
     return () => supabase.removeChannel(channel)
-  }, [fetchSponsors, authed])
+  }, [fetchSponsors])
 
-  const handleLogin = () => {
-    // Team password is read from Vite env var VITE_TEAM_PASSWORD
-    const teamPw = import.meta.env.VITE_TEAM_PASSWORD
-    if (pwInput === teamPw) { localStorage.setItem('sb_authed', 'true'); setAuthed(true); setPwError(false) }
-    else setPwError(true)
-  }
+  useEffect(() => {
+    if (localStorage.getItem('hub_authed') !== 'true') window.location.href = '/member-hub'
+  }, [])
 
   const save = async (form) => {
     if (!form.company.trim()) return
-    if (modal.id) {
-      await supabase.from('sponsors').update({ ...form, updated_at: new Date().toISOString() }).eq('id', modal.id)
-    } else {
-      await supabase.from('sponsors').insert([{ ...form, date_added: new Date().toISOString(), updated_at: new Date().toISOString() }])
+    try {
+      if (modal.id) {
+        await sponsorProxy('update', { id: modal.id, updates: { ...form, updated_at: new Date().toISOString() } })
+      } else {
+        await sponsorProxy('insert', [{ ...form, date_added: new Date().toISOString(), updated_at: new Date().toISOString() }])
+      }
+      setModal(null); fetchSponsors()
+      showToast(modal.id ? '✅ Sponsor updated' : '✅ Sponsor added')
+    } catch (e) {
+      showToast('❌ ' + e.message)
     }
-    setModal(null); fetchSponsors()
-    showToast(modal.id ? '✅ Sponsor updated' : '✅ Sponsor added')
   }
 
   const handleImport = async (rows) => {
     const now = new Date().toISOString()
     const records = rows.map(r => ({ ...r, date_added: now, updated_at: now }))
-    for (let i = 0; i < records.length; i += 50) await supabase.from('sponsors').insert(records.slice(i, i + 50))
-    setShowImport(false); fetchSponsors()
-    showToast(`✅ Imported ${rows.length} sponsors!`)
+    try {
+      for (let i = 0; i < records.length; i += 50) await sponsorProxy('insert', records.slice(i, i + 50))
+      setShowImport(false); fetchSponsors()
+      showToast(`✅ Imported ${rows.length} sponsors!`)
+    } catch (e) {
+      showToast('❌ Import failed: ' + e.message)
+    }
   }
 
   const remove = async (id) => {
     if (!confirm('Delete this sponsor?')) return
-    await supabase.from('sponsors').delete().eq('id', id)
-    fetchSponsors(); showToast('🗑️ Sponsor deleted')
+    try {
+      await sponsorProxy('delete', { id })
+      fetchSponsors(); showToast('🗑️ Sponsor deleted')
+    } catch (e) {
+      showToast('❌ ' + e.message)
+    }
   }
 
   const updateStatus = async (id, status) => {
-    await supabase.from('sponsors').update({ status, updated_at: new Date().toISOString() }).eq('id', id)
-    fetchSponsors()
+    try {
+      await sponsorProxy('update', { id, updates: { status, updated_at: new Date().toISOString() } })
+      fetchSponsors()
+    } catch (e) {
+      showToast('❌ ' + e.message)
+    }
   }
 
   const copy = (text) => { navigator.clipboard.writeText(text); showToast('📋 Copied!') }
@@ -475,11 +499,34 @@ export default function App() {
       try {
         const res = await fetch('/api/lookup', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ company: s.company }) })
         const parsed = await res.json()
-        if (parsed.email || parsed.phone) await supabase.from('sponsors').update({ email: parsed.email || s.email, phone: parsed.phone || s.phone, notes: parsed.notes || s.notes, updated_at: new Date().toISOString() }).eq('id', s.id)
+        if (parsed.email || parsed.phone) await sponsorProxy('update', { id: s.id, updates: { email: parsed.email || s.email, phone: parsed.phone || s.phone, notes: parsed.notes || s.notes, updated_at: new Date().toISOString() } })
       } catch (e) { console.error(e) }
       await new Promise(r => setTimeout(r, 800))
     }
     setLookingUp(false); fetchSponsors(); showToast(`✅ Lookup complete for ${missing.length} sponsors!`)
+  }
+
+  const deleteDuplicates = async () => {
+    const dupes = new Map()
+    const toDelete = []
+    for (const s of sponsors) {
+      const key = s.company?.trim().toLowerCase()
+      if (!key) continue
+      if (dupes.has(key)) {
+        toDelete.push(s.id)
+      } else {
+        dupes.set(key, s.id)
+      }
+    }
+    if (!toDelete.length) { showToast('✅ No duplicates found'); return }
+    if (!confirm(`Delete ${toDelete.length} duplicate sponsor${toDelete.length > 1 ? 's' : ''}?`)) return
+    try {
+      for (const id of toDelete) await sponsorProxy('delete', { id })
+      fetchSponsors()
+      showToast(`🗑️ Deleted ${toDelete.length} duplicate${toDelete.length > 1 ? 's' : ''}`)
+    } catch (e) {
+      showToast('❌ ' + e.message)
+    }
   }
 
   const today = new Date().toISOString().split('T')[0]
@@ -502,19 +549,7 @@ export default function App() {
 
   useEffect(() => { document.title = '4550 Something\'s Bruin | Sponsor Tracker' }, [])
 
-  if (!authed) return (
-    <div style={{ minHeight: '100vh', background: '#080a0f', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: "'Exo 2', sans-serif" }}>
-      <style>{FONTS}</style>
-      <div style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '20px', padding: '48px 40px', width: '100%', maxWidth: '380px', textAlign: 'center' }}>
-        <img src='/logo.jpg' alt='Team 4550' style={{ height: '80px', width: '80px', objectFit: 'contain', borderRadius: '12px', marginBottom: '20px' }} />
-        <div style={{ fontFamily: "'Orbitron', sans-serif", fontSize: '24px', letterSpacing: '3px', color: '#ef4444', marginBottom: '6px' }}>SOMETHING'S BRUIN</div>
-        <div style={{ fontSize: '11px', color: '#475569', letterSpacing: '2px', marginBottom: '32px' }}>SPONSOR TRACKER · TEAM 4550</div>
-        <input type='password' placeholder='Enter team password' value={pwInput} onChange={e => { setPwInput(e.target.value); setPwError(false) }} onKeyDown={e => e.key === 'Enter' && handleLogin()} style={{ width: '100%', background: 'rgba(255,255,255,0.06)', border: pwError ? '1px solid #ef4444' : '1px solid rgba(255,255,255,0.12)', borderRadius: '8px', padding: '12px 16px', color: '#e2e8f0', fontSize: '13px', fontFamily: "'Share Tech Mono', monospace", outline: 'none', boxSizing: 'border-box', marginBottom: '8px' }} />
-        {pwError && <div style={{ color: '#ef4444', fontSize: '11px', marginBottom: '12px' }}>Incorrect password</div>}
-        <button onClick={handleLogin} style={{ width: '100%', background: '#ef4444', border: 'none', borderRadius: '8px', padding: '12px', color: '#fff', fontSize: '13px', fontFamily: "'Orbitron', sans-serif", cursor: 'pointer', letterSpacing: '1px', fontWeight: 700, marginTop: '4px' }}>ENTER</button>
-      </div>
-    </div>
-  )
+  if (localStorage.getItem('hub_authed') !== 'true') return null
 
   return (
     <div style={{ ...styles.app, position: 'relative' }}>
@@ -585,6 +620,7 @@ export default function App() {
           <button style={styles.btn} onClick={exportCSV}>📤 EXPORT CSV</button>
           <button style={styles.btn} onClick={() => setShowImport(true)}>📥 IMPORT SPONSORS</button>
           <button style={styles.btn} onClick={lookupAll} disabled={lookingUp}>🔍 {lookingUp ? `LOOKING UP ${lookupProgress.current}/${lookupProgress.total}...` : 'LOOKUP ALL MISSING'}</button>
+          <button style={styles.btn} onClick={deleteDuplicates}>🗑️ DELETE DUPLICATES</button>
           <button style={styles.btn} onClick={() => setModal({})}>+ ADD SPONSOR</button>
         </div>
 
