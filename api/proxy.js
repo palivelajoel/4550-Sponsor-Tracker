@@ -2,11 +2,11 @@ import { createClient } from '@supabase/supabase-js';
 import { verifyToken, getTokenFromRequest, hashPassword } from './_shared.js';
 
 const ADMIN_TABLES = ['sponsors', 'captains', 'site_config', 'members', 'hub_tasks', 'suggestions', 'hub_calendar', 'inventory_items'];
-const HUB_TABLES = ['hub_tasks', 'inventory_items', 'inventory_transactions', 'hub_announcements', 'hub_media', 'hub_resources'];
+const HUB_TABLES = ['hub_tasks', 'inventory_items', 'inventory_transactions', 'hub_announcements', 'hub_media', 'hub_resources', 'sponsors', 'sponsor_notes'];
 
 export default async function handler(req, res) {
   try {
-    const token = getTokenFromRequest(req);
+    const token = getTokenFromRequest(req) || req.body?.token;
     if (!token) return res.status(401).json({ error: 'Unauthorized: missing token' });
 
     const payload = verifyToken(token);

@@ -1,18 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { createClient } from '@supabase/supabase-js'
 import Starfield from './Starfield.jsx'
-import { uploadFile, FONTS } from './hubUtils.jsx'
-
-const sponsorProxy = async (action, payload, table = 'sponsors') => {
-  const token = localStorage.getItem('hub_token')
-  const res = await fetch('/api/sponsor-proxy', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ table, action, payload, token }),
-  })
-  if (!res.ok) { const err = await res.json().catch(() => ({ error: 'Request failed' })); throw new Error(err.error || `Proxy error ${res.status}`) }
-  return res.json()
-}
+import { uploadFile, FONTS, hubProxy } from './hubUtils.jsx'
 
 const supabase = createClient(
   import.meta.env.VITE_SUPABASE_URL,
@@ -171,7 +160,7 @@ function NotesModal({ sponsor, onClose }) {
   const addNote = async () => {
     if (!newNote.trim()) return
     try {
-      const { data } = await sponsorProxy('insert', [{ sponsor_id: sponsor.id, note: newNote.trim() }], 'sponsor_notes')
+      const { data } = await hubProxy('sponsor_notes', 'insert', [{ sponsor_id: sponsor.id, note: newNote.trim() }])
       if (data) setNotes(n => [data[0], ...n])
       setNewNote('')
     } catch (e) { console.error(e) }
@@ -179,7 +168,7 @@ function NotesModal({ sponsor, onClose }) {
 
   const deleteNote = async (id) => {
     try {
-      await sponsorProxy('delete', { id }, 'sponsor_notes')
+      await hubProxy('sponsor_notes', 'delete', { id })
       setNotes(n => n.filter(x => x.id !== id))
     } catch (e) { console.error(e) }
   }
@@ -435,9 +424,9 @@ export default function App() {
     if (!form.company.trim()) return
     try {
       if (modal.id) {
-        await sponsorProxy('update', { id: modal.id, updates: { ...form, updated_at: new Date().toISOString() } })
+        await hubProxy('sponsors', 'update', { id: modal.id, updates: { ...form, updated_at: new Date().toISOString() } })
       } else {
-        await sponsorProxy('insert', [{ ...form, date_added: new Date().toISOString(), updated_at: new Date().toISOString() }])
+        await hubProxy('sponsors', 'insert', [{ ...form, date_added: new Date().toISOString(), updated_at: new Date().toISOString() }])
       }
       setModal(null); fetchSponsors()
       showToast(modal.id ? '✅ Sponsor updated' : '✅ Sponsor added')
@@ -450,7 +439,7 @@ export default function App() {
     const now = new Date().toISOString()
     const records = rows.map(r => ({ ...r, date_added: now, updated_at: now }))
     try {
-      for (let i = 0; i < records.length; i += 50) await sponsorProxy('insert', records.slice(i, i + 50))
+      for (let i = 0; i < records.length; i += 50) await hubProxy('sponsors', 'insert', records.slice(i, i + 50))
       setShowImport(false); fetchSponsors()
       showToast(`✅ Imported ${rows.length} sponsors!`)
     } catch (e) {
@@ -461,7 +450,7 @@ export default function App() {
   const remove = async (id) => {
     if (!confirm('Delete this sponsor?')) return
     try {
-      await sponsorProxy('delete', { id })
+      await hubProxy('sponsors', 'delete', { id })
       fetchSponsors(); showToast('🗑️ Sponsor deleted')
     } catch (e) {
       showToast('❌ ' + e.message)
@@ -470,7 +459,7 @@ export default function App() {
 
   const updateStatus = async (id, status) => {
     try {
-      await sponsorProxy('update', { id, updates: { status, updated_at: new Date().toISOString() } })
+      await hubProxy('sponsors', 'update', { id, updates: { status, updated_at: new Date().toISOString() } })
       fetchSponsors()
     } catch (e) {
       showToast('❌ ' + e.message)
@@ -499,7 +488,7 @@ export default function App() {
       try {
         const res = await fetch('/api/lookup', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ company: s.company }) })
         const parsed = await res.json()
-        if (parsed.email || parsed.phone) await sponsorProxy('update', { id: s.id, updates: { email: parsed.email || s.email, phone: parsed.phone || s.phone, notes: parsed.notes || s.notes, updated_at: new Date().toISOString() } })
+        if (parsed.email || parsed.phone) await hubProxy('sponsors', 'update', { id: s.id, updates: { email: parsed.email || s.email, phone: parsed.phone || s.phone, notes: parsed.notes || s.notes, updated_at: new Date().toISOString() } })
       } catch (e) { console.error(e) }
       await new Promise(r => setTimeout(r, 800))
     }
@@ -521,7 +510,7 @@ export default function App() {
     if (!toDelete.length) { showToast('✅ No duplicates found'); return }
     if (!confirm(`Delete ${toDelete.length} duplicate sponsor${toDelete.length > 1 ? 's' : ''}?`)) return
     try {
-      for (const id of toDelete) await sponsorProxy('delete', { id })
+      for (const id of toDelete) await hubProxy('sponsors', 'delete', { id })
       fetchSponsors()
       showToast(`🗑️ Deleted ${toDelete.length} duplicate${toDelete.length > 1 ? 's' : ''}`)
     } catch (e) {

@@ -32,7 +32,7 @@ export async function hubProxy(table, action, payload) {
   const res = await fetch("/api/hub-proxy", {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-    body: JSON.stringify({ table, action, payload }),
+    body: JSON.stringify({ table, action, payload, token }),
   });
   if (!res.ok) { let msg = await res.text().catch(() => ""); try { const j = JSON.parse(msg); if (j?.error) msg = j.error; } catch {} throw new Error(msg || `Proxy error ${res.status}`); }
   return res.json();
