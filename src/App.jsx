@@ -616,7 +616,32 @@ export default function App() {
         </div>
 
         {loading ? (
-          <div style={{ textAlign: 'center', color: '#475569', padding: '60px' }}>Loading...</div>
+          <div style={styles.grid}>
+            {[1,2,3,4,5,6].map(i => (
+              <div key={i} style={{ ...styles.card, padding: '20px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '14px', gap: '12px' }}>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ height: 20, width: '70%', background: 'rgba(255,255,255,0.06)', borderRadius: 6, marginBottom: 8, animation: 'pulse 1.5s ease-in-out infinite' }} />
+                    <div style={{ height: 12, width: '40%', background: 'rgba(255,255,255,0.04)', borderRadius: 4, animation: 'pulse 1.5s ease-in-out infinite' }} />
+                  </div>
+                  <div style={{ height: 22, width: 80, background: 'rgba(255,255,255,0.06)', borderRadius: 20, animation: 'pulse 1.5s ease-in-out infinite 0.1s' }} />
+                </div>
+                {[1,2,3].map(j => (
+                  <div key={j} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                    <div style={{ height: 12, width: 12, background: 'rgba(255,255,255,0.04)', borderRadius: 4 }} />
+                    <div style={{ height: 12, flex: 1, background: 'rgba(255,255,255,0.04)', borderRadius: 4, animation: `pulse 1.5s ease-in-out infinite ${j * 0.15}s` }} />
+                    <div style={{ height: 18, width: 36, background: 'rgba(239,68,68,0.08)', borderRadius: 4 }} />
+                  </div>
+                ))}
+                <div style={{ height: 16, width: '100%', background: 'rgba(255,255,255,0.04)', borderRadius: 6, marginTop: 12, marginBottom: 14, animation: 'pulse 1.5s ease-in-out infinite 0.2s' }} />
+                <div style={{ display: 'flex', gap: 8, paddingTop: 14, borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                  {[1,2,3].map(j => (
+                    <div key={j} style={{ flex: 1, height: 28, background: 'rgba(255,255,255,0.04)', borderRadius: 6, animation: `pulse 1.5s ease-in-out infinite ${j * 0.1}s` }} />
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
         ) : (
           <div style={styles.grid}>
             {filtered.map(s => {
