@@ -5,8 +5,10 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
+  const teamPassword = req.headers['x-team-password'];
   const token = getTokenFromRequest(req);
-  if (!token || !verifyToken(token)) return res.status(401).json({ error: 'Unauthorized' });
+  const isAuthed = (token && verifyToken(token)) || (teamPassword && teamPassword === process.env.VITE_TEAM_PASSWORD);
+  if (!isAuthed) return res.status(401).json({ error: 'Unauthorized' });
 
   const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE);
   const { table = 'sponsors', action, payload } = req.body || {};

@@ -5,9 +5,10 @@ import { uploadFile, FONTS } from './hubUtils.jsx'
 
 const sponsorProxy = async (action, payload, table = 'sponsors') => {
   const token = localStorage.getItem('hub_token')
+  const pw = import.meta.env.VITE_TEAM_PASSWORD
   const res = await fetch('/api/sponsor-proxy', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+    headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}), ...(pw ? { 'x-team-password': pw } : {}) },
     body: JSON.stringify({ table, action, payload }),
   })
   if (!res.ok) { const err = await res.json().catch(() => ({ error: 'Request failed' })); throw new Error(err.error || `Proxy error ${res.status}`) }
