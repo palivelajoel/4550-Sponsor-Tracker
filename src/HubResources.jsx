@@ -19,6 +19,7 @@ export default function HubResources() {
   const [items, setItems] = useState([]);
   const [filter, setFilter] = useState("All");
   const [folderFilter, setFolderFilter] = useState(null);
+  const [groupBy, setGroupBy] = useState("category");
   const [search, setSearch] = useState("");
   const [modal, setModal] = useState(false);
   const [form, setForm] = useState({ title: "", description: "", category: "Documentation", url: "", file_name: "", folder: "" });
@@ -114,8 +115,9 @@ export default function HubResources() {
 
   const groups = {};
   filtered.forEach(i => {
-    if (!groups[i.category]) groups[i.category] = [];
-    groups[i.category].push(i);
+    const key = groupBy === "folder" ? (i.folder || "Uncategorized") : i.category;
+    if (!groups[key]) groups[key] = [];
+    groups[key].push(i);
   });
 
   function getFileIcon(url, fname) {
@@ -154,31 +156,41 @@ export default function HubResources() {
             }}>{cat}</button>
           ))}
         </div>
-        {folders.length > 0 && (
-          <div style={{ display: "flex", gap: 6, flexWrap: "wrap", width: "100%" }}>
-            <span style={{ fontSize: 10, color: C.dim, fontFamily: "monospace", padding: "5px 0", marginRight: 4 }}>Folders:</span>
-            <button onClick={() => setFolderFilter(null)} style={{
-              background: folderFilter === null ? "rgba(236,72,153,0.15)" : "rgba(255,255,255,0.04)",
-              border: `1px solid ${folderFilter === null ? "#ec4899" : C.border}`,
-              color: folderFilter === null ? "#ec4899" : C.muted,
-              borderRadius: 20, padding: "3px 10px", cursor: "pointer", fontSize: 11, fontFamily: "monospace",
-            }}>All</button>
-            <button onClick={() => setFolderFilter("")} style={{
-              background: folderFilter === "" ? "rgba(236,72,153,0.15)" : "rgba(255,255,255,0.04)",
-              border: `1px solid ${folderFilter === "" ? "#ec4899" : C.border}`,
-              color: folderFilter === "" ? "#ec4899" : C.muted,
-              borderRadius: 20, padding: "3px 10px", cursor: "pointer", fontSize: 11, fontFamily: "monospace",
-            }}>Uncategorized</button>
-            {folders.filter(f => f).map(f => (
-              <button key={f} onClick={() => setFolderFilter(f)} style={{
-                background: folderFilter === f ? "rgba(236,72,153,0.15)" : "rgba(255,255,255,0.04)",
-                border: `1px solid ${folderFilter === f ? "#ec4899" : C.border}`,
-                color: folderFilter === f ? "#ec4899" : C.muted,
-                borderRadius: 20, padding: "3px 10px", cursor: "pointer", fontSize: 11, fontFamily: "monospace",
-              }}>{f}</button>
+        <div style={{ display: "flex", gap: 10, alignItems: "center", marginLeft: "auto" }}>
+          <div style={{ display: "flex", gap: 0, borderRadius: 6, overflow: "hidden", border: `1px solid ${C.border}` }}>
+            {["category", "folder"].map(m => (
+              <button key={m} onClick={() => setGroupBy(m)} style={{
+                padding: "5px 10px", background: groupBy === m ? "rgba(236,72,153,0.2)" : "transparent",
+                border: "none", color: groupBy === m ? "#ec4899" : C.muted, cursor: "pointer", fontSize: 11, fontFamily: "monospace",
+              }}>{m === "category" ? "🏷️ Cat" : "📁 Folder"}</button>
             ))}
           </div>
-        )}
+        </div>
+      </div>
+
+      {/* Folders */}
+      <div style={{ padding: "0 20px 14px", display: "flex", gap: 6, flexWrap: "wrap", borderBottom: `1px solid ${C.border}`, background: "rgba(255,255,255,0.015)" }}>
+        <span style={{ fontSize: 10, color: C.dim, fontFamily: "monospace", padding: "5px 0", marginRight: 4 }}>Folders:</span>
+        <button onClick={() => setFolderFilter(null)} style={{
+          background: folderFilter === null ? "rgba(236,72,153,0.15)" : "rgba(255,255,255,0.04)",
+          border: `1px solid ${folderFilter === null ? "#ec4899" : C.border}`,
+          color: folderFilter === null ? "#ec4899" : C.muted,
+          borderRadius: 20, padding: "3px 10px", cursor: "pointer", fontSize: 11, fontFamily: "monospace",
+        }}>All</button>
+        <button onClick={() => setFolderFilter("")} style={{
+          background: folderFilter === "" ? "rgba(236,72,153,0.15)" : "rgba(255,255,255,0.04)",
+          border: `1px solid ${folderFilter === "" ? "#ec4899" : C.border}`,
+          color: folderFilter === "" ? "#ec4899" : C.muted,
+          borderRadius: 20, padding: "3px 10px", cursor: "pointer", fontSize: 11, fontFamily: "monospace",
+        }}>Uncategorized</button>
+        {folders.filter(f => f).map(f => (
+          <button key={f} onClick={() => setFolderFilter(f)} style={{
+            background: folderFilter === f ? "rgba(236,72,153,0.15)" : "rgba(255,255,255,0.04)",
+            border: `1px solid ${folderFilter === f ? "#ec4899" : C.border}`,
+            color: folderFilter === f ? "#ec4899" : C.muted,
+            borderRadius: 20, padding: "3px 10px", cursor: "pointer", fontSize: 11, fontFamily: "monospace",
+          }}>{f}</button>
+        ))}
       </div>
 
       {/* Content */}
@@ -188,16 +200,16 @@ export default function HubResources() {
             No resources yet. Add links, Google Drive files, or upload documents.
           </div>
         )}
-        {Object.entries(groups).map(([cat, catItems]) => (
-          <div key={cat} style={{ marginBottom: 32 }}>
+        {Object.entries(groups).map(([key, items]) => (
+          <div key={key} style={{ marginBottom: 32 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
-              <span style={{ fontSize: 18 }}>{catIcon[cat] || "📁"}</span>
-              <div style={{ fontFamily: "'Orbitron', sans-serif", fontSize: 13, fontWeight: 700, color: C.text, letterSpacing: 1 }}>{cat.toUpperCase()}</div>
+              <span style={{ fontSize: 18 }}>{groupBy === "folder" ? "📁" : catIcon[key] || "📁"}</span>
+              <div style={{ fontFamily: "'Orbitron', sans-serif", fontSize: 13, fontWeight: 700, color: C.text, letterSpacing: 1 }}>{key.toUpperCase()}</div>
               <div style={{ flex: 1, height: 1, background: C.border, marginLeft: 8 }} />
-              <span style={{ fontSize: 11, color: C.dim, fontFamily: "monospace" }}>{catItems.length}</span>
+              <span style={{ fontSize: 11, color: C.dim, fontFamily: "monospace" }}>{items.length}</span>
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: 10 }}>
-              {catItems.map(item => (
+              {items.map(item => (
                 <div key={item.id} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8, padding: "14px 16px", display: "flex", gap: 12, alignItems: "flex-start", transition: "border-color 0.15s" }}
                   onMouseEnter={e => e.currentTarget.style.borderColor = "rgba(255,255,255,0.2)"}
                   onMouseLeave={e => e.currentTarget.style.borderColor = C.border}
@@ -211,7 +223,11 @@ export default function HubResources() {
                     {item.description && <div style={{ fontSize: 11, color: C.dim, marginTop: 3, lineHeight: 1.5 }}>{item.description}</div>}
                     <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 3 }}>
                       {item.file_name && <div style={{ fontSize: 10, color: "#475569", fontFamily: "monospace" }}>{item.file_name}</div>}
-                      {item.folder && <div style={{ fontSize: 10, color: "#475569", fontFamily: "monospace" }}>📁 {item.folder}</div>}
+                      {groupBy === "folder" ? (
+                        <div style={{ fontSize: 10, color: "#475569", fontFamily: "monospace" }}>{catIcon[item.category] || "📁"} {item.category}</div>
+                      ) : item.folder && (
+                        <div style={{ fontSize: 10, color: "#475569", fontFamily: "monospace" }}>📁 {item.folder}</div>
+                      )}
                     </div>
                   </div>
                   {canEdit && (
