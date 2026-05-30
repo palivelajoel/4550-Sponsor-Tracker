@@ -12,6 +12,7 @@ import HubResources from './HubResources.jsx'
 import HubProjector from './HubProjector.jsx'
 import HubScouting from './HubScouting.jsx'
 import HubInventory from './HubInventory.jsx'
+import HubForms from './HubForms.jsx'
 import ScoutMapTab from './ScoutMapTab.jsx'
 import PublicMedia from './PublicMedia.jsx'
 import Privacy from './Privacy.jsx'
@@ -30,6 +31,7 @@ const Page =
   : path === '/member-hub/resources'           ? HubResources
   : path === '/member-hub/projector'           ? HubProjector
   : path === '/member-hub/scout-map'           ? ScoutMapTab
+  : path === '/member-hub/forms'               ? HubForms
   : path === '/member-hub/inventory'           ? HubInventory
   : path === '/media'                          ? PublicMedia
   : path === '/privacy'                        ? Privacy

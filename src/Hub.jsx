@@ -64,6 +64,7 @@ export default function Hub() {
   const [logoUrl, setLogoUrl] = useState("/logo.jpg");
   const [memberName, setMemberName] = useState("");
   const [taskCount, setTaskCount] = useState(0);
+  const [pendingForms, setPendingForms] = useState(0);
   const [role, setRole] = useState("Member");
   const [subteam, setSubteam] = useState("General");
   const [loginLoading, setLoginLoading] = useState(false);
@@ -107,6 +108,14 @@ export default function Hub() {
     }
     const t = await sbFetch("hub_tasks?status=neq.Done&select=id");
     if (t) setTaskCount(t.length);
+    if (u && !isCaptainOrAbove()) {
+      const allF = await sbFetch("hub_forms?select=id");
+      const myS = await sbFetch(`hub_form_submissions?submitted_by=eq.${encodeURIComponent(u)}&select=form_id`);
+      if (allF && myS) {
+        const submittedIds = new Set(myS.map(s => s.form_id));
+        setPendingForms(allF.filter(f => !submittedIds.has(f.id)).length);
+      }
+    }
   }
 
   async function handleLogin(e) {
@@ -155,6 +164,7 @@ export default function Hub() {
     { id:"media", icon:"📸", label:"Media Gallery", description:"Photos and videos from competitions and events.", href:"/member-hub/media", accent:"#ec4899" },
     { id:"resources", icon:"📁", label:"Resources", description:"CAD files, documents, and team guides.", href:"/member-hub/resources", accent:"#64748b" },
     { id:"inventory", icon:"📦", label:"Inventory", description:"Track parts, tools, and supplies with AI identification.", href:"/member-hub/inventory", accent:"#22d3ee" },
+    { id:"forms", icon:"📋", label:"Forms", description:"Team forms, surveys, and feedback.", href:"/member-hub/forms", accent:"#22d3ee" },
     { id:"sponsor-tracker", icon:"🤝", label:"Sponsor Tracker", description:"Manage sponsors, contact info, and outreach status.", href:"/member-hub/sponsors", accent:"#0ea5e9" },
   ];
 
@@ -282,12 +292,37 @@ export default function Hub() {
 
         {/* Feature grid */}
         <div style={{ display:"grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(auto-fill,minmax(260px,1fr))", gap:isMobile?10:16 }}>
-          {FEATURES.filter(f => f.id !== "projector").sort((a, b) => {
+          {FEATURES.filter(f => f.id !== "projector" && f.id !== "forms").sort((a, b) => {
             const ai = tileOrder.indexOf(a.id); const bi = tileOrder.indexOf(b.id);
             return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi);
           }).map((f, i) => (
             <FeatureCard key={f.id} feature={f} index={i} isMobile={isMobile} />
           ))}
+        </div>
+
+        {/* Forms card */}
+        <div style={{ marginTop: 20, position: "relative" }}>
+          {pendingForms > 0 && (
+            <div style={{ position: "absolute", inset: 0, border: `2px solid ${C.red}`, borderRadius: 14, zIndex: 2, pointerEvents: "none" }}>
+              <div style={{ position: "absolute", top: -1, right: 24, background: C.bg, padding: "0 8px", fontFamily: "'Orbitron',sans-serif", fontSize: 10, fontWeight: 700, color: C.red, letterSpacing: 1 }}>
+                {pendingForms} PENDING FORM{pendingForms !== 1 ? "S" : ""}
+              </div>
+            </div>
+          )}
+          <a href="/member-hub/forms" style={{ textDecoration: "none", display: "block" }}>
+            <div style={{ background: "linear-gradient(135deg,rgba(34,211,238,0.1),rgba(168,85,247,0.07))", border: `1px solid rgba(34,211,238,0.3)`, borderRadius: 14, padding: isMobile ? "18px 16px" : "22px 28px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, cursor: "pointer", transition: "all 0.25s", flexWrap: "wrap" }}
+              onMouseEnter={e => e.currentTarget.style.borderColor = "rgba(34,211,238,0.7)"}
+              onMouseLeave={e => e.currentTarget.style.borderColor = "rgba(34,211,238,0.3)"}>
+              <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                <div style={{ fontSize: isMobile ? 28 : 38, animation: "float 2.5s ease-in-out infinite" }}>📋</div>
+                <div>
+                  <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: isMobile ? 13 : 15, fontWeight: 700, color: "#22d3ee", letterSpacing: 2, marginBottom: 3 }}>FORMS & SURVEYS</div>
+                  <div style={{ color: C.muted, fontSize: isMobile ? 12 : 13 }}>Team forms, feedback, and data collection.</div>
+                </div>
+              </div>
+              <div style={{ background: "#22d3ee", color: "#080a0f", padding: isMobile ? "8px 16px" : "10px 22px", borderRadius: 6, fontFamily: "'Orbitron',sans-serif", fontSize: 12, fontWeight: 700, letterSpacing: 2, flexShrink: 0 }}>OPEN →</div>
+            </div>
+          </a>
         </div>
       </main>
 

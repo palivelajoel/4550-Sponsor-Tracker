@@ -2,7 +2,7 @@ import { createClient } from '@supabase/supabase-js';
 import { verifyToken, getTokenFromRequest, hashPassword } from './_shared.js';
 
 const ADMIN_TABLES = ['sponsors', 'captains', 'site_config', 'members', 'hub_tasks', 'suggestions', 'hub_calendar', 'inventory_items'];
-const HUB_TABLES = ['hub_tasks', 'inventory_items', 'inventory_transactions', 'hub_announcements', 'hub_media', 'hub_resources', 'sponsors', 'sponsor_notes'];
+const HUB_TABLES = ['hub_tasks', 'inventory_items', 'inventory_transactions', 'hub_announcements', 'hub_media', 'hub_resources', 'sponsors', 'sponsor_notes', 'hub_forms', 'hub_form_submissions'];
 
 export default async function handler(req, res) {
   try {
@@ -41,7 +41,20 @@ export default async function handler(req, res) {
       return res.status(200).json({ data: upData });
     }
 
-    if (!['insert', 'update', 'delete', 'upsert'].includes(action)) return res.status(400).json({ error: 'Invalid action' });
+    if (!['select', 'insert', 'update', 'delete', 'upsert'].includes(action)) return res.status(400).json({ error: 'Invalid action' });
+
+    if (action === 'select') {
+      const { filters, order, limit: selLimit } = bodyPayload || {};
+      let query = supabase.from(table).select('*');
+      if (filters && typeof filters === 'object') {
+        Object.entries(filters).forEach(([k, v]) => { query = query.eq(k, v); });
+      }
+      if (order) query = query.order(order.column || 'created_at', { ascending: order.ascending ?? false });
+      if (selLimit) query = query.limit(selLimit);
+      const { data, error } = await query;
+      if (error) return res.status(500).json({ error: error.message });
+      return res.status(200).json({ data });
+    }
 
     if (action === 'insert') {
       let dataPayload = bodyPayload;
