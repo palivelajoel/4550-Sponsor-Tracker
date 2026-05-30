@@ -23,7 +23,6 @@ export default function HubProjector() {
   const timerRef = useRef(null);
 
   const SLIDES = [
-    { id: "clock", label: "🕐 Clock & Date" },
     { id: "calendar", label: "📅 Upcoming Events" },
     { id: "tasks", label: "✅ Open Tasks" },
     { id: "announcements", label: "📣 Announcements" },
@@ -138,13 +137,17 @@ export default function HubProjector() {
       </div>
 
       {/* Slide content */}
-      <div style={{ flex: 1, overflow: "hidden", padding: "16px 32px 24px", opacity: transitioning ? 0 : 1, transition: "opacity 0.35s ease" }}
+      <div style={{ flex: 1, overflow: "hidden", padding: "16px 32px 24px", position: "relative", opacity: transitioning ? 0 : 1, transition: "opacity 0.35s ease" }}
         className={transitioning ? "" : "projector-slide"}
       >
-        {SLIDES[slide].id === "clock" && <ClockSlide now={now} data={data} />}
         {SLIDES[slide].id === "calendar" && <CalendarSlide events={data.events} now={now} />}
         {SLIDES[slide].id === "tasks" && <TasksSlide tasks={data.tasks} />}
         {SLIDES[slide].id === "announcements" && <AnnouncementsSlide items={data.announcements} />}
+        {/* Clock overlay on all slides */}
+        <div style={{ position: "absolute", top: 12, right: 16, fontFamily: "'Orbitron', sans-serif", fontSize: 20, fontWeight: 700, color: C.text, letterSpacing: 2, textShadow: "0 0 20px rgba(0,0,0,0.8)", opacity: 0.7, lineHeight: 1.2, textAlign: "right" }}>
+          <div>{now.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })}</div>
+          <div style={{ fontSize: 10, fontFamily: "'Share Tech Mono', monospace", fontWeight: 400, color: C.dim, letterSpacing: 1 }}>{now.toLocaleDateString("en-US", { month: "short", day: "numeric" })}</div>
+        </div>
       </div>
 
       {/* Bottom bar */}
@@ -156,31 +159,6 @@ export default function HubProjector() {
           {data.events.length} upcoming · {data.tasks.length} open tasks · {data.announcements.length} announcements
         </div>
       </div>
-    </div>
-  );
-}
-
-// ── CLOCK SLIDE ──────────────────────────────────────────────────────────
-function ClockSlide({ now, data }) {
-  const upcoming = data.events.slice(0, 3);
-  return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", gap: 16 }}>
-      <div style={{ fontFamily: "'Orbitron', sans-serif", fontSize: "clamp(60px, 12vw, 120px)", fontWeight: 900, color: C.text, letterSpacing: 4, lineHeight: 1 }}>
-        {now.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
-      </div>
-      <div style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: "clamp(14px, 2.5vw, 24px)", color: C.dim, letterSpacing: 4 }}>
-        {now.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" }).toUpperCase()}
-      </div>
-      {upcoming.length > 0 && (
-        <div style={{ marginTop: 24, display: "flex", gap: 16, flexWrap: "wrap", justifyContent: "center" }}>
-          {upcoming.map(ev => (
-            <div key={ev.id} style={{ background: `${typeColor[ev.type] || "#64748b"}18`, border: `1px solid ${typeColor[ev.type] || "#64748b"}44`, borderRadius: 10, padding: "10px 18px", textAlign: "center" }}>
-              <div style={{ fontSize: 12, color: typeColor[ev.type] || C.dim, fontFamily: "monospace", marginBottom: 4 }}>{ev.date}</div>
-              <div style={{ fontSize: 15, fontWeight: 700, color: C.text }}>{ev.title}</div>
-            </div>
-          ))}
-        </div>
-      )}
     </div>
   );
 }
