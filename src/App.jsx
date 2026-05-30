@@ -100,14 +100,17 @@ function SuggestionsBox({ showToast }) {
 }
 
 function EmailTemplatesModal({ sponsor, onClose }) {
+  const allTemplates = (() => {
+    try { const custom = JSON.parse(localStorage.getItem('custom_email_templates')) || []; return [...EMAIL_TEMPLATES, ...custom]; } catch { return EMAIL_TEMPLATES; }
+  })()
   const [selected, setSelected] = useState(0)
-  const [body, setBody] = useState(EMAIL_TEMPLATES[0].body)
-  const [subject, setSubject] = useState(EMAIL_TEMPLATES[0].subject)
+  const [body, setBody] = useState(allTemplates[0].body)
+  const [subject, setSubject] = useState(allTemplates[0].subject)
 
   const selectTemplate = (i) => {
     setSelected(i)
-    setBody(EMAIL_TEMPLATES[i].body)
-    setSubject(EMAIL_TEMPLATES[i].subject)
+    setBody(allTemplates[i].body)
+    setSubject(allTemplates[i].subject)
   }
 
   const filled_body = body.replace('[Company Name]', sponsor?.company || '')
@@ -121,7 +124,7 @@ function EmailTemplatesModal({ sponsor, onClose }) {
       <div style={{ ...styles.modalBox, maxWidth: '600px' }}>
         <div style={styles.modalTitle}>📧 EMAIL TEMPLATES — {sponsor?.company}</div>
         <div style={{ display: 'flex', gap: '8px', marginBottom: '16px', flexWrap: 'wrap' }}>
-          {EMAIL_TEMPLATES.map((t, i) => (
+          {allTemplates.map((t, i) => (
             <button key={i} onClick={() => selectTemplate(i)} style={{ ...styles.btn, background: selected === i ? '#ef4444' : 'transparent', border: selected === i ? 'none' : '1px solid rgba(239,68,68,0.3)', color: selected === i ? '#fff' : '#ef4444' }}>{t.label}</button>
           ))}
         </div>
