@@ -279,6 +279,7 @@ export default function HubResources() {
             </div>
           </div>
         </div>
+      </>
       ) : (
         <div style={{ maxWidth: 800, margin: "0 auto", padding: "24px 20px", position: "relative", zIndex: 1 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20, flexWrap: "wrap", gap: 10 }}>
