@@ -442,12 +442,24 @@ export default function App() {
     }
   }
 
-  const saveEmailFix = async (id, email) => {
+  const recheck = async (s) => {
+    setFixEmail(f => ({ ...f, [s.id]: { lookingUp: true } }))
     try {
-      await hubProxy('sponsors', 'update', { id, updates: { email, updated_at: new Date().toISOString() } })
+      const res = await fetch('/api/lookup', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ company: s.company }) })
+      const data = await res.json()
+      setFixEmail(f => ({ ...f, [s.id]: { email: data.email || '', phone: data.phone || '', notes: data.notes || '' } }))
+    } catch {
+      setFixEmail(f => ({ ...f, [s.id]: { email: '', phone: '', notes: '' } }))
+      showToast('❌ Lookup failed')
+    }
+  }
+
+  const saveEmailFix = async (id, data) => {
+    try {
+      await hubProxy('sponsors', 'update', { id, updates: { email: data.email, phone: data.phone, notes: data.notes, updated_at: new Date().toISOString() } })
       setFixEmail(f => { const n = { ...f }; delete n[id]; return n; })
       fetchSponsors()
-      showToast('✅ Email updated!')
+      showToast('✅ Contact info updated!')
     } catch (e) { showToast('❌ ' + e.message) }
   }
 
@@ -655,19 +667,30 @@ export default function App() {
                     </div>
                   </div>
                   {s.email && <div style={styles.fieldRow}><span>📧</span>
-                    {fixEmail[s.id] ? (
+                    {fixEmail[s.id]?.lookingUp ? (
+                      <span style={{ flex: 1, color: '#94a3b8', fontSize: '11px', fontFamily: "'Share Tech Mono', monospace" }}>🔍 Looking up...</span>
+                    ) : fixEmail[s.id] ? (
                       <>
-                        <input value={fixEmail[s.id] || s.email} onChange={e => setFixEmail(f => ({ ...f, [s.id]: e.target.value }))}
-                          style={{ flex: 1, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(239,68,68,0.4)', borderRadius: '6px', padding: '4px 8px', color: '#e2e8f0', fontSize: '12px', fontFamily: "'Share Tech Mono', monospace", minWidth: 0, outline: 'none' }}
-                          autoFocus onKeyDown={e => e.key === 'Enter' && saveEmailFix(s.id, fixEmail[s.id])} />
-                        <button style={{ ...styles.copyBtn, color: '#22c55e' }} onClick={() => saveEmailFix(s.id, fixEmail[s.id])}>SAVE</button>
-                        <button style={{ ...styles.copyBtn }} onClick={() => setFixEmail(f => { const n = { ...f }; delete n[s.id]; return n; })}>CANCEL</button>
+                        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4, minWidth: 0 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                            <span style={{ fontSize: 10, color: '#64748b', fontFamily: "'Share Tech Mono', monospace", whiteSpace: 'nowrap' }}>📧</span>
+                            <input value={fixEmail[s.id].email} onChange={e => setFixEmail(f => ({ ...f, [s.id]: { ...f[s.id], email: e.target.value } }))}
+                              style={{ flex: 1, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(34,197,94,0.4)', borderRadius: '4px', padding: '3px 6px', color: '#e2e8f0', fontSize: '11px', fontFamily: "'Share Tech Mono', monospace", minWidth: 0, outline: 'none' }} />
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                            <span style={{ fontSize: 10, color: '#64748b', fontFamily: "'Share Tech Mono', monospace", whiteSpace: 'nowrap' }}>📞</span>
+                            <input value={fixEmail[s.id].phone} onChange={e => setFixEmail(f => ({ ...f, [s.id]: { ...f[s.id], phone: e.target.value } }))}
+                              style={{ flex: 1, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(34,197,94,0.4)', borderRadius: '4px', padding: '3px 6px', color: '#e2e8f0', fontSize: '11px', fontFamily: "'Share Tech Mono', monospace", minWidth: 0, outline: 'none' }} />
+                          </div>
+                        </div>
+                        <button style={{ ...styles.copyBtn, color: '#22c55e', borderColor: '#22c55e44' }} onClick={() => saveEmailFix(s.id, fixEmail[s.id])}>SAVE</button>
+                        <button style={styles.copyBtn} onClick={() => setFixEmail(f => { const n = { ...f }; delete n[s.id]; return n; })}>X</button>
                       </>
                     ) : (
                       <>
                         <a href={`mailto:${s.email}`} target='_blank' rel='noreferrer' style={{ flex: 1, color: '#fca5a5', textDecoration: 'none', wordBreak: 'break-all', overflowWrap: 'anywhere', minWidth: 0 }}>{s.email}</a>
                         <button style={styles.copyBtn} onClick={() => copy(s.email)}>COPY</button>
-                        <button style={{ ...styles.copyBtn, color: '#fca5a5', borderColor: '#fca5a544' }} onClick={() => setFixEmail(f => ({ ...f, [s.id]: '' }))}>WRONG?</button>
+                        <button style={{ ...styles.copyBtn, color: '#fca5a5', borderColor: '#fca5a544' }} onClick={() => recheck(s)}>WRONG?</button>
                       </>
                     )}
                   </div>}
