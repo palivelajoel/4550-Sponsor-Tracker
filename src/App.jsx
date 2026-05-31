@@ -383,6 +383,7 @@ export default function App() {
   const [loading, setLoading] = useState(true)
   const [lookingUp, setLookingUp] = useState(false)
   const [lookupProgress, setLookupProgress] = useState({ current: 0, total: 0 })
+  const [recheckedIds, setRecheckedIds] = useState(new Set())
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(null), 3500) }
 
   const fetchSponsors = useCallback(async () => {
@@ -485,37 +486,26 @@ export default function App() {
     URL.revokeObjectURL(url); showToast('📤 Exported to CSV!')
   }
 
-  const lookupAll = async () => {
-    const missing = sponsors.filter(s => !s.email && !s.phone)
-    if (!missing.length) { showToast('✅ All sponsors already have contact info!'); return }
-    if (!confirm(`Look up contact info for ${missing.length} sponsors? This may take a few minutes.`)) return
-    setLookingUp(true); setLookupProgress({ current: 0, total: missing.length })
-    for (let i = 0; i < missing.length; i++) {
-      const s = missing[i]; setLookupProgress({ current: i + 1, total: missing.length })
+  async function runBatch(label, list) {
+    if (!list.length) { showToast('✅ Nothing to process'); return }
+    if (!confirm(`${label} ${list.length} sponsors? This may take a while.`)) return
+    setRecheckedIds(new Set())
+    setLookingUp(true); setLookupProgress({ current: 0, total: list.length })
+    for (let i = 0; i < list.length; i++) {
+      const s = list[i]; setLookupProgress({ current: i + 1, total: list.length })
       try {
         const res = await fetch('/api/lookup', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ company: s.company }) })
         const parsed = await res.json()
         if (parsed.email || parsed.phone) await hubProxy('sponsors', 'update', { id: s.id, updates: { email: parsed.email || s.email, phone: parsed.phone || s.phone, notes: parsed.notes || s.notes, updated_at: new Date().toISOString() } })
       } catch (e) { console.error(e) }
+      setRecheckedIds(prev => new Set([...prev, s.id]))
       await new Promise(r => setTimeout(r, 800))
     }
-    setLookingUp(false); fetchSponsors(); showToast(`✅ Lookup complete for ${missing.length} sponsors!`)
+    setLookingUp(false); setRecheckedIds(new Set()); fetchSponsors(); showToast(`✅ ${label} complete for ${list.length} sponsors!`)
   }
 
-  const forceRecheckAll = async () => {
-    if (!confirm(`Re-check ALL ${sponsors.length} sponsors? This will search online for updated contact info and may take a while.`)) return
-    setLookingUp(true); setLookupProgress({ current: 0, total: sponsors.length })
-    for (let i = 0; i < sponsors.length; i++) {
-      const s = sponsors[i]; setLookupProgress({ current: i + 1, total: sponsors.length })
-      try {
-        const res = await fetch('/api/lookup', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ company: s.company }) })
-        const parsed = await res.json()
-        if (parsed.email || parsed.phone) await hubProxy('sponsors', 'update', { id: s.id, updates: { email: parsed.email || s.email, phone: parsed.phone || s.phone, notes: parsed.notes || s.notes, updated_at: new Date().toISOString() } })
-      } catch (e) { console.error(e) }
-      await new Promise(r => setTimeout(r, 800))
-    }
-    setLookingUp(false); fetchSponsors(); showToast(`✅ Re-checked ${sponsors.length} sponsors!`)
-  }
+  const lookupAll = () => runBatch('Look up missing info for', sponsors.filter(s => !s.email && !s.phone))
+  const forceRecheckAll = () => runBatch('Re-check all', sponsors)
 
   const deleteDuplicates = async () => {
     const dupes = new Map()
@@ -670,7 +660,7 @@ export default function App() {
               const tierColor = TIER_COLORS[s.tier] || '#64748b'
               const isFollowUpDue = s.follow_up_date && s.follow_up_date <= today
               return (
-                <div key={s.id} style={{ ...styles.card, outline: isFollowUpDue ? '2px solid rgba(245,158,11,0.4)' : 'none' }}>
+                <div key={s.id} style={{ ...styles.card, outline: recheckedIds.has(s.id) ? '2px solid rgba(34,197,94,0.6)' : isFollowUpDue ? '2px solid rgba(245,158,11,0.4)' : 'none', boxShadow: recheckedIds.has(s.id) ? '0 0 16px rgba(34,197,94,0.15), inset 0 0 20px rgba(34,197,94,0.04)' : 'none', transition: 'all 0.3s ease' }}>
                   <div style={styles.cardHeader}>
                     <div>
                       <div style={styles.company}>{s.company}</div>
