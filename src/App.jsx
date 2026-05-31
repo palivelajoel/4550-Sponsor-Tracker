@@ -376,6 +376,7 @@ export default function App() {
   const [filterStatus, setFilterStatus] = useState('All')
   const [filterTier, setFilterTier] = useState('All')
   const [sortBy, setSortBy] = useState(() => localStorage.getItem('sponsor_sort') || 'date')
+  const [sortAsc, setSortAsc] = useState(() => localStorage.getItem('sponsor_sort_dir') !== 'desc')
   const [modal, setModal] = useState(null)
   const [showImport, setShowImport] = useState(false)
   const [emailModal, setEmailModal] = useState(null)
@@ -407,6 +408,7 @@ export default function App() {
   }, [])
 
   useEffect(() => { localStorage.setItem('sponsor_sort', sortBy) }, [sortBy])
+  useEffect(() => { localStorage.setItem('sponsor_sort_dir', sortAsc ? 'asc' : 'desc') }, [sortAsc])
 
   const save = async (form) => {
     if (!form.company.trim()) return
@@ -535,17 +537,18 @@ export default function App() {
   const today = new Date().toISOString().split('T')[0]
   const followUpDue = sponsors.filter(s => s.follow_up_date && s.follow_up_date <= today && s.status !== 'Sponsored' && s.status !== 'Declined')
 
+  const dir = sortAsc ? 1 : -1
   const filtered = sponsors.filter(s => {
     const q = search.toLowerCase()
     return (!q || s.company?.toLowerCase().includes(q) || s.email?.toLowerCase().includes(q)) &&
       (filterStatus === 'All' || s.status === filterStatus) &&
       (filterTier === 'All' || s.tier === filterTier)
   }).sort((a, b) => {
-    if (sortBy === 'alpha') return (a.company || '').localeCompare(b.company || '')
-    if (sortBy === 'status') return (a.status || '').localeCompare(b.status || '')
-    if (sortBy === 'tier') return TIERS.indexOf(b.tier || 'None') - TIERS.indexOf(a.tier || 'None')
-    if (sortBy === 'followup') return (a.follow_up_date || '9999') > (b.follow_up_date || '9999') ? 1 : -1
-    return new Date(b.date_added || 0) - new Date(a.date_added || 0)
+    if (sortBy === 'alpha') return (a.company || '').localeCompare(b.company || '') * dir
+    if (sortBy === 'status') return (a.status || '').localeCompare(b.status || '') * dir
+    if (sortBy === 'tier') return (TIERS.indexOf(a.tier || 'None') - TIERS.indexOf(b.tier || 'None')) * dir
+    if (sortBy === 'followup') return ((a.follow_up_date || '9999') > (b.follow_up_date || '9999') ? 1 : -1) * dir
+    return (new Date(a.date_added || 0) - new Date(b.date_added || 0)) * dir
   })
 
   const counts = STATUS_OPTIONS.reduce((acc, s) => { acc[s] = sponsors.filter(x => x.status === s).length; return acc }, {})
@@ -618,6 +621,7 @@ export default function App() {
             <option value="tier">Sort: Tier</option>
             <option value="followup">Sort: Follow-Up</option>
           </select>
+          <button style={{ ...styles.select, width: 40, textAlign: 'center', padding: '10px 0' }} onClick={() => setSortAsc(v => !v)}>{sortAsc ? '↑' : '↓'}</button>
         </div>
         <div style={{ ...styles.controls, marginTop: '-12px' }}>
           <button style={styles.btn} onClick={exportCSV}>📤 EXPORT CSV</button>
