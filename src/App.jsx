@@ -502,6 +502,21 @@ export default function App() {
     setLookingUp(false); fetchSponsors(); showToast(`✅ Lookup complete for ${missing.length} sponsors!`)
   }
 
+  const forceRecheckAll = async () => {
+    if (!confirm(`Re-check ALL ${sponsors.length} sponsors? This will search online for updated contact info and may take a while.`)) return
+    setLookingUp(true); setLookupProgress({ current: 0, total: sponsors.length })
+    for (let i = 0; i < sponsors.length; i++) {
+      const s = sponsors[i]; setLookupProgress({ current: i + 1, total: sponsors.length })
+      try {
+        const res = await fetch('/api/lookup', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ company: s.company }) })
+        const parsed = await res.json()
+        if (parsed.email || parsed.phone) await hubProxy('sponsors', 'update', { id: s.id, updates: { email: parsed.email || s.email, phone: parsed.phone || s.phone, notes: parsed.notes || s.notes, updated_at: new Date().toISOString() } })
+      } catch (e) { console.error(e) }
+      await new Promise(r => setTimeout(r, 800))
+    }
+    setLookingUp(false); fetchSponsors(); showToast(`✅ Re-checked ${sponsors.length} sponsors!`)
+  }
+
   const deleteDuplicates = async () => {
     const dupes = new Map()
     const toDelete = []
@@ -617,6 +632,7 @@ export default function App() {
           <button style={styles.btn} onClick={() => setShowImport(true)}>📥 IMPORT SPONSORS</button>
           <button style={styles.btn} onClick={lookupAll} disabled={lookingUp}>🔍 {lookingUp ? `LOOKING UP ${lookupProgress.current}/${lookupProgress.total}...` : 'LOOKUP ALL MISSING'}</button>
           <button style={styles.btn} onClick={deleteDuplicates}>🗑️ DELETE DUPLICATES</button>
+          <button style={styles.btn} onClick={forceRecheckAll} disabled={lookingUp}>🔁 {lookingUp ? `RECHECKING ${lookupProgress.current}/${lookupProgress.total}...` : 'FORCE RECHECK ALL'}</button>
           <button style={styles.btn} onClick={() => setModal({})}>+ ADD SPONSOR</button>
         </div>
 
