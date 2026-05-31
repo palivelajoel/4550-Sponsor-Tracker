@@ -461,13 +461,15 @@ export default function App() {
 
   const recheck = async (s) => {
     const retry = (fixEmail[s.id]?.retry || 0) + 1
+    const currentEmail = fixEmail[s.id]?.email || s.email
+    addBadEmail(s.company, currentEmail)
     const bad = getBadEmails(s.company)
-    setFixEmail(f => ({ ...f, [s.id]: { lookingUp: true, retry, oldEmail: s.email } }))
+    setFixEmail(f => ({ ...f, [s.id]: { lookingUp: true, retry, oldEmail: currentEmail } }))
     try {
       const res = await fetch('/api/lookup', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ company: s.company, retry, bad_emails: bad }) })
       const data = await res.json()
       if (!res.ok) { setFixEmail(f => ({ ...f, [s.id]: { email: '', phone: '', notes: '' } })); showToast('❌ ' + (data.error || 'Lookup failed')); return }
-      setFixEmail(f => ({ ...f, [s.id]: { email: data.email || '', phone: data.phone || '', notes: data.notes || '', retry, oldEmail: s.email } }))
+      setFixEmail(f => ({ ...f, [s.id]: { email: data.email || '', phone: data.phone || '', notes: data.notes || '', retry, oldEmail: currentEmail } }))
     } catch {
       setFixEmail(f => ({ ...f, [s.id]: { email: '', phone: '', notes: '' } }))
       showToast('❌ Lookup failed — server may be unavailable')
