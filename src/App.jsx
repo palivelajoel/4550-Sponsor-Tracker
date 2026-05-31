@@ -53,7 +53,7 @@ const styles = {
   select: { background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '8px', padding: '10px 14px', color: '#e2e8f0', fontSize: '13px', fontFamily: "'Share Tech Mono', monospace", outline: 'none', cursor: 'pointer' },
   btn: { background: '#ef4444', border: 'none', borderRadius: '8px', padding: '10px 16px', color: '#fff', fontSize: '12px', fontFamily: "'Orbitron', sans-serif", cursor: 'pointer', letterSpacing: '1px', fontWeight: '700', whiteSpace: 'nowrap' },
   grid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '18px' },
-  card: { background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '14px', padding: '20px', transition: 'all 0.3s ease', wordBreak: 'break-word', overflowWrap: 'anywhere' },
+  card: { background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '14px', padding: '20px', transition: 'all 0.3s ease', wordBreak: 'break-word', overflowWrap: 'anywhere', display: 'flex', flexDirection: 'column' },
   cardHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '14px', gap: '12px' },
   company: { fontSize: '18px', fontFamily: "'Orbitron', sans-serif", letterSpacing: '2px', color: '#f1f5f9', wordBreak: 'break-word', overflowWrap: 'anywhere', minWidth: 0 },
   statusBadge: { display: 'inline-flex', alignItems: 'center', justifyContent: 'center', whiteSpace: 'nowrap', borderRadius: '20px', padding: '4px 12px', fontSize: '10px', letterSpacing: '1px', fontWeight: '600', border: '1px solid' },
@@ -729,17 +729,19 @@ export default function App() {
                   {s.phone && <div style={styles.fieldRow}><span>📞</span><a href={`tel:${s.phone}`} style={{ flex: 1, color: '#fca5a5', textDecoration: 'none', wordBreak: 'break-all', overflowWrap: 'anywhere', minWidth: 0 }}>{s.phone}</a><button style={styles.copyBtn} onClick={() => copy(s.phone)}>COPY</button></div>}
                   {s.notes && <div style={{ ...styles.fieldRow, alignItems: 'flex-start' }}><span>📝</span><span style={{ color: '#94a3b8', lineHeight: '1.5', fontSize: '11px', wordBreak: 'break-word', overflowWrap: 'anywhere', whiteSpace: 'pre-wrap', minWidth: 0 }}>{s.notes}</span></div>}
                   {s.follow_up_date && <div style={styles.fieldRow}><span>📅</span><span style={{ color: isFollowUpDue ? '#fbbf24' : '#94a3b8', fontSize: '11px' }}>Follow up: {s.follow_up_date}</span></div>}
-                  <div style={{ marginTop: '12px' }}>
-                    <label style={styles.label}>STATUS</label>
-                    <select style={{ ...styles.select, width: '100%', fontSize: '12px', padding: '7px 10px' }} value={s.status} onChange={e => updateStatus(s.id, e.target.value)}>
-                      {STATUS_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-                    </select>
-                  </div>
-                  <div style={styles.cardActions}>
-                    <button style={styles.editBtn} onClick={() => setModal(s)}>EDIT</button>
-                    <button style={{ ...styles.editBtn, flex: 'none' }} onClick={() => setEmailModal(s)}>EMAIL</button>
-                    <button style={{ ...styles.editBtn, flex: 'none' }} onClick={() => setNotesModal(s)}>NOTES</button>
-                    <button style={styles.deleteBtn} onClick={() => remove(s.id)}>DEL</button>
+                  <div style={{ marginTop: 'auto' }}>
+                    <div style={{ marginTop: '12px' }}>
+                      <label style={styles.label}>STATUS</label>
+                      <select style={{ ...styles.select, width: '100%', fontSize: '12px', padding: '7px 10px' }} value={s.status} onChange={e => updateStatus(s.id, e.target.value)}>
+                        {STATUS_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                      </select>
+                    </div>
+                    <div style={styles.cardActions}>
+                      <button style={styles.editBtn} onClick={() => setModal(s)}>EDIT</button>
+                      <button style={{ ...styles.editBtn, flex: 'none' }} onClick={() => setEmailModal(s)}>EMAIL</button>
+                      <button style={{ ...styles.editBtn, flex: 'none' }} onClick={() => setNotesModal(s)}>NOTES</button>
+                      <button style={styles.deleteBtn} onClick={() => remove(s.id)}>DEL</button>
+                    </div>
                   </div>
                 </div>
               )
