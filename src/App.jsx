@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { createClient } from '@supabase/supabase-js'
 import Starfield from './Starfield.jsx'
-import { FONTS, hubProxy } from './hubUtils.jsx'
+import { FONTS, hubProxy, getUsername } from './hubUtils.jsx'
 
 const supabase = createClient(
   import.meta.env.VITE_SUPABASE_URL,
@@ -101,7 +101,7 @@ function SuggestionsBox({ showToast }) {
 
 function EmailTemplatesModal({ sponsor, onClose }) {
   const allTemplates = (() => {
-    try { const custom = JSON.parse(localStorage.getItem('custom_email_templates')) || []; return [...EMAIL_TEMPLATES, ...custom]; } catch { return EMAIL_TEMPLATES; }
+    try { const custom = JSON.parse(localStorage.getItem('custom_email_templates_' + getUsername())) || []; return [...EMAIL_TEMPLATES, ...custom]; } catch { return EMAIL_TEMPLATES; }
   })()
   const [selected, setSelected] = useState(0)
   const [body, setBody] = useState(allTemplates[0].body)

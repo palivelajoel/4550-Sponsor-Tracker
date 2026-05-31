@@ -1,15 +1,15 @@
 import { useState, useEffect, useRef } from "react";
-import { FONTS, C, sbFetch, isAuthed, canEditHub, getRole, getSubteam, uploadFile, HubHeader, toastStyle, inputStyle, selectStyle, overlayStyle, addBtnStyle, ghostBtn, dangerBtn, hubProxy } from "./hubUtils.jsx";
+import { FONTS, C, sbFetch, isAuthed, canEditHub, getRole, getSubteam, getUsername, uploadFile, HubHeader, toastStyle, inputStyle, selectStyle, overlayStyle, addBtnStyle, ghostBtn, dangerBtn, hubProxy } from "./hubUtils.jsx";
 
 const CATEGORIES = ["All", "CAD & Design", "Programming", "Documentation", "Marketing", "Finance", "Competition", "Other"];
 const catIcon = { "CAD & Design": "🔧", Programming: "💻", Documentation: "📄", Marketing: "📢", Finance: "💰", Competition: "🏆", Other: "📁" };
-const TEMPLATE_KEY = 'custom_email_templates';
+function templateKey() { return 'custom_email_templates_' + getUsername(); }
 
 function loadTemplates() {
-  try { return JSON.parse(localStorage.getItem(TEMPLATE_KEY)) || []; } catch { return []; }
+  try { return JSON.parse(localStorage.getItem(templateKey())) || []; } catch { return []; }
 }
 function saveTemplates(templates) {
-  localStorage.setItem(TEMPLATE_KEY, JSON.stringify(templates));
+  localStorage.setItem(templateKey(), JSON.stringify(templates));
 }
 
 export default function HubResources() {
