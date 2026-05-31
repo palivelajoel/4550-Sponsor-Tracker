@@ -447,10 +447,11 @@ export default function App() {
     try {
       const res = await fetch('/api/lookup', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ company: s.company }) })
       const data = await res.json()
+      if (!res.ok) { setFixEmail(f => ({ ...f, [s.id]: { email: '', phone: '', notes: '' } })); showToast('❌ ' + (data.error || 'Lookup failed')); return }
       setFixEmail(f => ({ ...f, [s.id]: { email: data.email || '', phone: data.phone || '', notes: data.notes || '' } }))
     } catch {
       setFixEmail(f => ({ ...f, [s.id]: { email: '', phone: '', notes: '' } }))
-      showToast('❌ Lookup failed')
+      showToast('❌ Lookup failed — server may be unavailable')
     }
   }
 
@@ -683,6 +684,9 @@ export default function App() {
                               style={{ flex: 1, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(34,197,94,0.4)', borderRadius: '4px', padding: '3px 6px', color: '#e2e8f0', fontSize: '11px', fontFamily: "'Share Tech Mono', monospace", minWidth: 0, outline: 'none' }} />
                           </div>
                         </div>
+                        {fixEmail[s.id].notes && (
+                          <div style={{ fontSize: 10, color: '#64748b', fontFamily: "'Share Tech Mono', monospace", marginTop: 2, lineHeight: 1.4 }}>📎 {fixEmail[s.id].notes}</div>
+                        )}
                         <button style={{ ...styles.copyBtn, color: '#22c55e', borderColor: '#22c55e44' }} onClick={() => saveEmailFix(s.id, fixEmail[s.id])}>SAVE</button>
                         <button style={styles.copyBtn} onClick={() => setFixEmail(f => { const n = { ...f }; delete n[s.id]; return n; })}>X</button>
                       </>

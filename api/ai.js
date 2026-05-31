@@ -91,24 +91,50 @@ async function lookupSponsor(req, res) {
   const { company } = req.body;
   if (!company) return res.status(400).json({ error: 'Company name required' });
 
+  let webContent = '';
+  try {
+    const searchUrl = `https://html.duckduckgo.com/html/?q=${encodeURIComponent(company + ' sponsorship contact email')}`;
+    const searchRes = await fetch(searchUrl, { headers: { 'User-Agent': 'Mozilla/5.0' } });
+    const html = await searchRes.text();
+    const links = [...html.matchAll(/<a[^>]*class="result__a"[^>]*href="([^"]+)"[^>]*>/g)];
+    const urls = links.map(m => m[1].replace(/\/\/duckduckgo\.com\/l\/\?uddg=/, '').split('&')[0]).filter(u => u).slice(0, 3);
+    for (const url of urls) {
+      try {
+        const page = await fetch(decodeURIComponent(url), { headers: { 'User-Agent': 'Mozilla/5.0' }, signal: AbortSignal.timeout(5000) });
+        const text = await page.text();
+        const clean = text.replace(/<script[^>]*>[\s\S]*?<\/script>/g, '').replace(/<style[^>]*>[\s\S]*?<\/style>/g, '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+        webContent += clean.slice(0, 4000) + '\n\n';
+      } catch {}
+    }
+  } catch {}
+
+  const apiKey = process.env.GROQ_API_KEY;
+  if (!apiKey) return res.status(200).json({ email: '', phone: '', notes: 'AI lookup not configured' });
+
   const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${process.env.GROQ_API_KEY}` },
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
     body: JSON.stringify({
       model: 'llama-3.3-70b-versatile',
       messages: [
-        { role: 'system', content: 'You are a research assistant helping an FRC robotics team find sponsorship contact info for companies. Given a company name, provide their sponsorship, donations, or community outreach contact email and phone number. Respond ONLY with a valid JSON object with keys: email, phone, notes. No markdown, no backticks, just raw JSON.' },
-        { role: 'user', content: `Find sponsorship contact info for: ${company}` }
+        { role: 'system', content: 'You are a research assistant for an FRC robotics team. Given company web content and a company name, find the BEST sponsorship/donations/community outreach contact email and phone number. Prefer actual sponsorship-specific emails over generic contact forms. Return ONLY valid JSON with keys: email, phone, notes (source description). No markdown, no backticks, just raw JSON.' },
+        { role: 'user', content: webContent
+          ? `Company: ${company}\n\nWeb content found:\n${webContent}\n\nExtract the sponsorship contact email and phone number.`
+          : `Find sponsorship contact info for: ${company}. Check your knowledge thoroughly. Provide email, phone, and notes about the source.` }
       ],
-      temperature: 0.2,
-      max_tokens: 300,
+      temperature: 0.1,
+      max_tokens: 400,
     })
   });
 
   const data = await response.json();
-  const text = data.choices?.[0]?.message?.content || '';
-  const parsed = JSON.parse(text.replace(/```json|```/g, '').trim());
-  res.status(200).json(parsed);
+  const text = data.choices?.[0]?.message?.content || '{}';
+  try {
+    const parsed = JSON.parse(text.replace(/```json|```/g, '').trim());
+    res.status(200).json(parsed);
+  } catch {
+    res.status(200).json({ email: '', phone: '', notes: 'Could not parse lookup result' });
+  }
 }
 
 async function tracePitMap(req, res) {
