@@ -103,14 +103,16 @@ function EmailTemplatesModal({ sponsor, onClose }) {
   const allTemplates = (() => {
     try { const custom = JSON.parse(localStorage.getItem('custom_email_templates_' + getUsername())) || []; return [...EMAIL_TEMPLATES, ...custom]; } catch { return EMAIL_TEMPLATES; }
   })()
-  const [selected, setSelected] = useState(0)
-  const [body, setBody] = useState(allTemplates[0].body)
-  const [subject, setSubject] = useState(allTemplates[0].subject)
+  const lastIdx = Math.min(parseInt(localStorage.getItem('last_email_template') || '0'), allTemplates.length - 1)
+  const [selected, setSelected] = useState(lastIdx)
+  const [body, setBody] = useState(allTemplates[lastIdx].body)
+  const [subject, setSubject] = useState(allTemplates[lastIdx].subject)
 
   const selectTemplate = (i) => {
     setSelected(i)
     setBody(allTemplates[i].body)
     setSubject(allTemplates[i].subject)
+    localStorage.setItem('last_email_template', String(i))
   }
 
   const filled_body = body.replace('[Company Name]', sponsor?.company || '')
