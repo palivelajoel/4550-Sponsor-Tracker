@@ -695,38 +695,30 @@ export default function App() {
                       {isFollowUpDue && <div style={{ fontSize: '9px', color: '#fbbf24', letterSpacing: '1px' }}>⏰ FOLLOW-UP DUE</div>}
                     </div>
                   </div>
-                  {s.email && <div style={styles.fieldRow}><span>📧</span>
-                    {fixEmail[s.id]?.lookingUp ? (
-                      <span style={{ flex: 1, color: '#94a3b8', fontSize: '11px', fontFamily: "'Share Tech Mono', monospace" }}>🔍 Looking up...</span>
-                    ) : fixEmail[s.id] ? (
-                      <>
-                        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4, minWidth: 0 }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                            <span style={{ fontSize: 10, color: '#64748b', fontFamily: "'Share Tech Mono', monospace", whiteSpace: 'nowrap' }}>📧</span>
-                            <input value={fixEmail[s.id].email} onChange={e => setFixEmail(f => ({ ...f, [s.id]: { ...f[s.id], email: e.target.value } }))}
-                              style={{ flex: 1, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(34,197,94,0.4)', borderRadius: '4px', padding: '3px 6px', color: '#e2e8f0', fontSize: '11px', fontFamily: "'Share Tech Mono', monospace", minWidth: 0, outline: 'none' }} />
-                          </div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                            <span style={{ fontSize: 10, color: '#64748b', fontFamily: "'Share Tech Mono', monospace", whiteSpace: 'nowrap' }}>📞</span>
-                            <input value={fixEmail[s.id].phone} onChange={e => setFixEmail(f => ({ ...f, [s.id]: { ...f[s.id], phone: e.target.value } }))}
-                              style={{ flex: 1, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(34,197,94,0.4)', borderRadius: '4px', padding: '3px 6px', color: '#e2e8f0', fontSize: '11px', fontFamily: "'Share Tech Mono', monospace", minWidth: 0, outline: 'none' }} />
-                          </div>
-                        </div>
-                        {fixEmail[s.id].notes && (
-                          <div style={{ fontSize: 10, color: '#64748b', fontFamily: "'Share Tech Mono', monospace", marginTop: 2, lineHeight: 1.4 }}>📎 {fixEmail[s.id].notes}</div>
-                        )}
+                  {s.email && !fixEmail[s.id]?.lookingUp && !fixEmail[s.id] && <div style={styles.fieldRow}><span>📧</span><a href={`mailto:${s.email}`} target='_blank' rel='noreferrer' style={{ flex: 1, color: '#fca5a5', textDecoration: 'none', wordBreak: 'break-all', overflowWrap: 'anywhere', minWidth: 0 }}>{s.email}</a><button style={styles.copyBtn} onClick={() => copy(s.email)}>COPY</button><button style={{ ...styles.copyBtn, color: '#fca5a5', borderColor: '#fca5a544' }} onClick={() => recheck(s)}>WRONG?</button></div>}
+                  {fixEmail[s.id]?.lookingUp && <div style={{ ...styles.fieldRow, color: '#94a3b8', fontSize: '11px', fontFamily: "'Share Tech Mono', monospace" }}><span>📧</span>🔍 Looking up...</div>}
+                  {fixEmail[s.id] && !fixEmail[s.id].lookingUp && (
+                    <div style={{ border: '1px solid rgba(34,197,94,0.3)', borderRadius: 8, padding: '10px 12px', marginBottom: 8, background: 'rgba(34,197,94,0.04)' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+                        <span style={{ fontSize: 10, color: '#64748b', fontFamily: "'Share Tech Mono', monospace", whiteSpace: 'nowrap' }}>📧</span>
+                        <input value={fixEmail[s.id].email} onChange={e => setFixEmail(f => ({ ...f, [s.id]: { ...f[s.id], email: e.target.value } }))}
+                          style={{ flex: 1, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(34,197,94,0.4)', borderRadius: 4, padding: '4px 8px', color: '#e2e8f0', fontSize: '11px', fontFamily: "'Share Tech Mono', monospace", outline: 'none' }} />
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: fixEmail[s.id].notes ? 6 : 0 }}>
+                        <span style={{ fontSize: 10, color: '#64748b', fontFamily: "'Share Tech Mono', monospace", whiteSpace: 'nowrap' }}>📞</span>
+                        <input value={fixEmail[s.id].phone} onChange={e => setFixEmail(f => ({ ...f, [s.id]: { ...f[s.id], phone: e.target.value } }))}
+                          style={{ flex: 1, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(34,197,94,0.4)', borderRadius: 4, padding: '4px 8px', color: '#e2e8f0', fontSize: '11px', fontFamily: "'Share Tech Mono', monospace", outline: 'none' }} />
+                      </div>
+                      {fixEmail[s.id].notes && (
+                        <div style={{ fontSize: 10, color: '#64748b', fontFamily: "'Share Tech Mono', monospace", lineHeight: 1.4, marginBottom: 8 }}>📎 {fixEmail[s.id].notes}</div>
+                      )}
+                      <div style={{ display: 'flex', gap: 6 }}>
                         <button style={{ ...styles.copyBtn, color: '#22c55e', borderColor: '#22c55e44' }} onClick={() => saveEmailFix(s.id, fixEmail[s.id])}>SAVE</button>
                         <button style={styles.copyBtn} onClick={() => setFixEmail(f => { const n = { ...f }; delete n[s.id]; return n; })}>X</button>
-                      </>
-                    ) : (
-                      <>
-                        <a href={`mailto:${s.email}`} target='_blank' rel='noreferrer' style={{ flex: 1, color: '#fca5a5', textDecoration: 'none', wordBreak: 'break-all', overflowWrap: 'anywhere', minWidth: 0 }}>{s.email}</a>
-                        <button style={styles.copyBtn} onClick={() => copy(s.email)}>COPY</button>
-                        <button style={{ ...styles.copyBtn, color: '#fca5a5', borderColor: '#fca5a544' }} onClick={() => recheck(s)}>WRONG?</button>
-                      </>
-                    )}
-                  </div>}
-                  {s.phone && <div style={styles.fieldRow}><span>📞</span><a href={`tel:${s.phone}`} style={{ flex: 1, color: '#fca5a5', textDecoration: 'none', wordBreak: 'break-all', overflowWrap: 'anywhere', minWidth: 0 }}>{s.phone}</a><button style={styles.copyBtn} onClick={() => copy(s.phone)}>COPY</button></div>}
+                      </div>
+                    </div>
+                  )}
+                  {s.phone && !fixEmail[s.id] && <div style={styles.fieldRow}><span>📞</span><a href={`tel:${s.phone}`} style={{ flex: 1, color: '#fca5a5', textDecoration: 'none', wordBreak: 'break-all', overflowWrap: 'anywhere', minWidth: 0 }}>{s.phone}</a><button style={styles.copyBtn} onClick={() => copy(s.phone)}>COPY</button></div>}
                   {s.notes && <div style={{ ...styles.fieldRow, alignItems: 'flex-start' }}><span>📝</span><span style={{ color: '#94a3b8', lineHeight: '1.5', fontSize: '11px', wordBreak: 'break-word', overflowWrap: 'anywhere', whiteSpace: 'pre-wrap', minWidth: 0 }}>{s.notes}</span></div>}
                   {s.follow_up_date && <div style={styles.fieldRow}><span>📅</span><span style={{ color: isFollowUpDue ? '#fbbf24' : '#94a3b8', fontSize: '11px' }}>Follow up: {s.follow_up_date}</span></div>}
                   <div style={{ marginTop: 'auto' }}>
