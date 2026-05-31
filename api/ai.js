@@ -88,12 +88,22 @@ async function extractBrands(req, res) {
 }
 
 async function lookupSponsor(req, res) {
-  const { company } = req.body;
+  const { company, retry = 1 } = req.body;
   if (!company) return res.status(400).json({ error: 'Company name required' });
+
+  const queries = [
+    `how to email ${company} for sponsorships`,
+    `${company} sponsorship application email contact`,
+    `${company} donations community outreach email`,
+    `${company} corporate giving manager contact`,
+    `${company} support contact email phone`,
+    `${company} CEO founder email contact`,
+  ];
+  const query = queries[(retry - 1) % queries.length];
 
   let webContent = '';
   try {
-    const searchUrl = `https://html.duckduckgo.com/html/?q=${encodeURIComponent(company + ' sponsorship contact email')}`;
+    const searchUrl = `https://html.duckduckgo.com/html/?q=${encodeURIComponent(query)}`;
     const searchRes = await fetch(searchUrl, { headers: { 'User-Agent': 'Mozilla/5.0' } });
     const html = await searchRes.text();
     const links = [...html.matchAll(/<a[^>]*class="result__a"[^>]*href="([^"]+)"[^>]*>/g)];
