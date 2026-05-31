@@ -97,10 +97,10 @@ async function lookupSponsor(req, res) {
     const searchRes = await fetch(searchUrl, { headers: { 'User-Agent': 'Mozilla/5.0' } });
     const html = await searchRes.text();
     const links = [...html.matchAll(/<a[^>]*class="result__a"[^>]*href="([^"]+)"[^>]*>/g)];
-    const urls = links.map(m => m[1].replace(/\/\/duckduckgo\.com\/l\/\?uddg=/, '').split('&')[0]).filter(u => u).slice(0, 3);
+    const urls = links.map(m => m[1].replace(/\/\/duckduckgo\.com\/l\/\?uddg=/, '').split('&')[0]).filter(u => u).slice(0, 10);
     for (const url of urls) {
       try {
-        const page = await fetch(decodeURIComponent(url), { headers: { 'User-Agent': 'Mozilla/5.0' }, signal: AbortSignal.timeout(5000) });
+        const page = await fetch(decodeURIComponent(url), { headers: { 'User-Agent': 'Mozilla/5.0' }, signal: AbortSignal.timeout(3000) });
         const text = await page.text();
         const clean = text.replace(/<script[^>]*>[\s\S]*?<\/script>/g, '').replace(/<style[^>]*>[\s\S]*?<\/style>/g, '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
         webContent += clean.slice(0, 4000) + '\n\n';
