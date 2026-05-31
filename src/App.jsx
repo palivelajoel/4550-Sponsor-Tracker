@@ -525,7 +525,7 @@ export default function App() {
   }
 
   const lookupAll = () => runBatch('Look up missing info for', sponsors.filter(s => !s.email && !s.phone))
-  const forceRecheckAll = () => runBatch('Re-check all', sponsors)
+  const forceRecheckAll = () => runBatch('Re-check not-contacted', sponsors.filter(s => s.status === 'Not Contacted'))
 
   const deleteDuplicates = async () => {
     const dupes = new Map()
