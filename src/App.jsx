@@ -714,6 +714,7 @@ export default function App() {
                       )}
                       <div style={{ display: 'flex', gap: 6 }}>
                         <button style={{ ...styles.copyBtn, color: '#22c55e', borderColor: '#22c55e44' }} onClick={() => saveEmailFix(s.id, fixEmail[s.id])}>SAVE</button>
+                        <button style={{ ...styles.copyBtn, color: '#fca5a5', borderColor: '#fca5a544' }} onClick={() => recheck(s)}>WRONG?</button>
                         <button style={styles.copyBtn} onClick={() => setFixEmail(f => { const n = { ...f }; delete n[s.id]; return n; })}>X</button>
                       </div>
                     </div>
