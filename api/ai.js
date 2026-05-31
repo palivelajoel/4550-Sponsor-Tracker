@@ -88,7 +88,7 @@ async function extractBrands(req, res) {
 }
 
 async function lookupSponsor(req, res) {
-  const { company, retry = 1 } = req.body;
+  const { company, retry = 1, bad_emails = [] } = req.body;
   if (!company) return res.status(400).json({ error: 'Company name required' });
 
   const queries = [
@@ -127,10 +127,10 @@ async function lookupSponsor(req, res) {
     body: JSON.stringify({
       model: 'llama-3.3-70b-versatile',
       messages: [
-        { role: 'system', content: 'You are a research assistant for an FRC robotics team. Given company web content and a company name, find the BEST sponsorship/donations/community outreach contact email and phone number. Prefer actual sponsorship-specific emails over generic contact forms. Return ONLY valid JSON with keys: email, phone, notes (source description). No markdown, no backticks, just raw JSON.' },
+        { role: 'system', content: `You are a research assistant for an FRC robotics team. Given company web content and a company name, find the BEST sponsorship/donations/community outreach contact email and phone number. Prefer actual sponsorship-specific emails over generic contact forms. Return ONLY valid JSON with keys: email, phone, notes (source description). No markdown, no backticks, just raw JSON.${bad_emails.length ? `\n\nThe following emails are KNOWN to be wrong. NEVER return any of them:\n${bad_emails.map(e => `- ${e}`).join('\n')}` : ''}` },
         { role: 'user', content: webContent
-          ? `Company: ${company}\n\nWeb content found:\n${webContent}\n\nExtract the sponsorship contact email and phone number.`
-          : `Find sponsorship contact info for: ${company}. Check your knowledge thoroughly. Provide email, phone, and notes about the source.` }
+          ? `Company: ${company}\n\nWeb content found:\n${webContent}\n\nExtract the sponsorship contact email and phone number. Make sure it is NOT one of the known bad emails.`
+          : `Find sponsorship contact info for: ${company}. Check your knowledge thoroughly. Provide email, phone, and notes about the source. Avoid known bad emails.` }
       ],
       temperature: 0.1,
       max_tokens: 400,

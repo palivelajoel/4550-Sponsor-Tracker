@@ -447,14 +447,27 @@ export default function App() {
     }
   }
 
+  function getBadEmails(company) {
+    try { return JSON.parse(localStorage.getItem('bad_emails') || '{}')[company.toLowerCase()] || []; } catch { return []; }
+  }
+  function addBadEmail(company, email) {
+    if (!email) return;
+    const all = (() => { try { return JSON.parse(localStorage.getItem('bad_emails') || '{}'); } catch { return {}; } })();
+    const key = company.toLowerCase();
+    if (!all[key]) all[key] = [];
+    if (!all[key].includes(email)) all[key].push(email);
+    localStorage.setItem('bad_emails', JSON.stringify(all));
+  }
+
   const recheck = async (s) => {
     const retry = (fixEmail[s.id]?.retry || 0) + 1
-    setFixEmail(f => ({ ...f, [s.id]: { lookingUp: true, retry } }))
+    const bad = getBadEmails(s.company)
+    setFixEmail(f => ({ ...f, [s.id]: { lookingUp: true, retry, oldEmail: s.email } }))
     try {
-      const res = await fetch('/api/lookup', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ company: s.company, retry }) })
+      const res = await fetch('/api/lookup', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ company: s.company, retry, bad_emails: bad }) })
       const data = await res.json()
       if (!res.ok) { setFixEmail(f => ({ ...f, [s.id]: { email: '', phone: '', notes: '' } })); showToast('❌ ' + (data.error || 'Lookup failed')); return }
-      setFixEmail(f => ({ ...f, [s.id]: { email: data.email || '', phone: data.phone || '', notes: data.notes || '', retry } }))
+      setFixEmail(f => ({ ...f, [s.id]: { email: data.email || '', phone: data.phone || '', notes: data.notes || '', retry, oldEmail: s.email } }))
     } catch {
       setFixEmail(f => ({ ...f, [s.id]: { email: '', phone: '', notes: '' } }))
       showToast('❌ Lookup failed — server may be unavailable')
@@ -462,8 +475,10 @@ export default function App() {
   }
 
   const saveEmailFix = async (id, data) => {
+    const company = sponsors.find(s => s.id === id)?.company || ''
     try {
       await hubProxy('sponsors', 'update', { id, updates: { email: data.email, phone: data.phone, notes: data.notes, updated_at: new Date().toISOString() } })
+      addBadEmail(company, data.oldEmail)
       setFixEmail(f => { const n = { ...f }; delete n[id]; return n; })
       fetchSponsors()
       showToast('✅ Contact info updated!')
