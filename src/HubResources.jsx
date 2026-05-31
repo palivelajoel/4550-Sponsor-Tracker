@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { FONTS, C, sbFetch, isAuthed, canEditHub, uploadFile, HubHeader, toastStyle, inputStyle, selectStyle, overlayStyle, addBtnStyle, ghostBtn, dangerBtn, hubProxy } from "./hubUtils.jsx";
+import { FONTS, C, sbFetch, isAuthed, canEditHub, getRole, getSubteam, uploadFile, HubHeader, toastStyle, inputStyle, selectStyle, overlayStyle, addBtnStyle, ghostBtn, dangerBtn, hubProxy } from "./hubUtils.jsx";
 
 const CATEGORIES = ["All", "CAD & Design", "Programming", "Documentation", "Marketing", "Finance", "Competition", "Other"];
 const catIcon = { "CAD & Design": "🔧", Programming: "💻", Documentation: "📄", Marketing: "📢", Finance: "💰", Competition: "🏆", Other: "📁" };
@@ -104,6 +104,7 @@ export default function HubResources() {
     showToast("🗑️ Template deleted");
   };
 
+  const showTemplates = getRole() === "Admin" || getSubteam() === "Marketing & Outreach";
   const folders = [...new Set(items.map(i => i.folder || ""))].sort();
 
   const filtered = items.filter(i => {
@@ -243,42 +244,43 @@ export default function HubResources() {
         ))}
       </div>
 
-      {/* Email Templates */}
-      <div style={{ maxWidth: 900, margin: "0 auto", padding: "0 20px 40px" }}>
-        <div style={{ borderTop: `1px solid ${C.border}`, paddingTop: 24, marginBottom: 20 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20, flexWrap: "wrap", gap: 10 }}>
-            <div>
-              <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 18, fontWeight: 700, color: C.text }}>📧 Email Templates</div>
-              <div style={{ fontSize: 12, color: C.muted, fontFamily: "monospace", marginTop: 4 }}>
-                Customize templates used in the Sponsor Tracker
-              </div>
-            </div>
-            <button style={addBtnStyle} onClick={() => setTemplateModal({})}>+ ADD TEMPLATE</button>
-          </div>
-
-          {templates.length === 0 ? (
-            <div style={{ textAlign: "center", padding: 60, color: C.dim, fontFamily: "monospace", fontSize: 13 }}>
-              No custom templates yet. Add your first email template above.
-            </div>
-          ) : (
-            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-              {templates.map((t, i) => (
-                <div key={i} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 12, padding: "18px 20px" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, marginBottom: 8 }}>
-                    <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 13, fontWeight: 700, color: C.text, letterSpacing: 1 }}>{t.label}</div>
-                    <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
-                      <button style={ghostBtn} onClick={() => setTemplateModal({ ...t, _edit: i })}>EDIT</button>
-                      <button style={{ ...ghostBtn, color: C.red, borderColor: `${C.red}44` }} onClick={() => deleteTemplate(i)}>DEL</button>
-                    </div>
-                  </div>
-                  <div style={{ fontSize: 11, color: C.muted, fontFamily: "monospace", marginBottom: 4 }}>Subject: {t.subject}</div>
-                  <div style={{ fontSize: 11, color: C.dim, fontFamily: "monospace", lineHeight: 1.6, whiteSpace: "pre-wrap", maxHeight: 60, overflow: "hidden", textOverflow: "ellipsis" }}>{t.body}</div>
+      {showTemplates && (
+        <div style={{ maxWidth: 900, margin: "0 auto", padding: "0 20px 40px" }}>
+          <div style={{ borderTop: `1px solid ${C.border}`, paddingTop: 24, marginBottom: 20 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20, flexWrap: "wrap", gap: 10 }}>
+              <div>
+                <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 18, fontWeight: 700, color: C.text }}>📧 Email Templates</div>
+                <div style={{ fontSize: 12, color: C.muted, fontFamily: "monospace", marginTop: 4 }}>
+                  Customize templates used in the Sponsor Tracker
                 </div>
-              ))}
+              </div>
+              <button style={addBtnStyle} onClick={() => setTemplateModal({})}>+ ADD TEMPLATE</button>
             </div>
-          )}
+
+            {templates.length === 0 ? (
+              <div style={{ textAlign: "center", padding: 60, color: C.dim, fontFamily: "monospace", fontSize: 13 }}>
+                No custom templates yet. Add your first email template above.
+              </div>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                {templates.map((t, i) => (
+                  <div key={i} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 12, padding: "18px 20px" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, marginBottom: 8 }}>
+                      <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 13, fontWeight: 700, color: C.text, letterSpacing: 1 }}>{t.label}</div>
+                      <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
+                        <button style={ghostBtn} onClick={() => setTemplateModal({ ...t, _edit: i })}>EDIT</button>
+                        <button style={{ ...ghostBtn, color: C.red, borderColor: `${C.red}44` }} onClick={() => deleteTemplate(i)}>DEL</button>
+                      </div>
+                    </div>
+                    <div style={{ fontSize: 11, color: C.muted, fontFamily: "monospace", marginBottom: 4 }}>Subject: {t.subject}</div>
+                    <div style={{ fontSize: 11, color: C.dim, fontFamily: "monospace", lineHeight: 1.6, whiteSpace: "pre-wrap", maxHeight: 60, overflow: "hidden", textOverflow: "ellipsis" }}>{t.body}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Add modal */}
       {modal && <div style={overlayStyle} onClick={e => { if (e.target === e.currentTarget) setModal(false); }}>
