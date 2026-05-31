@@ -109,15 +109,13 @@ function ListForms({ forms, submissions, canEdit, username, onFill, onEdit, onDe
 
   return (
     <div style={{ maxWidth: 800, margin: "0 auto", padding: "24px 20px" }}>
-      {canEdit && (
-        <div style={{ marginBottom: 24, display: "flex", justifyContent: "flex-end" }}>
-          <button onClick={onNew} style={addBtnStyle}>+ Create Form</button>
-        </div>
-      )}
+      <div style={{ marginBottom: 24, display: "flex", justifyContent: "flex-end" }}>
+        <button onClick={onNew} style={addBtnStyle}>+ Create Form</button>
+      </div>
 
       {forms.length === 0 ? (
         <div style={{ textAlign: "center", padding: "80px 0", color: C.dim, fontFamily: "monospace", fontSize: 14 }}>
-          No forms yet. {canEdit ? "Create the first one above." : "Check back later."}
+          No forms yet. Create one above!
         </div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
@@ -136,7 +134,7 @@ function ListForms({ forms, submissions, canEdit, username, onFill, onEdit, onDe
                     ) : (
                       <span style={{ fontSize: 11, color: "#22c55e", fontFamily: "monospace", padding: "8px 0" }}>✓ Submitted</span>
                     )}
-                    {canEdit && (
+                    {(canEdit || f.created_by === username) && (
                       <>
                         <button onClick={() => onEdit(f)} style={{ ...ghostBtn, padding: "8px 12px", fontSize: 11 }}>Edit</button>
                         <button onClick={() => onResponses(f)} style={{ ...ghostBtn, padding: "8px 12px", fontSize: 11 }}>
