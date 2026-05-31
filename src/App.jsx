@@ -379,6 +379,7 @@ export default function App() {
   const [emailModal, setEmailModal] = useState(null)
   const [notesModal, setNotesModal] = useState(null)
   const [toast, setToast] = useState(null)
+  const [fixEmail, setFixEmail] = useState({})
   const [loading, setLoading] = useState(true)
   const [lookingUp, setLookingUp] = useState(false)
   const [lookupProgress, setLookupProgress] = useState({ current: 0, total: 0 })
@@ -439,6 +440,15 @@ export default function App() {
     } catch (e) {
       showToast('❌ ' + e.message)
     }
+  }
+
+  const saveEmailFix = async (id, email) => {
+    try {
+      await hubProxy('sponsors', 'update', { id, updates: { email, updated_at: new Date().toISOString() } })
+      setFixEmail(f => { const n = { ...f }; delete n[id]; return n; })
+      fetchSponsors()
+      showToast('✅ Email updated!')
+    } catch (e) { showToast('❌ ' + e.message) }
   }
 
   const updateStatus = async (id, status) => {
@@ -644,7 +654,23 @@ export default function App() {
                       {isFollowUpDue && <div style={{ fontSize: '9px', color: '#fbbf24', letterSpacing: '1px' }}>⏰ FOLLOW-UP DUE</div>}
                     </div>
                   </div>
-                  {s.email && <div style={styles.fieldRow}><span>📧</span><a href={`mailto:${s.email}`} target='_blank' rel='noreferrer' style={{ flex: 1, color: '#fca5a5', textDecoration: 'none', wordBreak: 'break-all', overflowWrap: 'anywhere', minWidth: 0 }}>{s.email}</a><button style={styles.copyBtn} onClick={() => copy(s.email)}>COPY</button></div>}
+                  {s.email && <div style={styles.fieldRow}><span>📧</span>
+                    {fixEmail[s.id] ? (
+                      <>
+                        <input value={fixEmail[s.id] || s.email} onChange={e => setFixEmail(f => ({ ...f, [s.id]: e.target.value }))}
+                          style={{ flex: 1, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(239,68,68,0.4)', borderRadius: '6px', padding: '4px 8px', color: '#e2e8f0', fontSize: '12px', fontFamily: "'Share Tech Mono', monospace", minWidth: 0, outline: 'none' }}
+                          autoFocus onKeyDown={e => e.key === 'Enter' && saveEmailFix(s.id, fixEmail[s.id])} />
+                        <button style={{ ...styles.copyBtn, color: '#22c55e' }} onClick={() => saveEmailFix(s.id, fixEmail[s.id])}>SAVE</button>
+                        <button style={{ ...styles.copyBtn }} onClick={() => setFixEmail(f => { const n = { ...f }; delete n[s.id]; return n; })}>CANCEL</button>
+                      </>
+                    ) : (
+                      <>
+                        <a href={`mailto:${s.email}`} target='_blank' rel='noreferrer' style={{ flex: 1, color: '#fca5a5', textDecoration: 'none', wordBreak: 'break-all', overflowWrap: 'anywhere', minWidth: 0 }}>{s.email}</a>
+                        <button style={styles.copyBtn} onClick={() => copy(s.email)}>COPY</button>
+                        <button style={{ ...styles.copyBtn, color: '#fca5a5', borderColor: '#fca5a544' }} onClick={() => setFixEmail(f => ({ ...f, [s.id]: '' }))}>WRONG?</button>
+                      </>
+                    )}
+                  </div>}
                   {s.phone && <div style={styles.fieldRow}><span>📞</span><a href={`tel:${s.phone}`} style={{ flex: 1, color: '#fca5a5', textDecoration: 'none', wordBreak: 'break-all', overflowWrap: 'anywhere', minWidth: 0 }}>{s.phone}</a><button style={styles.copyBtn} onClick={() => copy(s.phone)}>COPY</button></div>}
                   {s.notes && <div style={{ ...styles.fieldRow, alignItems: 'flex-start' }}><span>📝</span><span style={{ color: '#94a3b8', lineHeight: '1.5', fontSize: '11px', wordBreak: 'break-word', overflowWrap: 'anywhere', whiteSpace: 'pre-wrap', minWidth: 0 }}>{s.notes}</span></div>}
                   {s.follow_up_date && <div style={styles.fieldRow}><span>📅</span><span style={{ color: isFollowUpDue ? '#fbbf24' : '#94a3b8', fontSize: '11px' }}>Follow up: {s.follow_up_date}</span></div>}
