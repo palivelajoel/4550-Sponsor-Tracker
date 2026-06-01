@@ -184,6 +184,8 @@ export default function Landing() {
   const [menuOpen, setMenuOpen] = useState(false);
   const heroParallaxRef = useRef(null);
 
+  useEffect(() => { window.scrollTo(0, 0); }, []);
+
   useEffect(() => {
     document.title = "Team 4550 Something's Bruin";
     sbFetch("site_config?select=key,value").then(rows => {
@@ -245,6 +247,39 @@ export default function Landing() {
       color: "#22c55e",
     },
   ];
+
+  const cardSpring = { type: "spring", stiffness: 120, damping: 18 };
+
+  const stagger = {
+    viewport: { once: true },
+    transition: { staggerChildren: 0.08, ...cardSpring },
+  };
+
+  const cardItem = {
+    hidden: { opacity: 0, y: 40, scale: 0.93 },
+    visible: { opacity: 1, y: 0, scale: 1 },
+  };
+
+  const slideUp = {
+    initial: { opacity: 0, y: 70, scale: 0.94 },
+    whileInView: { opacity: 1, y: 0, scale: 1 },
+    viewport: { once: true },
+    transition: { type: "spring", stiffness: 90, damping: 18 },
+  };
+
+  const slideLeft = {
+    initial: { opacity: 0, x: -80, scale: 0.94 },
+    whileInView: { opacity: 1, x: 0, scale: 1 },
+    viewport: { once: true },
+    transition: { type: "spring", stiffness: 90, damping: 18 },
+  };
+
+  const slideRight = {
+    initial: { opacity: 0, x: 80, scale: 0.94 },
+    whileInView: { opacity: 1, x: 0, scale: 1 },
+    viewport: { once: true },
+    transition: { type: "spring", stiffness: 90, damping: 18 },
+  };
 
   return (
     <div style={{ background: "transparent", color: "#f1f5f9", fontFamily: "'Exo 2', sans-serif", overflowX: "hidden", overflow:"hidden", position: "relative", minHeight: "100vh" }}>
@@ -364,22 +399,22 @@ export default function Landing() {
       {/* ABOUT */}
       <section id="about"><div className="sec">
         
-          <motion.div initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.65 }}>
+          <motion.div {...slideUp}>
             <Eyebrow>// WHO WE ARE</Eyebrow>
             <SectionTitle>About the Team</SectionTitle>
             <div className="about-grid">
-              <div>
+              <motion.div initial={{ opacity: 0, y: 50 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ type: "spring", stiffness: 100, damping: 18, delay: 0.1 }}>
                 <p style={{ color: "#94a3b8", lineHeight: 1.8, fontSize: 15 }}>FRC Team 4550 "Something's Bruin" has been competing since 2012, representing Cherry Creek High School in FIRST Robotics Competition. Our team of 40–50 student engineers, programmers, and designers builds competition-ready robots each season — from scratch, in six weeks.</p>
                 <p style={{ color: "#94a3b8", lineHeight: 1.8, fontSize: 15, marginTop: 14 }}>We've competed at the 2016 World Championship and continue to push the boundaries of what student-built robots can achieve. Beyond the robot, we're deeply committed to STEM outreach and community impact across the Denver metro area.</p>
-              </div>
-              <div className="stats-grid">
+              </motion.div>
+              <motion.div className="stats-grid" variants={stagger} initial="hidden" whileInView="visible" viewport={{ once: true }}>
                 {[{ num: "12+", label: "Years Competing" }, { num: "40–50", label: "Members" }, { num: "2016", label: "World Championship" }, { num: "3", label: "Sub-Teams" }].map((s, i) => (
-                  <div key={s.label} style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 10, padding: isMobile ? "18px 14px" : "24px 20px", textAlign: "center" }}>
+                  <motion.div key={s.label} variants={cardItem} whileHover={{ scale: 1.06, borderColor: "rgba(239,68,68,0.3)" }} style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 10, padding: isMobile ? "18px 14px" : "24px 20px", textAlign: "center" }}>
                     <div style={{ fontFamily: "'Orbitron', sans-serif", fontSize: isMobile ? 22 : 28, fontWeight: 700, color: "#ef4444" }}>{s.num}</div>
                     <div style={{ fontSize: 11, color: "#64748b", fontFamily: "'Share Tech Mono', monospace", marginTop: 4 }}>{s.label}</div>
-                  </div>
+                  </motion.div>
                 ))}
-              </div>
+              </motion.div>
             </div>
           </motion.div>
         
@@ -389,19 +424,19 @@ export default function Landing() {
       {captains.length > 0 && (
         <section id="team" style={{ background: "rgba(255,255,255,0.015)" }}><div className="sec">
           
-            <motion.div initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.65 }}>
+            <motion.div {...slideLeft}>
               <Eyebrow>// LEADERSHIP</Eyebrow>
               <SectionTitle>Our Team</SectionTitle>
-              <div className="captains-grid">
+              <motion.div className="captains-grid" variants={stagger} initial="hidden" whileInView="visible" viewport={{ once: true }}>
                 {captains.map((c, i) => (
-                  <div key={c.id} style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 12, padding: isMobile ? "20px 14px" : "26px 20px", textAlign: "center" }}>
+                  <motion.div key={c.id} variants={cardItem} whileHover={{ scale: 1.04, borderColor: "rgba(239,68,68,0.3)" }} style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 12, padding: isMobile ? "20px 14px" : "26px 20px", textAlign: "center" }}>
                     <CaptainPhoto photoUrl={c.photo_url} name={c.name} size={isMobile ? 70 : 88} style={{ display: "block", margin: "0 auto 12px", borderWidth: 2, borderStyle: "solid", borderColor: "rgba(239,68,68,0.4)" }} />
                     <div style={{ fontFamily: "'Orbitron', sans-serif", fontSize: isMobile ? 11 : 13, fontWeight: 700, color: "#f1f5f9", marginBottom: 4 }}>{c.name}</div>
                     <div style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 10, color: "#ef4444", letterSpacing: 2, marginBottom: c.bio ? 8 : 0 }}>{c.position}</div>
                     {c.bio && <p style={{ color: "#64748b", fontSize: 12, lineHeight: 1.6 }}>{c.bio}</p>}
-                  </div>
+                  </motion.div>
                 ))}
-              </div>
+              </motion.div>
             </motion.div>
           
         </div></section>
@@ -410,18 +445,18 @@ export default function Landing() {
       {/* SUB-TEAMS */}
       <section id="sub-teams"><div className="sec">
         
-          <motion.div initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.65 }}>
+          <motion.div {...slideRight}>
             <Eyebrow>// HOW WE BUILD</Eyebrow>
             <SectionTitle>Sub-Teams</SectionTitle>
-            <div className="subteams-grid">
+            <motion.div className="subteams-grid" variants={stagger} initial="hidden" whileInView="visible" viewport={{ once: true }}>
               {SUB_TEAMS.map((st, i) => (
-                <div key={st.name} style={{ background: "rgba(255,255,255,0.03)", border: `1px solid rgba(255,255,255,0.08)`, borderTop: `3px solid ${st.color}`, borderRadius: 10, padding: isMobile ? "22px 18px" : "28px 24px" }}>
+                <motion.div key={st.name} variants={cardItem} whileHover={{ scale: 1.04, borderTopColor: st.color }} style={{ background: "rgba(255,255,255,0.03)", border: `1px solid rgba(255,255,255,0.08)`, borderTop: `3px solid ${st.color}`, borderRadius: 10, padding: isMobile ? "22px 18px" : "28px 24px" }}>
                   <div style={{ fontSize: 28, marginBottom: 10 }}>{st.icon}</div>
                   <div style={{ fontFamily: "'Orbitron', sans-serif", fontSize: 14, fontWeight: 700, color: "#f1f5f9", marginBottom: 12, letterSpacing: 1 }}>{st.name}</div>
                   <p style={{ color: "#94a3b8", lineHeight: 1.75, fontSize: 14 }}>{st.description}</p>
-                </div>
+                </motion.div>
               ))}
-            </div>
+            </motion.div>
           </motion.div>
         
       </div></section>
@@ -429,22 +464,22 @@ export default function Landing() {
       {/* OUTREACH */}
       <section id="outreach" style={{ background: "rgba(255,255,255,0.015)" }}><div className="sec">
         
-          <motion.div initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.65 }}>
+          <motion.div {...slideUp}>
             <Eyebrow>// COMMUNITY</Eyebrow>
             <SectionTitle>Community Outreach</SectionTitle>
-            <div className="outreach-grid">
+            <motion.div className="outreach-grid" variants={stagger} initial="hidden" whileInView="visible" viewport={{ once: true }}>
               {[
                 { icon: "🤖", title: "Team Mentoring", desc: "We mentor younger FRC and FLL teams throughout the Denver metro area, sharing technical knowledge and competition experience." },
                 { icon: "🏫", title: "School Outreach", desc: "Visiting local elementary and middle schools to inspire the next generation of engineers through hands-on robotics demos." },
                 { icon: "🌍", title: "Community Events", desc: "Participating in local STEM fairs, library events, and community festivals to promote robotics and engineering education." },
               ].map((o, i) => (
-                <div key={o.title} style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 10, padding: isMobile ? "22px 18px" : "28px 24px" }}>
+                <motion.div key={o.title} variants={cardItem} whileHover={{ scale: 1.04, borderColor: "rgba(34,197,94,0.3)" }} style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 10, padding: isMobile ? "22px 18px" : "28px 24px" }}>
                   <div style={{ fontSize: 28, marginBottom: 10 }}>{o.icon}</div>
                   <div style={{ fontFamily: "'Orbitron', sans-serif", fontSize: 13, fontWeight: 700, color: "#f1f5f9", marginBottom: 10 }}>{o.title}</div>
                   <p style={{ color: "#94a3b8", lineHeight: 1.7, fontSize: 14 }}>{o.desc}</p>
-                </div>
+                </motion.div>
               ))}
-            </div>
+            </motion.div>
           </motion.div>
         
       </div></section>
@@ -452,13 +487,13 @@ export default function Landing() {
       {/* MEDIA */}
       <section id="media-gallery"><div className="sec">
         
-          <motion.div initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.65 }}>
+          <motion.div {...slideLeft}>
             <Eyebrow>// GALLERY</Eyebrow>
             <SectionTitle>Media Gallery</SectionTitle>
-            <p style={{ color: "#94a3b8", maxWidth: 520, margin: "0 auto 28px", lineHeight: 1.8, fontSize: 15, textAlign: "center" }}>Browse photos and videos from competitions, outreach events, build season, and team activities.</p>
-            <div style={{ textAlign: "center" }}>
+            <motion.p initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ type: "spring", stiffness: 100, damping: 18, delay: 0.15 }} style={{ color: "#94a3b8", maxWidth: 520, margin: "0 auto 28px", lineHeight: 1.8, fontSize: 15, textAlign: "center" }}>Browse photos and videos from competitions, outreach events, build season, and team activities.</motion.p>
+            <motion.div initial={{ opacity: 0, scale: 0.9 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} transition={{ type: "spring", stiffness: 120, damping: 16, delay: 0.25 }} style={{ textAlign: "center" }}>
               <a href="/media" style={{ display: "inline-block", background: "#ef4444", color: "#fff", textDecoration: "none", padding: isMobile ? "12px 28px" : "14px 36px", borderRadius: 6, fontFamily: "'Orbitron', sans-serif", fontWeight: 700, fontSize: isMobile ? 11 : 13, letterSpacing: 2 }}>EXPLORE GALLERY →</a>
-            </div>
+            </motion.div>
           </motion.div>
         
       </div></section>
@@ -466,21 +501,21 @@ export default function Landing() {
       {/* SOCIAL MEDIA */}
       <section id="media" style={{ background: "rgba(255,255,255,0.015)" }}><div className="sec">
         
-          <motion.div initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.65 }}>
+          <motion.div {...slideRight}>
             <Eyebrow>// FOLLOW ALONG</Eyebrow>
             <SectionTitle>Social Media</SectionTitle>
-            <div className="media-row">
+            <motion.div className="media-row" variants={stagger} initial="hidden" whileInView="visible" viewport={{ once: true }}>
               {[
                 { href: ig, icon: "📸", title: "Instagram", handle: "@cherrycreek.robotics", border: "rgba(59,130,246,0.3)" },
                 { href: yt, icon: "▶️", title: "YouTube", handle: "Team 4550 Something's Bruin", border: "rgba(239,68,68,0.3)" },
               ].map((m, i) => (
-                <a key={m.title} href={m.href} target="_blank" rel="noreferrer" className="media-card" style={{ background: "rgba(255,255,255,0.03)", border: `1px solid ${m.border}`, borderRadius: 10, padding: isMobile ? "24px 18px" : "32px 24px", textDecoration: "none", textAlign: "center", display: "block" }}>
+                <motion.a key={m.title} href={m.href} target="_blank" rel="noreferrer" className="media-card" variants={cardItem} whileHover={{ scale: 1.05, borderColor: m.border.replace("0.3", "0.7") }} style={{ background: "rgba(255,255,255,0.03)", border: `1px solid ${m.border}`, borderRadius: 10, padding: isMobile ? "24px 18px" : "32px 24px", textDecoration: "none", textAlign: "center", display: "block" }}>
                   <div style={{ fontSize: 32, marginBottom: 10 }}>{m.icon}</div>
                   <div style={{ fontFamily: "'Orbitron', sans-serif", fontSize: 15, fontWeight: 700, color: "#f1f5f9", marginBottom: 6 }}>{m.title}</div>
                   <div style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 12, color: "#64748b" }}>{m.handle}</div>
-                </a>
+                </motion.a>
               ))}
-            </div>
+            </motion.div>
           </motion.div>
         
       </div></section>
@@ -490,17 +525,19 @@ export default function Landing() {
       {/* SPONSORS */}
       <section id="sponsors" style={{ background: "rgba(255,255,255,0.015)" }}><div className="sec">
         
-          <motion.div initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.65 }}>
+          <motion.div {...slideUp}>
             <div style={{ textAlign: "center" }}>
               <Eyebrow>// PARTNER WITH US</Eyebrow>
               <SectionTitle>Become a Sponsor</SectionTitle>
-              <p style={{ color: "#94a3b8", maxWidth: 560, margin: "0 auto 28px", lineHeight: 1.8, fontSize: 15 }}>Sponsoring FRC Team 4550 connects your organization with motivated young engineers and demonstrates your commitment to STEM education. Multiple sponsorship tiers are available with recognition at competitions, on our robot, and across our platforms.</p>
-              <div className="tier-row">
+              <motion.p initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ type: "spring", stiffness: 100, damping: 18, delay: 0.1 }} style={{ color: "#94a3b8", maxWidth: 560, margin: "0 auto 28px", lineHeight: 1.8, fontSize: 15 }}>Sponsoring FRC Team 4550 connects your organization with motivated young engineers and demonstrates your commitment to STEM education. Multiple sponsorship tiers are available with recognition at competitions, on our robot, and across our platforms.</motion.p>
+              <motion.div className="tier-row" variants={stagger} initial="hidden" whileInView="visible" viewport={{ once: true }}>
                 {[{ name: "Bronze", color: "#b45309" }, { name: "Silver", color: "#94a3b8" }, { name: "Gold", color: "#eab308" }, { name: "Platinum", color: "#818cf8" }].map((t, i) => (
-                  <div key={t.name} style={{ border: `1px solid ${t.color}`, borderRadius: 20, padding: isMobile ? "5px 14px" : "6px 20px", fontFamily: "'Orbitron', sans-serif", fontSize: isMobile ? 10 : 12, fontWeight: 700, letterSpacing: 2, color: t.color }}>{t.name}</div>
+                  <motion.div key={t.name} variants={cardItem} whileHover={{ scale: 1.12, borderColor: t.color }} style={{ border: `1px solid ${t.color}`, borderRadius: 20, padding: isMobile ? "5px 14px" : "6px 20px", fontFamily: "'Orbitron', sans-serif", fontSize: isMobile ? 10 : 12, fontWeight: 700, letterSpacing: 2, color: t.color }}>{t.name}</motion.div>
                 ))}
-              </div>
-              <a href={`mailto:${email}`} style={{ display: "inline-block", background: "#ef4444", color: "#fff", textDecoration: "none", padding: isMobile ? "12px 24px" : "14px 32px", borderRadius: 6, fontFamily: "'Orbitron', sans-serif", fontWeight: 700, fontSize: isMobile ? 11 : 13, letterSpacing: 2 }}>CONTACT US TO SPONSOR</a>
+              </motion.div>
+              <motion.div initial={{ opacity: 0, scale: 0.9 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} transition={{ type: "spring", stiffness: 120, damping: 16, delay: 0.35 }}>
+                <a href={`mailto:${email}`} style={{ display: "inline-block", background: "#ef4444", color: "#fff", textDecoration: "none", padding: isMobile ? "12px 24px" : "14px 32px", borderRadius: 6, fontFamily: "'Orbitron', sans-serif", fontWeight: 700, fontSize: isMobile ? 11 : 13, letterSpacing: 2 }}>CONTACT US TO SPONSOR</a>
+              </motion.div>
             </div>
           </motion.div>
         
@@ -509,12 +546,14 @@ export default function Landing() {
       {/* DONATE */}
       <section style={{ background: "rgba(239,68,68,0.05)", borderTop: "1px solid rgba(239,68,68,0.2)" }}><div className="sec">
         
-          <motion.div initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.65 }}>
+          <motion.div {...slideRight}>
             <div style={{ textAlign: "center" }}>
               <Eyebrow>// SUPPORT THE TEAM</Eyebrow>
               <SectionTitle>Make a Donation</SectionTitle>
-              <p style={{ color: "#94a3b8", maxWidth: 460, margin: "0 auto 28px", lineHeight: 1.8, fontSize: 15 }}>Every donation goes directly toward robot parts, competition fees, and team travel. Help us compete at the highest level.</p>
-              <a href={donate} target="_blank" rel="noreferrer" style={{ display: "inline-block", background: "#ef4444", color: "#fff", textDecoration: "none", padding: isMobile ? "12px 28px" : "14px 32px", borderRadius: 6, fontFamily: "'Orbitron', sans-serif", fontWeight: 700, fontSize: isMobile ? 11 : 13, letterSpacing: 2 }}>DONATE NOW</a>
+              <motion.p initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ type: "spring", stiffness: 100, damping: 18, delay: 0.1 }} style={{ color: "#94a3b8", maxWidth: 460, margin: "0 auto 28px", lineHeight: 1.8, fontSize: 15 }}>Every donation goes directly toward robot parts, competition fees, and team travel. Help us compete at the highest level.</motion.p>
+              <motion.div initial={{ opacity: 0, scale: 0.85 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} transition={{ type: "spring", stiffness: 140, damping: 14, delay: 0.25 }}>
+                <a href={donate} target="_blank" rel="noreferrer" style={{ display: "inline-block", background: "#ef4444", color: "#fff", textDecoration: "none", padding: isMobile ? "12px 28px" : "14px 32px", borderRadius: 6, fontFamily: "'Orbitron', sans-serif", fontWeight: 700, fontSize: isMobile ? 11 : 13, letterSpacing: 2 }}>DONATE NOW</a>
+              </motion.div>
             </div>
           </motion.div>
         
@@ -523,17 +562,17 @@ export default function Landing() {
       {/* CONTACT */}
       <section id="contact"><div className="sec">
         
-          <motion.div initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.65 }}>
+          <motion.div {...slideUp}>
             <div style={{ textAlign: "center" }}>
               <Eyebrow>// GET IN TOUCH</Eyebrow>
               <SectionTitle>Contact</SectionTitle>
-              <div className="contact-row">
+              <motion.div className="contact-row" variants={stagger} initial="hidden" whileInView="visible" viewport={{ once: true }}>
                 {[{ href: `mailto:${email}`, icon: "✉️", label: email }, { href: ig, icon: "📸", label: "@cherrycreek.robotics" }].map((c, i) => (
-                  <a key={c.label} href={c.href} target="_blank" rel="noreferrer" style={{ display: "flex", alignItems: "center", gap: 8, color: "#94a3b8", textDecoration: "none", fontSize: isMobile ? 13 : 15, fontFamily: "'Share Tech Mono', monospace", padding: isMobile ? "12px 20px" : 0, background: isMobile ? "rgba(255,255,255,0.04)" : "transparent", borderRadius: isMobile ? 8 : 0, border: isMobile ? "1px solid rgba(255,255,255,0.08)" : "none" }}>
+                  <motion.a key={c.label} href={c.href} target="_blank" rel="noreferrer" variants={cardItem} whileHover={{ scale: 1.05, borderColor: "rgba(239,68,68,0.4)", color: "#ef4444" }} style={{ display: "flex", alignItems: "center", gap: 8, color: "#94a3b8", textDecoration: "none", fontSize: isMobile ? 13 : 15, fontFamily: "'Share Tech Mono', monospace", padding: isMobile ? "12px 20px" : 0, background: isMobile ? "rgba(255,255,255,0.04)" : "transparent", borderRadius: isMobile ? 8 : 0, border: isMobile ? "1px solid rgba(255,255,255,0.08)" : "none" }}>
                     <span style={{ fontSize: 18 }}>{c.icon}</span>{c.label}
-                  </a>
+                  </motion.a>
                 ))}
-              </div>
+              </motion.div>
             </div>
           </motion.div>
         
