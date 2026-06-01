@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { motion } from 'framer-motion'
 import { FONTS, C, sbFetch, isAuthed, canEditHub, HubHeader, toastStyle, inputStyle, selectStyle, overlayStyle, modalStyle, addBtnStyle, ghostBtn, dangerBtn, hubProxy, getTokenUserId } from "./hubUtils.jsx";
 import Starfield from "./Starfield.jsx";
 
@@ -410,12 +411,13 @@ export default function HubInventory() {
 
         {/* Inventory grid */}
         <div style={{ display: "grid", gap: 12, gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))" }}>
-          {filtered.map(item => {
+          {filtered.map((item, i) => {
             const isLow = (item.quantity ?? 0) <= (item.low_stock_threshold ?? 5);
             const itemTags = Array.isArray(item.tags) ? item.tags : (item.tags ? item.tags.split(",").map(t => t.trim()).filter(Boolean) : []);
             const catInfo = CATEGORY_MAP[item.category];
             return (
-              <div key={item.id} style={{
+              <motion.div key={item.id} initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.35, delay: i * 0.03 }} whileHover={{ scale: 1.01 }}
+                style={{
                 background: C.surface,
                 border: `1px solid ${isLow ? "rgba(239,68,68,0.4)" : C.border}`,
                 borderRadius: 10,
@@ -464,7 +466,7 @@ export default function HubInventory() {
                     <button onClick={() => handleDelete(item.id)} style={dangerBtn}>Delete</button>
                   </div>
                 )}
-              </div>
+              </motion.div>
             );
           })}
         </div>

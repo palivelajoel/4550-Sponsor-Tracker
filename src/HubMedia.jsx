@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { motion } from 'framer-motion'
 import { FONTS, C, sbFetch, isAuthed, canEditHub, uploadFile, HubHeader, toastStyle, inputStyle, selectStyle, overlayStyle, addBtnStyle, ghostBtn, dangerBtn, hubProxy } from "./hubUtils.jsx";
 
 const CATEGORIES = ["All", "Competition", "Build Season", "Outreach", "Team", "Other"];
@@ -257,12 +258,11 @@ export default function HubMedia() {
           </div>
         )}
         <div className="media-grid">
-          {filtered.map(item => {
+          {filtered.map((item, i) => {
             const thumb = getThumbnail(item);
             return (
-              <div key={item.id} onClick={() => setLightbox(item)} style={{ cursor: "pointer", borderRadius: 8, overflow: "hidden", border: `1px solid ${C.border}`, background: "rgba(255,255,255,0.03)", transition: "transform 0.15s, border-color 0.15s" }}
-                onMouseEnter={e => { e.currentTarget.style.transform = "scale(1.02)"; e.currentTarget.style.borderColor = "rgba(255,255,255,0.2)"; }}
-                onMouseLeave={e => { e.currentTarget.style.transform = "scale(1)"; e.currentTarget.style.borderColor = C.border; }}
+              <motion.div key={item.id} initial={{ opacity: 0, scale: 0.92 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} transition={{ duration: 0.35, delay: i * 0.04 }} whileHover={{ scale: 1.02, borderColor: "rgba(255,255,255,0.2)" }}
+                onClick={() => setLightbox(item)} style={{ cursor: "pointer", borderRadius: 8, overflow: "hidden", border: `1px solid ${C.border}`, background: "rgba(255,255,255,0.03)" }}
               >
                 <div style={{ width: "100%", aspectRatio: "16/10", background: "#0d1117", overflow: "hidden", position: "relative" }}>
                   {thumb ? (
@@ -282,9 +282,9 @@ export default function HubMedia() {
                   <div style={{ fontSize: 10, color: C.dim, fontFamily: "monospace", marginTop: 2, display: "flex", gap: 6 }}>
                     <span>{item.year}</span>
                     {item.folder && <span>· {item.folder}</span>}
-                  </div>
                 </div>
               </div>
+            </motion.div>
             );
           })}
         </div>

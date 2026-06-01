@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
+import { motion, useScroll, useTransform } from 'framer-motion'
 import { createClient } from '@supabase/supabase-js'
 import Starfield from './Starfield.jsx'
 import { FONTS, hubProxy, getUsername } from './hubUtils.jsx'
@@ -370,6 +371,12 @@ function ImportModal({ onClose, onImport, existingSponsors }) {
   )
 }
 
+function ParallaxLayer({ speed = 0.1, style, children, ...rest }) {
+  const { scrollY } = useScroll();
+  const y = useTransform(scrollY, (v) => v * speed);
+  return <motion.div style={{ y, ...style }} {...rest}>{children}</motion.div>;
+}
+
 export default function App() {
   const [sponsors, setSponsors] = useState([])
   const [search, setSearch] = useState('')
@@ -579,8 +586,10 @@ export default function App() {
     <div style={{ ...styles.app, position: 'relative' }}>
       <div style={{ position:"fixed", inset:0, pointerEvents:"none", overflow:"hidden", zIndex:0 }}>
         <Starfield density={12000} opacity={0.28} />
-        {[{ s:500, t:"-20%", l:"-15%", c:"rgba(239,68,68,0.07)", d:"0s" }, { s:350, b:"-10%", r:"-10%", c:"rgba(59,130,246,0.05)", d:"1.5s" }, { s:250, t:"45%", r:"15%", c:"rgba(168,85,247,0.04)", d:"0.8s" }].map((o,i) => (
-          <div key={i} style={{ position:"absolute", width:o.s, height:o.s, top:o.t, bottom:o.b, left:o.l, right:o.r, borderRadius:"50%", background:`radial-gradient(circle, ${o.c}, transparent)`, animation:`orbFloat ${6+i}s ease-in-out infinite`, animationDelay:o.d }} />
+        {[{ s:500, t:"-20%", l:"-15%", c:"rgba(239,68,68,0.07)", d:"0s", speed:0.06 }, { s:350, b:"-10%", r:"-10%", c:"rgba(59,130,246,0.05)", d:"1.5s", speed:-0.04 }, { s:250, t:"45%", r:"15%", c:"rgba(168,85,247,0.04)", d:"0.8s", speed:0.10 }].map((o,i) => (
+          <ParallaxLayer key={i} speed={o.speed} style={{ position:"absolute", width:o.s, height:o.s, top:o.t, bottom:o.b, left:o.l, right:o.r }}>
+            <div style={{ width:"100%", height:"100%", borderRadius:"50%", background:`radial-gradient(circle, ${o.c}, transparent)`, animation:`orbFloat ${6+i}s ease-in-out infinite`, animationDelay:o.d }} />
+          </ParallaxLayer>
         ))}
         <div style={{ position:"absolute", inset:0, backgroundImage:"linear-gradient(rgba(239,68,68,0.04) 1px,transparent 1px),linear-gradient(90deg,rgba(239,68,68,0.04) 1px,transparent 1px)", backgroundSize:"44px 44px" }} />
         <div style={{ position:"absolute", left:0, right:0, height:2, background:"linear-gradient(90deg,transparent,rgba(239,68,68,0.3),transparent)", animation:"scanline 4s linear infinite", top:"-4px" }} />
@@ -614,11 +623,11 @@ export default function App() {
             <div style={{ ...styles.statNum, color: '#ef4444' }}>{sponsors.length}</div>
             <div style={styles.statLabel}>TOTAL</div>
           </div>
-          {STATUS_OPTIONS.map(s => (
-            <div key={s} style={styles.statCard}>
+          {STATUS_OPTIONS.map((s, i) => (
+            <motion.div key={s} initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.4, delay: i * 0.06 }} style={styles.statCard}>
               <div style={{ ...styles.statNum, color: STATUS_COLORS[s] }}>{counts[s]}</div>
               <div style={styles.statLabel}>{s.toUpperCase()}</div>
-            </div>
+            </motion.div>
           ))}
         </div>
 
@@ -684,7 +693,7 @@ export default function App() {
               const tierColor = TIER_COLORS[s.tier] || '#64748b'
               const isFollowUpDue = s.follow_up_date && s.follow_up_date <= today
               return (
-                <div key={s.id} style={{ ...styles.card, outline: recheckedIds.has(s.id) ? '2px solid rgba(34,197,94,0.6)' : isFollowUpDue ? '2px solid rgba(245,158,11,0.4)' : 'none', boxShadow: recheckedIds.has(s.id) ? '0 0 16px rgba(34,197,94,0.15), inset 0 0 20px rgba(34,197,94,0.04)' : 'none', transition: 'all 0.3s ease' }}>
+                <motion.div key={s.id} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.4 }} whileHover={{ y: -3, scale: 1.01 }} style={{ ...styles.card, outline: recheckedIds.has(s.id) ? '2px solid rgba(34,197,94,0.6)' : isFollowUpDue ? '2px solid rgba(245,158,11,0.4)' : 'none', boxShadow: recheckedIds.has(s.id) ? '0 0 16px rgba(34,197,94,0.15), inset 0 0 20px rgba(34,197,94,0.04)' : 'none' }}>
                   <div style={styles.cardHeader}>
                     <div>
                       <div style={styles.company}>{s.company}</div>
@@ -738,7 +747,7 @@ export default function App() {
                       <button style={styles.deleteBtn} onClick={() => remove(s.id)}>DEL</button>
                     </div>
                   </div>
-                </div>
+                </motion.div>
               )
             })}
           </div>

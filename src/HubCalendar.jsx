@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { motion } from 'framer-motion'
 import { FONTS, C, sbFetch, isAuthed, canEditHub, HubHeader, toastStyle, inputStyle, selectStyle, overlayStyle, modalStyle, addBtnStyle, ghostBtn, dangerBtn } from "./hubUtils.jsx";
 import Starfield from "./Starfield.jsx";
 
@@ -527,7 +528,8 @@ function EventsView({ items: itemsInRange, openEdit, canEdit, itemColor, eventSu
               const endTime = item.end_time ? item.end_time.slice(0, 5) : "";
               const timeLabel = startTime ? (endTime ? `${startTime} – ${endTime}` : startTime) : "";
               return (
-                <div key={`${item.kind}-${item.id}`} onClick={() => openEdit(item)}
+                <motion.div key={`${item.kind}-${item.id}`} initial={{ opacity: 0, x: -12 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.3 }}
+                  onClick={() => openEdit(item)}
                   style={{ display: "flex", gap: 10, padding: "8px 12px", background: C.surface, border: `1px solid ${C.border}`, borderRadius: 6, marginBottom: 4, cursor: canEdit && item.kind === "event" ? "pointer" : "default", alignItems: "center" }}>
                   <div style={{ width: 3, height: 28, borderRadius: 2, background: itemColor(item), flexShrink: 0 }} />
                   <div style={{ flex: 1, minWidth: 0 }}>
@@ -542,7 +544,7 @@ function EventsView({ items: itemsInRange, openEdit, canEdit, itemColor, eventSu
                       {timeLabel && <span style={{ fontSize: 10, color: C.muted, fontFamily: "monospace" }}>{timeLabel}</span>}
                     </div>
                   </div>
-                </div>
+                </motion.div>
               );
             })}
           </div>

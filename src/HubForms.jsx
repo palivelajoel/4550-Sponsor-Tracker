@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { motion } from 'framer-motion'
 import { FONTS, C, sbFetch, isAuthed, canEditHub, getUsername, HubHeader, toastStyle, inputStyle, selectStyle, addBtnStyle, ghostBtn, hubProxy } from "./hubUtils.jsx";
 
 let qid = 1;

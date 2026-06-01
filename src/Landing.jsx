@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { motion, useScroll, useTransform } from 'framer-motion'
 import Starfield from "./Starfield.jsx";
 import { CaptainPhoto } from "./hubUtils.jsx";
 
@@ -30,13 +31,21 @@ function DistortedGrid() {
 
 // Subtle bear / Bruin references scattered in the background
 function BruinBg() {
+  const { scrollY } = useScroll();
+  const items = [
+    { text: "BRUIN", speed: 0.03, style: { top: "18%", left: "2%", fontSize: 140, fontWeight: 900, color: "rgba(239,68,68,0.025)", fontFamily: "'Orbitron', sans-serif", transform: "rotate(-12deg)", letterSpacing: 24, whiteSpace: "nowrap" } },
+    { text: "BEAR DOWN", speed: -0.02, style: { bottom: "28%", right: "1%", fontSize: 100, fontWeight: 900, color: "rgba(59,130,246,0.025)", fontFamily: "'Orbitron', sans-serif", transform: "rotate(8deg)", letterSpacing: 18, whiteSpace: "nowrap" } },
+    { text: "#BRUINNATION", speed: 0.05, style: { top: "55%", left: "55%", fontSize: 70, fontWeight: 900, color: "rgba(239,68,68,0.02)", fontFamily: "'Orbitron', sans-serif", transform: "rotate(-6deg)", letterSpacing: 12, whiteSpace: "nowrap" } },
+    { text: "GO BRUINS", speed: -0.04, style: { top: "5%", right: "12%", fontSize: 50, fontWeight: 900, color: "rgba(239,68,68,0.015)", fontFamily: "'Orbitron', sans-serif", transform: "rotate(20deg)", letterSpacing: 8, whiteSpace: "nowrap" } },
+    { text: "#BEARPRIDE", speed: 0.02, style: { bottom: "50%", left: "35%", fontSize: 36, fontWeight: 900, color: "rgba(59,130,246,0.015)", fontFamily: "'Orbitron', sans-serif", transform: "rotate(-2deg)", letterSpacing: 6, whiteSpace: "nowrap" } },
+  ];
   return (
     <div style={{ position: "fixed", inset: 0, pointerEvents: "none", overflow: "hidden", zIndex: 0 }}>
-      <div style={{ position: "absolute", top: "18%", left: "2%", fontSize: 140, fontWeight: 900, color: "rgba(239,68,68,0.025)", fontFamily: "'Orbitron', sans-serif", transform: "rotate(-12deg)", letterSpacing: 24, whiteSpace: "nowrap" }}>BRUIN</div>
-      <div style={{ position: "absolute", bottom: "28%", right: "1%", fontSize: 100, fontWeight: 900, color: "rgba(59,130,246,0.025)", fontFamily: "'Orbitron', sans-serif", transform: "rotate(8deg)", letterSpacing: 18, whiteSpace: "nowrap" }}>BEAR DOWN</div>
-      <div style={{ position: "absolute", top: "55%", left: "55%", fontSize: 70, fontWeight: 900, color: "rgba(239,68,68,0.02)", fontFamily: "'Orbitron', sans-serif", transform: "rotate(-6deg)", letterSpacing: 12, whiteSpace: "nowrap" }}>#BRUINNATION</div>
-      <div style={{ position: "absolute", top: "5%", right: "12%", fontSize: 50, fontWeight: 900, color: "rgba(239,68,68,0.015)", fontFamily: "'Orbitron', sans-serif", transform: "rotate(20deg)", letterSpacing: 8, whiteSpace: "nowrap" }}>GO BRUINS</div>
-      <div style={{ position: "absolute", bottom: "50%", left: "35%", fontSize: 36, fontWeight: 900, color: "rgba(59,130,246,0.015)", fontFamily: "'Orbitron', sans-serif", transform: "rotate(-2deg)", letterSpacing: 6, whiteSpace: "nowrap" }}>#BEARPRIDE</div>
+      {items.map((item, i) => (
+        <motion.div key={i} style={{ y: useTransform(scrollY, (v) => v * item.speed), position: "absolute", ...item.style }}>
+          {item.text}
+        </motion.div>
+      ))}
       <span style={{ position: "absolute", top: "12%", left: "78%", fontSize: 32, opacity: 0.035 }}>🐻</span>
       <span style={{ position: "absolute", top: "70%", left: "8%", fontSize: 26, opacity: 0.03 }}>🐻</span>
       <span style={{ position: "absolute", top: "38%", left: "42%", fontSize: 20, opacity: 0.025 }}>🐻</span>
@@ -55,6 +64,13 @@ function BruinBg() {
       </svg>
     </div>
   );
+}
+
+// Parallax wrapper — moves children at speed fraction of scroll
+function ParallaxLayer({ speed = 0.1, style, children, ...rest }) {
+  const { scrollY } = useScroll();
+  const y = useTransform(scrollY, (v) => v * speed);
+  return <motion.div style={{ y, ...style }} {...rest}>{children}</motion.div>;
 }
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
@@ -159,21 +175,6 @@ function SponsorBar({ sponsors = [], isMobile }) {
   );
 }
 
-function FadeSection({ children, style }) {
-  const ref = useRef(null);
-  const [vis, setVis] = useState(false);
-  useEffect(() => {
-    const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) { setVis(true); obs.disconnect(); } }, { threshold: 0.08 });
-    if (ref.current) obs.observe(ref.current);
-    return () => obs.disconnect();
-  }, []);
-  return (
-    <div ref={ref} style={{ opacity: vis ? 1 : 0, transform: vis ? "none" : "translateY(24px)", transition: "opacity 0.65s ease, transform 0.65s ease", ...style }}>
-      {children}
-    </div>
-  );
-}
-
 export default function Landing() {
   const isMobile = useDeviceSize();
   const [config, setConfig] = useState({});
@@ -249,8 +250,10 @@ export default function Landing() {
     <div style={{ background: "transparent", color: "#f1f5f9", fontFamily: "'Exo 2', sans-serif", overflowX: "hidden", overflow:"hidden", position: "relative", minHeight: "100vh" }}>
       <div style={{ position:"fixed", inset:0, pointerEvents:"none", overflow:"hidden", zIndex:0 }}>
         <Starfield density={9000} opacity={0.38} />
-        {[{ s:500, t:"-20%", l:"-15%", c:"rgba(239,68,68,0.07)", d:"0s" }, { s:350, b:"-10%", r:"-10%", c:"rgba(59,130,246,0.05)", d:"1.5s" }, { s:250, t:"45%", r:"15%", c:"rgba(168,85,247,0.04)", d:"0.8s" }].map((o,i) => (
-          <div key={i} style={{ position:"absolute", width:o.s, height:o.s, top:o.t, bottom:o.b, left:o.l, right:o.r, borderRadius:"50%", background:`radial-gradient(circle, ${o.c}, transparent)`, animation:`orbFloat ${6+i}s ease-in-out infinite`, animationDelay:o.d }} />
+        {[{ s:500, t:"-20%", l:"-15%", c:"rgba(239,68,68,0.07)", d:"0s", speed:0.06 }, { s:350, b:"-10%", r:"-10%", c:"rgba(59,130,246,0.05)", d:"1.5s", speed:-0.04 }, { s:250, t:"45%", r:"15%", c:"rgba(168,85,247,0.04)", d:"0.8s", speed:0.10 }].map((o,i) => (
+          <ParallaxLayer key={i} speed={o.speed} style={{ position:"absolute", width:o.s, height:o.s, top:o.t, bottom:o.b, left:o.l, right:o.r }}>
+            <div style={{ width:"100%", height:"100%", borderRadius:"50%", background:`radial-gradient(circle, ${o.c}, transparent)`, animation:`orbFloat ${6+i}s ease-in-out infinite`, animationDelay:o.d }} />
+          </ParallaxLayer>
         ))}
         <div style={{ position:"absolute", inset:0, backgroundImage:"linear-gradient(rgba(239,68,68,0.04) 1px,transparent 1px),linear-gradient(90deg,rgba(239,68,68,0.04) 1px,transparent 1px)", backgroundSize:"44px 44px" }} />
         <div style={{ position:"absolute", left:0, right:0, height:2, background:"linear-gradient(90deg,transparent,rgba(239,68,68,0.3),transparent)", animation:"scanline 4s linear infinite", top:"-4px" }} />
@@ -361,7 +364,7 @@ export default function Landing() {
       {/* ABOUT */}
       <section id="about"><div className="sec">
         
-          <FadeSection>
+          <motion.div initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.65 }}>
             <Eyebrow>// WHO WE ARE</Eyebrow>
             <SectionTitle>About the Team</SectionTitle>
             <div className="about-grid">
@@ -378,7 +381,7 @@ export default function Landing() {
                 ))}
               </div>
             </div>
-          </FadeSection>
+          </motion.div>
         
       </div></section>
 
@@ -386,7 +389,7 @@ export default function Landing() {
       {captains.length > 0 && (
         <section id="team" style={{ background: "rgba(255,255,255,0.015)" }}><div className="sec">
           
-            <FadeSection>
+            <motion.div initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.65 }}>
               <Eyebrow>// LEADERSHIP</Eyebrow>
               <SectionTitle>Our Team</SectionTitle>
               <div className="captains-grid">
@@ -399,7 +402,7 @@ export default function Landing() {
                   </div>
                 ))}
               </div>
-            </FadeSection>
+            </motion.div>
           
         </div></section>
       )}
@@ -407,7 +410,7 @@ export default function Landing() {
       {/* SUB-TEAMS */}
       <section id="sub-teams"><div className="sec">
         
-          <FadeSection>
+          <motion.div initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.65 }}>
             <Eyebrow>// HOW WE BUILD</Eyebrow>
             <SectionTitle>Sub-Teams</SectionTitle>
             <div className="subteams-grid">
@@ -419,14 +422,14 @@ export default function Landing() {
                 </div>
               ))}
             </div>
-          </FadeSection>
+          </motion.div>
         
       </div></section>
 
       {/* OUTREACH */}
       <section id="outreach" style={{ background: "rgba(255,255,255,0.015)" }}><div className="sec">
         
-          <FadeSection>
+          <motion.div initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.65 }}>
             <Eyebrow>// COMMUNITY</Eyebrow>
             <SectionTitle>Community Outreach</SectionTitle>
             <div className="outreach-grid">
@@ -442,28 +445,28 @@ export default function Landing() {
                 </div>
               ))}
             </div>
-          </FadeSection>
+          </motion.div>
         
       </div></section>
 
       {/* MEDIA */}
       <section id="media-gallery"><div className="sec">
         
-          <FadeSection>
+          <motion.div initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.65 }}>
             <Eyebrow>// GALLERY</Eyebrow>
             <SectionTitle>Media Gallery</SectionTitle>
             <p style={{ color: "#94a3b8", maxWidth: 520, margin: "0 auto 28px", lineHeight: 1.8, fontSize: 15, textAlign: "center" }}>Browse photos and videos from competitions, outreach events, build season, and team activities.</p>
             <div style={{ textAlign: "center" }}>
               <a href="/media" style={{ display: "inline-block", background: "#ef4444", color: "#fff", textDecoration: "none", padding: isMobile ? "12px 28px" : "14px 36px", borderRadius: 6, fontFamily: "'Orbitron', sans-serif", fontWeight: 700, fontSize: isMobile ? 11 : 13, letterSpacing: 2 }}>EXPLORE GALLERY →</a>
             </div>
-          </FadeSection>
+          </motion.div>
         
       </div></section>
 
       {/* SOCIAL MEDIA */}
       <section id="media" style={{ background: "rgba(255,255,255,0.015)" }}><div className="sec">
         
-          <FadeSection>
+          <motion.div initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.65 }}>
             <Eyebrow>// FOLLOW ALONG</Eyebrow>
             <SectionTitle>Social Media</SectionTitle>
             <div className="media-row">
@@ -478,7 +481,7 @@ export default function Landing() {
                 </a>
               ))}
             </div>
-          </FadeSection>
+          </motion.div>
         
       </div></section>
 
@@ -487,7 +490,7 @@ export default function Landing() {
       {/* SPONSORS */}
       <section id="sponsors" style={{ background: "rgba(255,255,255,0.015)" }}><div className="sec">
         
-          <FadeSection>
+          <motion.div initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.65 }}>
             <div style={{ textAlign: "center" }}>
               <Eyebrow>// PARTNER WITH US</Eyebrow>
               <SectionTitle>Become a Sponsor</SectionTitle>
@@ -499,28 +502,28 @@ export default function Landing() {
               </div>
               <a href={`mailto:${email}`} style={{ display: "inline-block", background: "#ef4444", color: "#fff", textDecoration: "none", padding: isMobile ? "12px 24px" : "14px 32px", borderRadius: 6, fontFamily: "'Orbitron', sans-serif", fontWeight: 700, fontSize: isMobile ? 11 : 13, letterSpacing: 2 }}>CONTACT US TO SPONSOR</a>
             </div>
-          </FadeSection>
+          </motion.div>
         
       </div></section>
 
       {/* DONATE */}
       <section style={{ background: "rgba(239,68,68,0.05)", borderTop: "1px solid rgba(239,68,68,0.2)" }}><div className="sec">
         
-          <FadeSection>
+          <motion.div initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.65 }}>
             <div style={{ textAlign: "center" }}>
               <Eyebrow>// SUPPORT THE TEAM</Eyebrow>
               <SectionTitle>Make a Donation</SectionTitle>
               <p style={{ color: "#94a3b8", maxWidth: 460, margin: "0 auto 28px", lineHeight: 1.8, fontSize: 15 }}>Every donation goes directly toward robot parts, competition fees, and team travel. Help us compete at the highest level.</p>
               <a href={donate} target="_blank" rel="noreferrer" style={{ display: "inline-block", background: "#ef4444", color: "#fff", textDecoration: "none", padding: isMobile ? "12px 28px" : "14px 32px", borderRadius: 6, fontFamily: "'Orbitron', sans-serif", fontWeight: 700, fontSize: isMobile ? 11 : 13, letterSpacing: 2 }}>DONATE NOW</a>
             </div>
-          </FadeSection>
+          </motion.div>
         
       </div></section>
 
       {/* CONTACT */}
       <section id="contact"><div className="sec">
         
-          <FadeSection>
+          <motion.div initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.65 }}>
             <div style={{ textAlign: "center" }}>
               <Eyebrow>// GET IN TOUCH</Eyebrow>
               <SectionTitle>Contact</SectionTitle>
@@ -532,7 +535,7 @@ export default function Landing() {
                 ))}
               </div>
             </div>
-          </FadeSection>
+          </motion.div>
         
       </div></section>
 

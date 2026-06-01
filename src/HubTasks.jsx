@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { motion } from 'framer-motion'
 import { FONTS, C, sbFetch, isAuthed, canEditHub, SUBTEAMS, HubHeader, toastStyle, inputStyle, selectStyle, overlayStyle, modalStyle, addBtnStyle, ghostBtn, dangerBtn, hubProxy } from "./hubUtils.jsx";
 
 const STATUSES = ["Backlog", "To Do", "In Progress", "Review", "Done"];
@@ -517,22 +518,23 @@ function GanttChart({ tasks, priorityColor, statusColor, openEdit, isOverdue }) 
 }
 
 function TaskCard({ task, isOverdue, onClick, onDragStart }) {
-  const [hovered, setHovered] = useState(false);
   return (
-    <div
+    <motion.div
       draggable
       onDragStart={onDragStart}
       onClick={onClick}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
+      initial={{ opacity: 0, y: 12 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true }}
+      transition={{ duration: 0.3 }}
+      whileHover={{ scale: 1.02, borderColor: "rgba(255,255,255,0.2)" }}
       style={{
-        background: isOverdue ? "rgba(239,68,68,0.07)" : hovered ? "rgba(255,255,255,0.05)" : "rgba(255,255,255,0.03)",
-        border: `1px solid ${isOverdue ? "rgba(239,68,68,0.3)" : hovered ? "rgba(255,255,255,0.15)" : C.border}`,
+        background: isOverdue ? "rgba(239,68,68,0.07)" : "rgba(255,255,255,0.03)",
+        border: `1px solid ${isOverdue ? "rgba(239,68,68,0.3)" : C.border}`,
         borderLeft: `3px solid ${priorityColor[task.priority] || C.dim}`,
         borderRadius: 7,
         padding: "10px 11px",
         cursor: "pointer",
-        transition: "all 0.15s",
       }}
     >
       <div style={{ fontSize: 13, fontWeight: 600, color: C.text, marginBottom: 6, lineHeight: 1.4 }}>{task.title}</div>
@@ -550,6 +552,6 @@ function TaskCard({ task, isOverdue, onClick, onDragStart }) {
           </span>
         )}
       </div>
-    </div>
+    </motion.div>
   );
 }

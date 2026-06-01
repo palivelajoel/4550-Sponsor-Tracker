@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { motion } from 'framer-motion'
 import { FONTS, C, sbFetch, isAuthed, canEditHub, getRole, getSubteam, getUsername, uploadFile, HubHeader, toastStyle, inputStyle, selectStyle, overlayStyle, addBtnStyle, ghostBtn, dangerBtn, hubProxy } from "./hubUtils.jsx";
 
 const CATEGORIES = ["All", "CAD & Design", "Programming", "Documentation", "Marketing", "Finance", "Competition", "Other"];
@@ -210,10 +211,9 @@ export default function HubResources() {
               <span style={{ fontSize: 11, color: C.dim, fontFamily: "monospace" }}>{items.length}</span>
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: 10 }}>
-              {items.map(item => (
-                <div key={item.id} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8, padding: "14px 16px", display: "flex", gap: 12, alignItems: "flex-start", transition: "border-color 0.15s" }}
-                  onMouseEnter={e => e.currentTarget.style.borderColor = "rgba(255,255,255,0.2)"}
-                  onMouseLeave={e => e.currentTarget.style.borderColor = C.border}
+              {items.map((item, i) => (
+                <motion.div key={item.id} initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.3, delay: i * 0.03 }} whileHover={{ borderColor: "rgba(255,255,255,0.2)" }}
+                  style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8, padding: "14px 16px", display: "flex", gap: 12, alignItems: "flex-start" }}
                 >
                   <div style={{ fontSize: 22, flexShrink: 0 }}>{getFileIcon(item.url, item.file_name)}</div>
                   <div style={{ flex: 1, minWidth: 0 }}>
@@ -237,7 +237,7 @@ export default function HubResources() {
                       onMouseLeave={e => e.target.style.color = "#475569"}
                     >✕</button>
                   )}
-                </div>
+                </motion.div>
               ))}
             </div>
           </div>

@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { motion } from 'framer-motion'
 import { FONTS, C, sbFetch, isAuthed, canEditHub, HubHeader, toastStyle, inputStyle, selectStyle, overlayStyle, addBtnStyle, ghostBtn, dangerBtn, hubProxy } from "./hubUtils.jsx";
 
 const TAGS = ["General", "Build", "Programming", "Marketing & Outreach", "Competition", "Reminder", "Urgent"];
@@ -115,16 +116,16 @@ export default function HubAnnouncements() {
         {filtered.length === 0 && (
           <div style={{ textAlign: "center", color: C.dim, padding: "60px 0", fontFamily: "monospace" }}>No announcements yet.</div>
         )}
-        {filtered.map(item => {
+        {filtered.map((item, i) => {
           const isExpanded = expanded === item.id;
           return (
-            <div key={item.id} style={{
+            <motion.div key={item.id} initial={{ opacity: 0, x: -20 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.35, delay: i * 0.04 }}
+              style={{
               background: item.pinned ? "rgba(239,68,68,0.06)" : C.surface,
               border: `1px solid ${item.pinned ? "rgba(239,68,68,0.25)" : C.border}`,
               borderRadius: 10,
               padding: "18px 20px",
               marginBottom: 12,
-              transition: "all 0.15s",
             }}>
               <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
                 <div style={{ flex: 1 }}>
@@ -155,7 +156,7 @@ export default function HubAnnouncements() {
                   )}
                 </div>
               </div>
-            </div>
+            </motion.div>
           );
         })}
       </div>

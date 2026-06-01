@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { motion, useScroll, useTransform } from 'framer-motion'
 import { FONTS, C, ROLE_COLORS, SUBTEAM_COLORS, TEAM_PASSWORD, sbFetch, isAdmin, isCaptainOrAbove, getRole, getUsername } from "./hubUtils.jsx";
 
 import Starfield from "./Starfield.jsx";
@@ -54,6 +55,12 @@ function PwInput({ value, onChange, placeholder = "Password", style: s = {} }) {
       </button>
     </div>
   );
+}
+
+function ParallaxLayer({ speed = 0.1, style, children, ...rest }) {
+  const { scrollY } = useScroll();
+  const y = useTransform(scrollY, (v) => v * speed);
+  return <motion.div style={{ y, ...style }} {...rest}>{children}</motion.div>;
 }
 
 export default function Hub() {
@@ -177,8 +184,10 @@ export default function Hub() {
         {/* Animated background */}
         <div style={{ position:"absolute", inset:0, pointerEvents:"none", overflow:"hidden", zIndex:0 }}>
 <Starfield density={6000} opacity={0.55} />
-          {[{ s:500, t:"-20%", l:"-15%", c:"rgba(239,68,68,0.07)", d:"0s" }, { s:350, b:"-10%", r:"-10%", c:"rgba(59,130,246,0.05)", d:"1.5s" }, { s:250, t:"45%", r:"15%", c:"rgba(168,85,247,0.04)", d:"0.8s" }].map((o,i) => (
-            <div key={i} style={{ position:"absolute", width:o.s, height:o.s, top:o.t, bottom:o.b, left:o.l, right:o.r, borderRadius:"50%", background:`radial-gradient(circle, ${o.c}, transparent)`, animation:`orbFloat ${6+i}s ease-in-out infinite`, animationDelay:o.d }} />
+          {[{ s:500, t:"-20%", l:"-15%", c:"rgba(239,68,68,0.07)", d:"0s", speed:0.06 }, { s:350, b:"-10%", r:"-10%", c:"rgba(59,130,246,0.05)", d:"1.5s", speed:-0.04 }, { s:250, t:"45%", r:"15%", c:"rgba(168,85,247,0.04)", d:"0.8s", speed:0.10 }].map((o,i) => (
+            <ParallaxLayer key={i} speed={o.speed} style={{ position:"absolute", width:o.s, height:o.s, top:o.t, bottom:o.b, left:o.l, right:o.r }}>
+              <div style={{ width:"100%", height:"100%", borderRadius:"50%", background:`radial-gradient(circle, ${o.c}, transparent)`, animation:`orbFloat ${6+i}s ease-in-out infinite`, animationDelay:o.d }} />
+            </ParallaxLayer>
           ))}
           <div style={{ position:"absolute", inset:0, backgroundImage:"linear-gradient(rgba(239,68,68,0.04) 1px,transparent 1px),linear-gradient(90deg,rgba(239,68,68,0.04) 1px,transparent 1px)", backgroundSize:"44px 44px" }} />
           <div style={{ position:"absolute", left:0, right:0, height:2, background:"linear-gradient(90deg,transparent,rgba(239,68,68,0.3),transparent)", animation:"scanline 4s linear infinite", top:"-4px" }} />
@@ -211,7 +220,7 @@ export default function Hub() {
     <div style={{ minHeight:"100vh", background:C.bg, color:C.text, fontFamily:"'Exo 2',sans-serif", position:"relative", overflow:"hidden" }}>
       <div style={{ position:"absolute", inset:0, pointerEvents:"none", overflow:"hidden", zIndex:0 }}>
         <Starfield density={11000} opacity={0.32} />
-        {[{ s:500, t:"-20%", l:"-15%", c:"rgba(239,68,68,0.07)", d:"0s" }, { s:350, b:"-10%", r:"-10%", c:"rgba(59,130,246,0.05)", d:"1.5s" }, { s:250, t:"45%", r:"15%", c:"rgba(168,85,247,0.04)", d:"0.8s" }].map((o,i) => (
+        {[{ s:500, t:"-20%", l:"-15%", c:"rgba(239,68,68,0.07)", d:"0s", speed:0.06 }, { s:350, b:"-10%", r:"-10%", c:"rgba(59,130,246,0.05)", d:"1.5s", speed:-0.04 }, { s:250, t:"45%", r:"15%", c:"rgba(168,85,247,0.04)", d:"0.8s", speed:0.10 }].map((o,i) => (
           <div key={i} style={{ position:"absolute", width:o.s, height:o.s, top:o.t, bottom:o.b, left:o.l, right:o.r, borderRadius:"50%", background:`radial-gradient(circle, ${o.c}, transparent)`, animation:`orbFloat ${6+i}s ease-in-out infinite`, animationDelay:o.d }} />
         ))}
         <div style={{ position:"absolute", inset:0, backgroundImage:"linear-gradient(rgba(239,68,68,0.04) 1px,transparent 1px),linear-gradient(90deg,rgba(239,68,68,0.04) 1px,transparent 1px)", backgroundSize:"44px 44px" }} />
@@ -220,11 +229,7 @@ export default function Hub() {
       <style>{FONTS + `
         @keyframes orbFloat{0%,100%{transform:scale(1);}50%{transform:scale(1.15);}}
         @keyframes scanline{0%{top:-4px;}100%{top:100%;}}
-        .feat-card{transition:transform 0.22s ease,border-color 0.22s ease,box-shadow 0.22s ease;}
-        .feat-card:hover{transform:translateY(-4px)!important;}
-        .feat-card:active{transform:scale(0.98)!important;}
-        .feat-icon{transition:transform 0.2s ease;}
-        .feat-card:hover .feat-icon{transform:scale(1.18)!important;}
+
       `}</style>
 
       {/* Header */}
@@ -338,16 +343,25 @@ export default function Hub() {
 }
 
 function FeatureCard({ feature, index, isMobile }) {
-  const [hovered, setHovered] = useState(false);
   return (
-    <div className="feat-card"
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true }}
+      transition={{ duration: 0.4, delay: index * 0.04 }}
+      whileHover={{ scale: 1.03, borderColor: feature.accent }}
       onClick={() => { window.location.href = feature.href; }}
-      onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}
-      style={{ background: hovered ? `${feature.accent}10` : C.surface, border:`1px solid ${hovered ? feature.accent+"88" : C.border}`, borderRadius:12, padding: isMobile ? "16px 12px" : "22px 20px", cursor:"pointer", boxShadow: hovered ? `0 0 28px ${feature.accent}22` : "none", animation:`fadeUp 0.4s ease both`, animationDelay:`${index * 0.04}s`, userSelect:"none" }}>
-      <div className="feat-icon" style={{ fontSize:isMobile?22:28, marginBottom:isMobile?8:12 }}>{feature.icon}</div>
+      style={{ background: C.surface, border:`1px solid ${C.border}`, borderRadius:12, padding: isMobile ? "16px 12px" : "22px 20px", cursor:"pointer", userSelect:"none" }}>
+      <motion.div style={{ fontSize:isMobile?22:28, marginBottom:isMobile?8:12 }}
+        whileHover={{ scale: 1.18 }} transition={{ duration: 0.2 }}>
+        {feature.icon}
+      </motion.div>
       <div style={{ fontFamily:"'Orbitron',sans-serif", fontWeight:700, fontSize:isMobile?10:12, color:C.text, marginBottom:isMobile?4:7, letterSpacing:1 }}>{feature.label}</div>
       {!isMobile && <div style={{ fontSize:12, color:C.dim, lineHeight:1.6 }}>{feature.description}</div>}
-      <div style={{ marginTop:isMobile?6:12, fontSize:11, fontFamily:"monospace", color:feature.accent, fontWeight:700, opacity:hovered?1:0.5, transition:"opacity 0.2s" }}>Open →</div>
-    </div>
+      <motion.div style={{ marginTop:isMobile?6:12, fontSize:11, fontFamily:"monospace", color:feature.accent, fontWeight:700 }}
+        whileHover={{ opacity: 1 }} initial={{ opacity: 0.5 }}>
+        Open →
+      </motion.div>
+    </motion.div>
   );
 }
