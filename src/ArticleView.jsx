@@ -111,7 +111,7 @@ const articleStyles = `
 }
 
 .article-content p {
-  margin-bottom: 16px;
+  margin-bottom: 28px;
   color: #d4cdc0;
 }
 
