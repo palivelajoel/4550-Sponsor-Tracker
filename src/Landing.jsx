@@ -465,6 +465,26 @@ export default function Landing() {
         
       </section>
 
+      {/* TEAM IMAGES */}
+      {([1,2,3,4].some(i => config[`landing_img_${i}`])) && (
+        <section style={{ padding: isMobile ? "40px 16px" : "60px 24px", position: "relative" }}>
+          <div style={{ maxWidth: 1100, margin: "0 auto" }}>
+            <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(4,1fr)", gap: isMobile ? 10 : 16 }}>
+              {[1,2,3,4].map(i => {
+                const url = config[`landing_img_${i}`];
+                if (!url) return null;
+                return (
+                  <div key={i} style={{ borderRadius: 12, overflow: "hidden", aspectRatio: "4/3", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)" }}>
+                    <img src={url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+                      onError={e => { e.target.style.display = "none"; }} />
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* ABOUT */}
       <section id="about"><div className="sec">
         

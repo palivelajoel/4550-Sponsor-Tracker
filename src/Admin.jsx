@@ -975,6 +975,10 @@ function SiteConfig({ config, logoUrl, setLogoUrl, reload, showToast, isMobile }
     { key: "donate_url", label: "Donate URL" }, { key: "season_year", label: "Season Year" },
     { key: "privacy_policy", label: "Privacy Policy (HTML)", long: true },
     { key: "terms_conditions", label: "Terms & Conditions (HTML)", long: true },
+    { key: "landing_img_1", label: "Landing Image 1 URL" },
+    { key: "landing_img_2", label: "Landing Image 2 URL" },
+    { key: "landing_img_3", label: "Landing Image 3 URL" },
+    { key: "landing_img_4", label: "Landing Image 4 URL" },
   ];
 
   return (
