@@ -74,7 +74,7 @@ function ParallaxLayer({ speed = 0.1, style, children, ...rest }) {
 }
 
 // Text that progressively reveals characters as you scroll through it
-function ScrollTypewriter({ text, style: styleProp, speed = 28 }) {
+function ScrollTypewriter({ text, style: styleProp, speed = 28, initialReveal = 0.4 }) {
   const ref = useRef(null);
   const [count, setCount] = useState(0);
   const started = useRef(false);
@@ -82,22 +82,24 @@ function ScrollTypewriter({ text, style: styleProp, speed = 28 }) {
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
+    const startAt = Math.floor(text.length * initialReveal);
     const obs = new IntersectionObserver(([entry]) => {
       if (entry.isIntersecting && !started.current) {
         started.current = true;
         obs.disconnect();
-        let i = 0;
+        setCount(startAt);
+        let i = startAt;
         const step = () => {
           i++;
           setCount(i);
           if (i < text.length) setTimeout(step, speed);
         };
-        step();
+        if (i < text.length) setTimeout(step, speed);
       }
     }, { threshold: 0.2 });
     obs.observe(el);
     return () => obs.disconnect();
-  }, [text, speed]);
+  }, [text, speed, initialReveal]);
 
   return (
     <span ref={ref} style={styleProp}>
@@ -471,11 +473,8 @@ export default function Landing() {
             <SectionTitle>About the Team</SectionTitle>
             <div className="about-grid">
               <motion.div initial={{ opacity: 0, y: 50 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ type: "spring", stiffness: 100, damping: 18, delay: 0.1 }}>
-                <p style={{ color: "#94a3b8", lineHeight: 1.8, fontSize: 15, minHeight: "3em" }}>
-                  <ScrollTypewriter text={`FRC Team 4550 "Something's Bruin" has been competing since 2012, representing Cherry Creek High School in FIRST Robotics Competition. Our team of 40–50 student engineers, programmers, and designers builds competition-ready robots each season — from scratch, in six weeks.`} />
-                </p>
-                <p style={{ color: "#94a3b8", lineHeight: 1.8, fontSize: 15, marginTop: 14, minHeight: "3em" }}>
-                  <ScrollTypewriter text={`We've competed at the 2016 World Championship and continue to push the boundaries of what student-built robots can achieve. Beyond the robot, we're deeply committed to STEM outreach and community impact across the Denver metro area.`} />
+                <p style={{ color: "#94a3b8", lineHeight: 1.8, fontSize: 15, minHeight: "5em" }}>
+                  <ScrollTypewriter text={`FRC Team 4550 "Something's Bruin" has been competing since 2012, representing Cherry Creek High School in FIRST Robotics Competition. Our team of 40–50 student engineers, programmers, and designers builds competition-ready robots each season — from scratch, in six weeks. We've competed at the 2016 World Championship and continue to push the boundaries of what student-built robots can achieve. Beyond the robot, we're deeply committed to STEM outreach and community impact across the Denver metro area.`} />
                 </p>
               </motion.div>
               <motion.div className="stats-grid" variants={stagger} initial="hidden" whileInView="visible" viewport={{ once: true }}>
