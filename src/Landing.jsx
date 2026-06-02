@@ -73,6 +73,42 @@ function ParallaxLayer({ speed = 0.1, style, children, ...rest }) {
   return <motion.div style={{ y, ...style }} {...rest}>{children}</motion.div>;
 }
 
+// Text that progressively reveals characters as you scroll through it
+function ScrollTypewriter({ text, style: styleProp }) {
+  const ref = useRef(null);
+  const { scrollY } = useScroll();
+  const [count, setCount] = useState(0);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const update = () => {
+      const rect = el.getBoundingClientRect();
+      const top = rect.top + window.scrollY;
+      const h = rect.height;
+      const winH = window.innerHeight;
+      const revealStart = top - winH + h * 0.2;
+      const revealEnd = top + h + winH * 0.2;
+      const scrollBottom = window.scrollY + winH;
+      const progress = Math.max(0, Math.min(1, (scrollBottom - revealStart) / (revealEnd - revealStart)));
+      setCount(Math.floor(progress * text.length));
+    };
+    const unsub = scrollY.on('change', update);
+    update();
+    return unsub;
+  }, [scrollY, text]);
+
+  return (
+    <span ref={ref} style={styleProp}>
+      {text.slice(0, count)}
+      {count < text.length && text.length > 10 && (
+        <span style={{ animation: "cursorBlink 0.8s step-end infinite", color: "#ef4444", fontWeight: 300 }}>|</span>
+      )}
+      <span style={{ opacity: 0.06, userSelect: "none" }}>{text.slice(count)}</span>
+    </span>
+  );
+}
+
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
@@ -340,6 +376,7 @@ export default function Landing() {
           .stats-grid{gap:8px;}
         }
         @keyframes glitch{0%,90%,100%{text-shadow:none;}92%{text-shadow:-3px 0 #ef4444,3px 0 #3b82f6;}95%{text-shadow:3px 0 #ef4444,-3px 0 #3b82f6;}97%{text-shadow:none;}}
+        @keyframes cursorBlink{0%,100%{opacity:1}50%{opacity:0}}
       `}</style>
 
       {/* NAV */}
@@ -404,8 +441,12 @@ export default function Landing() {
             <SectionTitle>About the Team</SectionTitle>
             <div className="about-grid">
               <motion.div initial={{ opacity: 0, y: 50 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ type: "spring", stiffness: 100, damping: 18, delay: 0.1 }}>
-                <p style={{ color: "#94a3b8", lineHeight: 1.8, fontSize: 15 }}>FRC Team 4550 "Something's Bruin" has been competing since 2012, representing Cherry Creek High School in FIRST Robotics Competition. Our team of 40–50 student engineers, programmers, and designers builds competition-ready robots each season — from scratch, in six weeks.</p>
-                <p style={{ color: "#94a3b8", lineHeight: 1.8, fontSize: 15, marginTop: 14 }}>We've competed at the 2016 World Championship and continue to push the boundaries of what student-built robots can achieve. Beyond the robot, we're deeply committed to STEM outreach and community impact across the Denver metro area.</p>
+                <p style={{ color: "#94a3b8", lineHeight: 1.8, fontSize: 15, minHeight: "3em" }}>
+                  <ScrollTypewriter text={`FRC Team 4550 "Something's Bruin" has been competing since 2012, representing Cherry Creek High School in FIRST Robotics Competition. Our team of 40–50 student engineers, programmers, and designers builds competition-ready robots each season — from scratch, in six weeks.`} />
+                </p>
+                <p style={{ color: "#94a3b8", lineHeight: 1.8, fontSize: 15, marginTop: 14, minHeight: "3em" }}>
+                  <ScrollTypewriter text={`We've competed at the 2016 World Championship and continue to push the boundaries of what student-built robots can achieve. Beyond the robot, we're deeply committed to STEM outreach and community impact across the Denver metro area.`} />
+                </p>
               </motion.div>
               <motion.div className="stats-grid" variants={stagger} initial="hidden" whileInView="visible" viewport={{ once: true }}>
                 {[{ num: "12+", label: "Years Competing" }, { num: "40–50", label: "Members" }, { num: "2016", label: "World Championship" }, { num: "3", label: "Sub-Teams" }].map((s, i) => (
@@ -453,7 +494,9 @@ export default function Landing() {
                 <motion.div key={st.name} variants={cardItem} whileHover={{ scale: 1.04, borderTopColor: st.color }} style={{ background: "rgba(255,255,255,0.03)", border: `1px solid rgba(255,255,255,0.08)`, borderTop: `3px solid ${st.color}`, borderRadius: 10, padding: isMobile ? "22px 18px" : "28px 24px" }}>
                   <div style={{ fontSize: 28, marginBottom: 10 }}>{st.icon}</div>
                   <div style={{ fontFamily: "'Orbitron', sans-serif", fontSize: 14, fontWeight: 700, color: "#f1f5f9", marginBottom: 12, letterSpacing: 1 }}>{st.name}</div>
-                  <p style={{ color: "#94a3b8", lineHeight: 1.75, fontSize: 14 }}>{st.description}</p>
+                  <p style={{ color: "#94a3b8", lineHeight: 1.75, fontSize: 14, minHeight: "4em" }}>
+                    <ScrollTypewriter text={st.description} />
+                  </p>
                 </motion.div>
               ))}
             </motion.div>
@@ -476,7 +519,9 @@ export default function Landing() {
                 <motion.div key={o.title} variants={cardItem} whileHover={{ scale: 1.04, borderColor: "rgba(34,197,94,0.3)" }} style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 10, padding: isMobile ? "22px 18px" : "28px 24px" }}>
                   <div style={{ fontSize: 28, marginBottom: 10 }}>{o.icon}</div>
                   <div style={{ fontFamily: "'Orbitron', sans-serif", fontSize: 13, fontWeight: 700, color: "#f1f5f9", marginBottom: 10 }}>{o.title}</div>
-                  <p style={{ color: "#94a3b8", lineHeight: 1.7, fontSize: 14 }}>{o.desc}</p>
+                  <p style={{ color: "#94a3b8", lineHeight: 1.7, fontSize: 14, minHeight: "3em" }}>
+                    <ScrollTypewriter text={o.desc} />
+                  </p>
                 </motion.div>
               ))}
             </motion.div>
