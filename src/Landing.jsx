@@ -523,9 +523,7 @@ export default function Landing() {
                 <motion.div key={st.name} variants={cardItem} whileHover={{ scale: 1.04, borderTopColor: st.color }} style={{ background: "rgba(255,255,255,0.03)", border: `1px solid rgba(255,255,255,0.08)`, borderTop: `3px solid ${st.color}`, borderRadius: 10, padding: isMobile ? "22px 18px" : "28px 24px" }}>
                   <div style={{ fontSize: 28, marginBottom: 10 }}>{st.icon}</div>
                   <div style={{ fontFamily: "'Orbitron', sans-serif", fontSize: 14, fontWeight: 700, color: "#f1f5f9", marginBottom: 12, letterSpacing: 1 }}>{st.name}</div>
-                  <p style={{ color: "#94a3b8", lineHeight: 1.75, fontSize: 14, minHeight: "4em" }}>
-                    <ScrollTypewriter text={st.description} />
-                  </p>
+                  <p style={{ color: "#94a3b8", lineHeight: 1.75, fontSize: 14 }}>{st.description}</p>
                 </motion.div>
               ))}
             </motion.div>
@@ -548,9 +546,7 @@ export default function Landing() {
                 <motion.div key={o.title} variants={cardItem} whileHover={{ scale: 1.04, borderColor: "rgba(34,197,94,0.3)" }} style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 10, padding: isMobile ? "22px 18px" : "28px 24px" }}>
                   <div style={{ fontSize: 28, marginBottom: 10 }}>{o.icon}</div>
                   <div style={{ fontFamily: "'Orbitron', sans-serif", fontSize: 13, fontWeight: 700, color: "#f1f5f9", marginBottom: 10 }}>{o.title}</div>
-                  <p style={{ color: "#94a3b8", lineHeight: 1.7, fontSize: 14, minHeight: "3em" }}>
-                    <ScrollTypewriter text={o.desc} />
-                  </p>
+                  <p style={{ color: "#94a3b8", lineHeight: 1.7, fontSize: 14 }}>{o.desc}</p>
                 </motion.div>
               ))}
             </motion.div>
