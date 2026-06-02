@@ -279,98 +279,6 @@ function SponsorBar({ sponsors = [], isMobile }) {
   );
 }
 
-function FloatingLogos({ logos }) {
-  if (!logos || logos.length === 0) return null;
-  const [positions, setPositions] = useState(() =>
-    logos.map(() => ({
-      x: Math.random() * (window.innerWidth - 120),
-      y: Math.random() * (window.innerHeight - 120),
-    }))
-  );
-  const [dragging, setDragging] = useState(null);
-  const dragRef = useRef(null);
-
-  function handleDown(i, e) {
-    e.preventDefault();
-    setDragging(i);
-    const cx = e.clientX ?? e.touches?.[0]?.clientX ?? 0;
-    const cy = e.clientY ?? e.touches?.[0]?.clientY ?? 0;
-    dragRef.current = {
-      startX: cx - positions[i].x,
-      startY: cy - positions[i].y,
-      type: e.type,
-    };
-  }
-
-  useEffect(() => {
-    if (dragging === null) return;
-    function move(e) {
-      const cx = e.clientX ?? e.touches?.[0]?.clientX ?? 0;
-      const cy = e.clientY ?? e.touches?.[0]?.clientY ?? 0;
-      setPositions(prev => {
-        const next = [...prev];
-        next[dragging] = {
-          x: cx - dragRef.current.startX,
-          y: cy - dragRef.current.startY,
-        };
-        return next;
-      });
-    }
-    function up() { setDragging(null); }
-    window.addEventListener("mousemove", move);
-    window.addEventListener("mouseup", up);
-    window.addEventListener("touchmove", move, { passive: false });
-    window.addEventListener("touchend", up);
-    return () => {
-      window.removeEventListener("mousemove", move);
-      window.removeEventListener("mouseup", up);
-      window.removeEventListener("touchmove", move);
-      window.removeEventListener("touchend", up);
-    };
-  }, [dragging]);
-
-  const sizes = [64, 80, 56, 72, 48, 60];
-  const delays = [0, 1.2, 2.5, 0.8, 3.1, 1.8];
-
-  return (
-    <>
-      <style>{`
-        @keyframes logoFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-14px)}}
-        @keyframes logoGlow{0%,100%{filter:drop-shadow(0 0 10px rgba(239,68,68,0.5))}50%{filter:drop-shadow(0 0 22px rgba(239,68,68,0.8))}}
-        @keyframes logoKnick{0%,100%{transform:translateY(0) rotate(0deg)}25%{transform:translateY(-6px) rotate(3deg)}75%{transform:translateY(2px) rotate(-2deg)}}
-      `}</style>
-      {logos.map((url, i) => {
-        const p = positions[i] || { x: 100, y: 100 };
-        const size = sizes[i % sizes.length];
-        return (
-          <img key={i} src={url} alt=""
-            draggable={false}
-            onMouseDown={e => handleDown(i, e)}
-            onTouchStart={e => handleDown(i, e)}
-            style={{
-              position: "fixed",
-              left: p.x, top: p.y,
-              width: size, height: size,
-              objectFit: "contain",
-              cursor: dragging === i ? "grabbing" : "grab",
-              zIndex: dragging === i ? 9999 : 10,
-              pointerEvents: "auto",
-              animation: dragging === i ? "none" : `logoFloat ${4 + (i % 3) * 0.8}s ease-in-out ${delays[i % delays.length]}s infinite, logoGlow 3s ease-in-out ${delays[i % delays.length]}s infinite`,
-              opacity: 0.85,
-              transition: "opacity 0.3s",
-              borderRadius: 8,
-              userSelect: "none",
-              touchAction: "none",
-            }}
-            onMouseEnter={e => e.currentTarget.style.opacity = 1}
-            onMouseLeave={e => e.currentTarget.style.opacity = 0.85}
-          />
-        );
-      })}
-    </>
-  );
-}
-
 function LogoKnick({ logos, index = 0, size = 36, style: s }) {
   const list = (() => { try { return JSON.parse(logos || "[]"); } catch { return []; } })();
   const url = list[index % list.length];
@@ -521,7 +429,6 @@ export default function Landing() {
       <BruinBg />
       {/* Distorted grid that warps on scroll */}
         <DistortedGrid />
-        <FloatingLogos logos={(() => { try { return JSON.parse(config.season_logos || "[]"); } catch { return []; }; })()} />
       
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&family=Exo+2:wght@300;400;600;700&family=Bebas+Neue&display=swap');
@@ -567,6 +474,7 @@ export default function Landing() {
         }
         @keyframes glitch{0%,90%,100%{text-shadow:none;}92%{text-shadow:-3px 0 #ef4444,3px 0 #3b82f6;}95%{text-shadow:3px 0 #ef4444,-3px 0 #3b82f6;}97%{text-shadow:none;}}
         @keyframes cursorBlink{0%,100%{opacity:1}50%{opacity:0}}
+        @keyframes logoKnick{0%,100%{transform:translateY(0) rotate(0deg)}25%{transform:translateY(-6px) rotate(3deg)}75%{transform:translateY(2px) rotate(-2deg)}}
       `}</style>
 
       {/* NAV */}
