@@ -1,37 +1,10 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import Starfield from "./Starfield.jsx";
+import { sbFetch } from "./hubUtils.jsx";
 
-export default function Privacy() {
-  useEffect(() => {
-    document.title = "Privacy Policy · Team 4550";
-  }, []);
-
-  return (
-    <div style={{ minHeight: "100vh", background: "#080a0f", color: "#f1f5f9", fontFamily: "'Exo 2', sans-serif", position: "relative" }}>
-      <div style={{ position: "fixed", inset: 0, pointerEvents: "none", overflow: "hidden", zIndex: 0 }}>
-        <Starfield density={9000} opacity={0.38} />
-      </div>
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&family=Exo+2:wght@300;400;600;700&display=swap');
-        *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
-        body{background:#080a0f;}
-        .legal-content{max-width:800px;margin:0 auto;padding:100px 24px 60px;position:relative;z-index:1;}
-        .legal-content h1{font-family:'Orbitron',sans-serif;font-size:28px;font-weight:700;color:#ef4444;margin-bottom:8px;letter-spacing:2px;}
-        .legal-content .updated{font-family:'Share Tech Mono',monospace;font-size:11px;color:#64748b;margin-bottom:32px;}
-        .legal-content h2{font-family:'Orbitron',sans-serif;font-size:16px;font-weight:700;color:#f1f5f9;margin-top:32px;margin-bottom:12px;letter-spacing:1px;}
-        .legal-content h3{font-family:'Orbitron',sans-serif;font-size:13px;font-weight:700;color:#e2e8f0;margin-top:24px;margin-bottom:8px;letter-spacing:0.5px;}
-        .legal-content p,.legal-content li{color:#94a3b8;line-height:1.8;font-size:14px;margin-bottom:10px;}
-        .legal-content ul{padding-left:20px;margin-bottom:12px;}
-        .legal-content li{margin-bottom:6px;}
-        .legal-content a{color:#fca5a5;text-decoration:none;}
-        .legal-content a:hover{text-decoration:underline;}
-        .legal-content .back-link{display:inline-block;margin-bottom:28px;color:#64748b;text-decoration:none;font-family:'Share Tech Mono',monospace;font-size:12px;}
-        .legal-content .back-link:hover{color:#ef4444;}
-      `}</style>
-      <div className="legal-content">
-        <a href="/" className="back-link">← Back to Home</a>
+const FALLBACK = `...
         <h1>Privacy Policy</h1>
-        <p className="updated">Last Updated: May 26, 2026</p>
+        <p class="updated">Last Updated: May 26, 2026</p>
 
         <p>FRC Team 4550 "Something's Bruin" ("we," "our," or "us") operates the website at <a href="https://4550robotics.com">4550robotics.com</a> (the "Site"). This Privacy Policy explains how we collect, use, disclose, and protect your information when you visit our Site or use our services.</p>
 
@@ -40,7 +13,7 @@ export default function Privacy() {
         <h3>Information You Provide to Us</h3>
         <ul>
           <li><strong>Member Hub Accounts:</strong> When team members register for the Member Hub, we collect your name, username, and any information you provide in your profile.</li>
-          <li><strong>Suggestions & Feedback:</strong> If you submit a suggestion or feedback through our Site, we collect the content of your submission.</li>
+          <li><strong>Suggestions &amp; Feedback:</strong> If you submit a suggestion or feedback through our Site, we collect the content of your submission.</li>
           <li><strong>Contact Forms:</strong> If you email us or use a contact form, we collect your email address and the contents of your message.</li>
           <li><strong>Sponsor Information:</strong> Sponsor contact information (company name, email, phone) is stored in our secure database for outreach purposes.</li>
         </ul>
@@ -64,34 +37,28 @@ export default function Privacy() {
 
         <h2>3. Data Inventory</h2>
         <p>The following table details every data point collected by our Site and services:</p>
-        <div style={{ overflowX: "auto", marginBottom: 16 }}>
-          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12, color: "#cbd5e1", fontFamily: "'Share Tech Mono', monospace" }}>
+        <div style="overflow-x:auto;margin-bottom:16px">
+          <table style="width:100%;border-collapse:collapse;font-size:12px;color:#cbd5e1;font-family:'Share Tech Mono',monospace">
             <thead>
-              <tr style={{ background: "rgba(255,255,255,0.05)", borderBottom: "1px solid rgba(255,255,255,0.1)" }}>
-                <th style={{ padding: "10px 12px", textAlign: "left", color: "#f1f5f9" }}>Data Point</th>
-                <th style={{ padding: "10px 12px", textAlign: "left", color: "#f1f5f9" }}>Purpose</th>
-                <th style={{ padding: "10px 12px", textAlign: "left", color: "#f1f5f9" }}>Storage</th>
-                <th style={{ padding: "10px 12px", textAlign: "left", color: "#f1f5f9" }}>Retention</th>
-                <th style={{ padding: "10px 12px", textAlign: "left", color: "#f1f5f9" }}>Shared With</th>
+              <tr style="background:rgba(255,255,255,0.05);border-bottom:1px solid rgba(255,255,255,0.1)">
+                <th style="padding:10px 12px;text-align:left;color:#f1f5f9">Data Point</th>
+                <th style="padding:10px 12px;text-align:left;color:#f1f5f9">Purpose</th>
+                <th style="padding:10px 12px;text-align:left;color:#f1f5f9">Storage</th>
+                <th style="padding:10px 12px;text-align:left;color:#f1f5f9">Retention</th>
+                <th style="padding:10px 12px;text-align:left;color:#f1f5f9">Shared With</th>
               </tr>
             </thead>
             <tbody>
-              {[
-                ["Name / Username", "Member Hub identification", "Supabase", "Until deactivation", "Never sold"],
-                ["Email address", "Communication, login", "Supabase", "Until deactivation", "Never sold"],
-                ["Phone number", "Sponsor outreach", "Supabase", "Until requested deletion", "Never sold"],
-                ["Task assignments", "Team coordination", "Supabase", "Until deleted by user", "Never sold"],
-                ["Calendar events", "Team scheduling", "Supabase", "Until deleted by user", "Never sold"],
-                ["Media uploads", "Team gallery", "Supabase Storage", "Until deleted by user", "Never sold"],
-                ["Suggestions / Feedback", "Team improvement", "Supabase", "Indefinite (anonymized)", "Never sold"],
-                ["IP address", "Analytics, security", "Vercel logs", "30 days", "Vercel (processor)"],
-                ["Login sessions", "Authentication", "LocalStorage", "Until logout", "Never"],
-                ["Camera / Photos", "Inventory AI identification", "Supabase Storage", "Until deleted by user", "None (AI in-memory only)"],
-              ].map((row, i) => (
-                <tr key={i} style={{ borderBottom: "1px solid rgba(255,255,255,0.05)", background: i % 2 === 0 ? "transparent" : "rgba(255,255,255,0.02)" }}>
-                  {row.map((cell, j) => <td key={j} style={{ padding: "8px 12px" }}>{cell}</td>)}
-                </tr>
-              ))}
+              <tr style="border-bottom:1px solid rgba(255,255,255,0.05)"><td style="padding:8px 12px">Name / Username</td><td style="padding:8px 12px">Member Hub identification</td><td style="padding:8px 12px">Supabase</td><td style="padding:8px 12px">Until deactivation</td><td style="padding:8px 12px">Never sold</td></tr>
+              <tr style="border-bottom:1px solid rgba(255,255,255,0.05);background:rgba(255,255,255,0.02)"><td style="padding:8px 12px">Email address</td><td style="padding:8px 12px">Communication, login</td><td style="padding:8px 12px">Supabase</td><td style="padding:8px 12px">Until deactivation</td><td style="padding:8px 12px">Never sold</td></tr>
+              <tr style="border-bottom:1px solid rgba(255,255,255,0.05)"><td style="padding:8px 12px">Phone number</td><td style="padding:8px 12px">Sponsor outreach</td><td style="padding:8px 12px">Supabase</td><td style="padding:8px 12px">Until requested deletion</td><td style="padding:8px 12px">Never sold</td></tr>
+              <tr style="border-bottom:1px solid rgba(255,255,255,0.05);background:rgba(255,255,255,0.02)"><td style="padding:8px 12px">Task assignments</td><td style="padding:8px 12px">Team coordination</td><td style="padding:8px 12px">Supabase</td><td style="padding:8px 12px">Until deleted by user</td><td style="padding:8px 12px">Never sold</td></tr>
+              <tr style="border-bottom:1px solid rgba(255,255,255,0.05)"><td style="padding:8px 12px">Calendar events</td><td style="padding:8px 12px">Team scheduling</td><td style="padding:8px 12px">Supabase</td><td style="padding:8px 12px">Until deleted by user</td><td style="padding:8px 12px">Never sold</td></tr>
+              <tr style="border-bottom:1px solid rgba(255,255,255,0.05);background:rgba(255,255,255,0.02)"><td style="padding:8px 12px">Media uploads</td><td style="padding:8px 12px">Team gallery</td><td style="padding:8px 12px">Supabase Storage</td><td style="padding:8px 12px">Until deleted by user</td><td style="padding:8px 12px">Never sold</td></tr>
+              <tr style="border-bottom:1px solid rgba(255,255,255,0.05)"><td style="padding:8px 12px">Suggestions / Feedback</td><td style="padding:8px 12px">Team improvement</td><td style="padding:8px 12px">Supabase</td><td style="padding:8px 12px">Indefinite (anonymized)</td><td style="padding:8px 12px">Never sold</td></tr>
+              <tr style="border-bottom:1px solid rgba(255,255,255,0.05);background:rgba(255,255,255,0.02)"><td style="padding:8px 12px">IP address</td><td style="padding:8px 12px">Analytics, security</td><td style="padding:8px 12px">Vercel logs</td><td style="padding:8px 12px">30 days</td><td style="padding:8px 12px">Vercel (processor)</td></tr>
+              <tr style="border-bottom:1px solid rgba(255,255,255,0.05)"><td style="padding:8px 12px">Login sessions</td><td style="padding:8px 12px">Authentication</td><td style="padding:8px 12px">LocalStorage</td><td style="padding:8px 12px">Until logout</td><td style="padding:8px 12px">Never</td></tr>
+              <tr style="border-bottom:1px solid rgba(255,255,255,0.05);background:rgba(255,255,255,0.02)"><td style="padding:8px 12px">Camera / Photos</td><td style="padding:8px 12px">Inventory AI identification</td><td style="padding:8px 12px">Supabase Storage</td><td style="padding:8px 12px">Until deleted by user</td><td style="padding:8px 12px">None (AI in-memory only)</td></tr>
             </tbody>
           </table>
         </div>
@@ -107,7 +74,7 @@ export default function Privacy() {
         <h2>5. Data Sharing and Disclosure</h2>
         <p>We do not sell your personal information to third parties. We may share your information in the following circumstances:</p>
         <ul>
-          <li><strong>Service Providers:</strong> With Vercel (hosting), Supabase (database & authentication), and other service providers who help us operate the Site.</li>
+          <li><strong>Service Providers:</strong> With Vercel (hosting), Supabase (database &amp; authentication), and other service providers who help us operate the Site.</li>
           <li><strong>Legal Requirements:</strong> If required by law, court order, or governmental regulation.</li>
           <li><strong>Protection of Rights:</strong> To protect the rights, property, or safety of our team, our members, or others.</li>
           <li><strong>School District:</strong> Cherry Creek School District may have access to certain information as part of oversight of the team as a school-affiliated organization.</li>
@@ -140,7 +107,7 @@ export default function Privacy() {
         </ul>
         <p>To make a CCPA request, please contact us at <a href="mailto:team4550frc@gmail.com">team4550frc@gmail.com</a>.</p>
 
-        <h2>10. Children's Privacy (COPPA)</h2>
+        <h2>10. Children Privacy (COPPA)</h2>
         <p>Our Site is intended for general audiences. The Member Hub is restricted to team members and authorized personnel. We do not knowingly collect personal information from children under 13 without parental consent. If we become aware that a child under 13 has provided us with personal information, we will take steps to delete such information. If you believe a child under 13 has provided us with personal information, please contact us immediately.</p>
 
         <h2>11. Third-Party Links</h2>
@@ -157,7 +124,45 @@ export default function Privacy() {
           9300 E Union Ave<br />
           Greenwood Village, CO 80111<br />
           Email: <a href="mailto:team4550frc@gmail.com">team4550frc@gmail.com</a>
-        </p>
+        </p>`;
+
+export default function Privacy() {
+  const [html, setHtml] = useState("");
+
+  useEffect(() => {
+    document.title = "Privacy Policy · Team 4550";
+    sbFetch("site_config?key=eq.privacy_policy&select=value").then(r => {
+      if (r?.[0]?.value) setHtml(r[0].value);
+    });
+  }, []);
+
+  const content = html || FALLBACK;
+
+  return (
+    <div style={{ minHeight: "100vh", background: "#080a0f", color: "#f1f5f9", fontFamily: "'Exo 2', sans-serif", position: "relative" }}>
+      <div style={{ position: "fixed", inset: 0, pointerEvents: "none", overflow: "hidden", zIndex: 0 }}>
+        <Starfield density={9000} opacity={0.38} />
+      </div>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&family=Exo+2:wght@300;400;600;700&display=swap');
+        *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+        body{background:#080a0f;}
+        .legal-content{max-width:800px;margin:0 auto;padding:100px 24px 60px;position:relative;z-index:1;}
+        .legal-content h1{font-family:'Orbitron',sans-serif;font-size:28px;font-weight:700;color:#ef4444;margin-bottom:8px;letter-spacing:2px;}
+        .legal-content .updated{font-family:'Share Tech Mono',monospace;font-size:11px;color:#64748b;margin-bottom:32px;}
+        .legal-content h2{font-family:'Orbitron',sans-serif;font-size:16px;font-weight:700;color:#f1f5f9;margin-top:32px;margin-bottom:12px;letter-spacing:1px;}
+        .legal-content h3{font-family:'Orbitron',sans-serif;font-size:13px;font-weight:700;color:#e2e8f0;margin-top:24px;margin-bottom:8px;letter-spacing:0.5px;}
+        .legal-content p,.legal-content li{color:#94a3b8;line-height:1.8;font-size:14px;margin-bottom:10px;}
+        .legal-content ul{padding-left:20px;margin-bottom:12px;}
+        .legal-content li{margin-bottom:6px;}
+        .legal-content a{color:#fca5a5;text-decoration:none;}
+        .legal-content a:hover{text-decoration:underline;}
+        .legal-content .back-link{display:inline-block;margin-bottom:28px;color:#64748b;text-decoration:none;font-family:'Share Tech Mono',monospace;font-size:12px;}
+        .legal-content .back-link:hover{color:#ef4444;}
+      `}</style>
+      <div className="legal-content">
+        <a href="/" className="back-link">← Back to Home</a>
+        <div dangerouslySetInnerHTML={{ __html: content }} />
       </div>
       <footer style={{ position: "relative", zIndex: 1, borderTop: "1px solid rgba(255,255,255,0.06)", padding: "24px 32px", textAlign: "center" }}>
         <div style={{ color: "#334155", fontSize: 11, fontFamily: "'Share Tech Mono', monospace" }}>

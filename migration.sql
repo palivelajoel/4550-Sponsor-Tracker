@@ -331,6 +331,26 @@ DROP POLICY IF EXISTS "Public select scouting_picklist" ON public.scouting_pickl
 CREATE POLICY "Public select scouting_picklist" ON public.scouting_picklist FOR SELECT USING (true);
 
 -- ============================================================
+-- 18. ARTICLES (blog / outreach posts)
+-- ============================================================
+CREATE TABLE IF NOT EXISTS public.articles (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    title TEXT NOT NULL,
+    content TEXT,
+    excerpt TEXT,
+    image_url TEXT,
+    author TEXT,
+    author_id UUID REFERENCES public.members(id) ON DELETE SET NULL,
+    published BOOLEAN DEFAULT false,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE public.articles ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Public select articles" ON public.articles;
+CREATE POLICY "Public select articles" ON public.articles FOR SELECT USING (true);
+
+-- ============================================================
 -- SEED DATA: Default site_config entries
 -- ============================================================
 INSERT INTO public.site_config (key, value) VALUES

@@ -244,6 +244,7 @@ export default function Landing() {
   const [captains, setCaptains] = useState([]);
   const [sponsors, setSponsors] = useState([]);
   const [logoUrl, setLogoUrl] = useState("/logo.jpg");
+  const [articles, setArticles] = useState([]);
   const [menuOpen, setMenuOpen] = useState(false);
   const heroParallaxRef = useRef(null);
 
@@ -260,6 +261,7 @@ export default function Landing() {
     });
     sbFetch("captains?select=*&order=sort_order.asc").then(r => { if (r) setCaptains(r); });
     sbFetch("sponsors?select=company,logo_url,tier,email&order=company.asc&status=not.eq.Declined").then(r => { if (r) setSponsors(r); });
+    sbFetch("articles?select=id,title,excerpt,image_url,author,created_at&published=eq.true&order=created_at.desc&limit=4").then(r => { if (r) setArticles(r); });
   }, []);
 
   // Hero parallax via ref (no React re-renders)
@@ -566,6 +568,33 @@ export default function Landing() {
             <motion.div initial={{ opacity: 0, scale: 0.9 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} transition={{ type: "spring", stiffness: 120, damping: 16, delay: 0.25 }} style={{ textAlign: "center" }}>
               <a href="/media" style={{ display: "inline-block", background: "#ef4444", color: "#fff", textDecoration: "none", padding: isMobile ? "12px 28px" : "14px 36px", borderRadius: 6, fontFamily: "'Orbitron', sans-serif", fontWeight: 700, fontSize: isMobile ? 11 : 13, letterSpacing: 2 }}>EXPLORE GALLERY →</a>
             </motion.div>
+          </ProgressSection>
+        
+      </div></section>
+
+      {/* ARTICLES */}
+      <section id="articles" style={{ background: "rgba(255,255,255,0.015)" }}><div className="sec">
+        
+          <ProgressSection>
+            <Eyebrow>// LATEST</Eyebrow>
+            <SectionTitle>Team Articles</SectionTitle>
+            <motion.p initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ type: "spring", stiffness: 100, damping: 18, delay: 0.15 }} style={{ color: "#94a3b8", maxWidth: 560, margin: "0 auto 36px", lineHeight: 1.8, fontSize: 15, textAlign: "center" }}>Updates, stories, and insights from the team.</motion.p>
+            <motion.div variants={stagger} initial="hidden" whileInView="visible" viewport={{ once: true }} style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(auto-fill,minmax(280px,1fr))", gap: isMobile ? 16 : 20, maxWidth: 960, margin: "0 auto" }}>
+              {articles.map((a, i) => (
+                <motion.a key={a.id} href={"/article?id=" + a.id} variants={cardItem} whileHover={{ scale: 1.03, borderColor: "rgba(239,68,68,0.5)" }}
+                  style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 12, overflow: "hidden", textDecoration: "none", display: "flex", flexDirection: "column" }}>
+                  {a.image_url && <div style={{ width: "100%", height: 160, background: `url(${a.image_url}) center/cover`, flexShrink: 0 }} />}
+                  <div style={{ padding: "18px 20px", flex: 1, display: "flex", flexDirection: "column" }}>
+                    <div style={{ fontSize: 11, color: "#64748b", fontFamily: "'Share Tech Mono',monospace", marginBottom: 6 }}>
+                      {new Date(a.created_at).toLocaleDateString()} {a.author && `· ${a.author}`}
+                    </div>
+                    <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: isMobile ? 12 : 13, fontWeight: 700, color: "#f1f5f9", marginBottom: 8, letterSpacing: 0.5, lineHeight: 1.4 }}>{a.title}</div>
+                    {a.excerpt && <div style={{ fontSize: 12, color: "#94a3b8", lineHeight: 1.6, flex: 1 }}>{a.excerpt}</div>}
+                  </div>
+                </motion.a>
+              ))}
+            </motion.div>
+            {articles.length === 0 && <div style={{ textAlign: "center", fontSize: 13, color: "#475569", fontFamily: "monospace" }}>No articles yet — check back soon.</div>}
           </ProgressSection>
         
       </div></section>

@@ -161,6 +161,7 @@ export default function Hub() {
   const currentSubteam = localStorage.getItem("hub_subteam") || "General";
   const isAdminUser = currentRole === "Admin";
   const isCaptain = ["Captain","Admin"].includes(currentRole);
+  const isOutreach = currentSubteam === "Marketing & Outreach";
 
   const FEATURES = [
     { id:"projector", icon:"📡", label:"Meeting Projector", description:"Live rotating display — calendar, tasks & announcements. Fullscreen.", href:"/member-hub/projector", accent:"#ef4444", featured:true },
@@ -173,6 +174,7 @@ export default function Hub() {
     { id:"inventory", icon:"📦", label:"Inventory", description:"Track parts, tools, and supplies with AI identification.", href:"/member-hub/inventory", accent:"#22d3ee" },
     { id:"forms", icon:"📋", label:"Forms", description:"Team forms, surveys, and feedback.", href:"/member-hub/forms", accent:"#22d3ee" },
     { id:"sponsor-tracker", icon:"🤝", label:"Sponsor Tracker", description:"Manage sponsors, contact info, and outreach status.", href:"/member-hub/sponsors", accent:"#0ea5e9" },
+    { id:"articles", icon:"📝", label:"Articles", description:"Write and manage blog posts and outreach articles.", href:"/member-hub/articles", accent:"#a855f7" },
   ];
 
   // ── LOGIN ───────────────────────────────────────────────
@@ -297,13 +299,39 @@ export default function Hub() {
 
         {/* Feature grid */}
         <div style={{ display:"grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(auto-fill,minmax(260px,1fr))", gap:isMobile?10:16 }}>
-          {FEATURES.filter(f => f.id !== "projector" && f.id !== "forms").sort((a, b) => {
-            const ai = tileOrder.indexOf(a.id); const bi = tileOrder.indexOf(b.id);
-            return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi);
-          }).map((f, i) => (
+          {(() => {
+            let list = FEATURES.filter(f => f.id !== "projector" && f.id !== "forms" && f.id !== "articles");
+            if (isOutreach) {
+              list = list.filter(f => f.id !== "inventory");
+              const art = FEATURES.find(f => f.id === "articles");
+              if (art) list.push(art);
+            }
+            return list.sort((a, b) => {
+              const ai = tileOrder.indexOf(a.id); const bi = tileOrder.indexOf(b.id);
+              return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi);
+            });
+          })().map((f, i) => (
             <FeatureCard key={f.id} feature={f} index={i} isMobile={isMobile} />
           ))}
         </div>
+
+        {/* Admin articles card (thin, above Forms) */}
+        {isAdminUser && (
+          <a href="/member-hub/articles" style={{ textDecoration: "none", display: "block", marginTop: 20 }}>
+            <div style={{ background: "linear-gradient(135deg,rgba(168,85,247,0.08),rgba(59,130,246,0.05))", border: "1px solid rgba(168,85,247,0.25)", borderRadius: 10, padding: isMobile ? "10px 14px" : "12px 22px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, cursor: "pointer", transition: "all 0.25s" }}
+              onMouseEnter={e => e.currentTarget.style.borderColor = "rgba(168,85,247,0.6)"}
+              onMouseLeave={e => e.currentTarget.style.borderColor = "rgba(168,85,247,0.25)"}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <div style={{ fontSize: isMobile ? 18 : 22 }}>📝</div>
+                <div>
+                  <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: isMobile ? 11 : 12, fontWeight: 700, color: "#a855f7", letterSpacing: 1 }}>ARTICLES</div>
+                  <div style={{ color: C.muted, fontSize: isMobile ? 10 : 11 }}>Write and manage blog posts.</div>
+                </div>
+              </div>
+              <div style={{ background: "#a855f7", color: "#fff", padding: isMobile ? "4px 12px" : "5px 16px", borderRadius: 5, fontFamily: "'Orbitron',sans-serif", fontSize: 10, fontWeight: 700, letterSpacing: 1, flexShrink: 0 }}>OPEN →</div>
+            </div>
+          </a>
+        )}
 
         {/* Forms card */}
         <div style={{ marginTop: 20, position: "relative" }}>

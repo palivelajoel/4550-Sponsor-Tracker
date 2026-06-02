@@ -973,6 +973,8 @@ function SiteConfig({ config, logoUrl, setLogoUrl, reload, showToast, isMobile }
     { key: "instagram", label: "Instagram URL" }, { key: "youtube", label: "YouTube URL" },
     { key: "tba_api_key", label: "TBA API Key" },
     { key: "donate_url", label: "Donate URL" }, { key: "season_year", label: "Season Year" },
+    { key: "privacy_policy", label: "Privacy Policy (HTML)", long: true },
+    { key: "terms_conditions", label: "Terms & Conditions (HTML)", long: true },
   ];
 
   return (
@@ -1037,10 +1039,16 @@ function SiteConfig({ config, logoUrl, setLogoUrl, reload, showToast, isMobile }
       <div style={S.card}>
         <div style={S.cardTitle}>Site Details</div>
         {fields.map(f => (
-          <div key={f.key} style={{ display: "flex", flexDirection: isMobile ? 'column' : 'row', gap: isMobile ? 6 : 10, marginBottom: 12, alignItems: isMobile ? 'stretch' : 'center' }}>
-            <label style={{ color: "#94a3b8", fontSize: 12, minWidth: isMobile ? 0 : 120, fontFamily: "monospace" }}>{f.label}</label>
-            <input value={vals[f.key] || ""} onChange={e => setVals({ ...vals, [f.key]: e.target.value })} style={{ ...S.input, flex: 1, marginBottom: 0 }} />
-            <button onClick={() => saveKey(f.key)} style={{ ...S.btnGhost, width: isMobile ? '100%' : undefined }}>Save</button>
+          <div key={f.key} style={{ display: "flex", flexDirection: isMobile ? 'column' : 'row', gap: isMobile ? 6 : 10, marginBottom: 12, alignItems: isMobile ? 'stretch' : 'flex-start' }}>
+            <label style={{ color: "#94a3b8", fontSize: 12, minWidth: isMobile ? 0 : 120, fontFamily: "monospace", paddingTop: f.long ? 8 : 0 }}>{f.label}</label>
+            {f.long ? (
+              <textarea value={vals[f.key] || ""} onChange={e => setVals({ ...vals, [f.key]: e.target.value })}
+                rows={12} style={{ ...S.input, flex: 1, marginBottom: 0, resize: "vertical", fontFamily: "monospace", fontSize: 12, lineHeight: 1.6, minHeight: 140 }}
+              />
+            ) : (
+              <input value={vals[f.key] || ""} onChange={e => setVals({ ...vals, [f.key]: e.target.value })} style={{ ...S.input, flex: 1, marginBottom: 0 }} />
+            )}
+            <button onClick={() => saveKey(f.key)} style={{ ...S.btnGhost, width: isMobile ? '100%' : undefined, flexShrink: 0 }}>Save</button>
           </div>
         ))}
       </div>

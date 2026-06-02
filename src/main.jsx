@@ -17,6 +17,8 @@ import ScoutMapTab from './ScoutMapTab.jsx'
 import PublicMedia from './PublicMedia.jsx'
 import Privacy from './Privacy.jsx'
 import Terms from './Terms.jsx'
+import HubArticles from './HubArticles.jsx'
+import ArticleView from './ArticleView.jsx'
 
 const path = window.location.pathname
 
@@ -33,6 +35,8 @@ const Page =
   : path === '/member-hub/scout-map'           ? ScoutMapTab
   : path === '/member-hub/forms'               ? HubForms
   : path === '/member-hub/inventory'           ? HubInventory
+  : path === '/member-hub/articles'            ? HubArticles
+  : path === '/article'                        ? ArticleView
   : path === '/media'                          ? PublicMedia
   : path === '/privacy'                        ? Privacy
   : path === '/terms'                          ? Terms
