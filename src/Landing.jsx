@@ -337,6 +337,7 @@ function FloatingLogos({ logos }) {
       <style>{`
         @keyframes logoFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-14px)}}
         @keyframes logoGlow{0%,100%{filter:drop-shadow(0 0 10px rgba(239,68,68,0.5))}50%{filter:drop-shadow(0 0 22px rgba(239,68,68,0.8))}}
+        @keyframes logoKnick{0%,100%{transform:translateY(0) rotate(0deg)}25%{transform:translateY(-6px) rotate(3deg)}75%{transform:translateY(2px) rotate(-2deg)}}
       `}</style>
       {logos.map((url, i) => {
         const p = positions[i] || { x: 100, y: 100 };
@@ -367,6 +368,22 @@ function FloatingLogos({ logos }) {
         );
       })}
     </>
+  );
+}
+
+function LogoKnick({ logos, index = 0, size = 36, style: s }) {
+  const list = (() => { try { return JSON.parse(logos || "[]"); } catch { return []; } })();
+  const url = list[index % list.length];
+  if (!url || list.length === 0) return null;
+  return (
+    <img src={url} alt="" draggable={false}
+      style={{
+        width: size, height: size, objectFit: "contain", borderRadius: 6,
+        filter: "drop-shadow(0 0 8px rgba(239,68,68,0.45))",
+        animation: `logoKnick ${6 + (index % 3) * 1.5}s ease-in-out ${index * 0.7}s infinite`,
+        opacity: 0.6, pointerEvents: "none", userSelect: "none",
+        ...s,
+      }} />
   );
 }
 
@@ -628,6 +645,7 @@ export default function Landing() {
                       </motion.div>
                     </Card3D>
                   ))}
+                  <LogoKnick logos={config.season_logos} index={0} size={32} style={{ margin: "0 auto" }} />
                 </motion.div>
               </div>
               {config.landing_img_1 && (
@@ -673,10 +691,11 @@ export default function Landing() {
             <motion.div className="subteams-grid" variants={stagger} initial="hidden" whileInView="visible" viewport={{ once: true }}>
               {SUB_TEAMS.map((st, i) => (
                 <Card3D key={st.name}>
-                  <motion.div variants={cardItem} whileHover={{ borderTopColor: st.color }} style={{ background: "rgba(255,255,255,0.03)", border: `1px solid rgba(255,255,255,0.08)`, borderTop: `3px solid ${st.color}`, borderRadius: 10, padding: isMobile ? "22px 18px" : "28px 24px" }}>
+                  <motion.div variants={cardItem} whileHover={{ borderTopColor: st.color }} style={{ background: "rgba(255,255,255,0.03)", border: `1px solid rgba(255,255,255,0.08)`, borderTop: `3px solid ${st.color}`, borderRadius: 10, padding: isMobile ? "22px 18px" : "28px 24px", position: "relative" }}>
                     <div style={{ fontSize: 28, marginBottom: 10 }}>{st.icon}</div>
                     <div style={{ fontFamily: "'Orbitron', sans-serif", fontSize: 14, fontWeight: 700, color: "#f1f5f9", marginBottom: 12, letterSpacing: 1 }}>{st.name}</div>
                     <p style={{ color: "#94a3b8", lineHeight: 1.75, fontSize: 14 }}>{st.description}</p>
+                    <LogoKnick logos={config.season_logos} index={i + 1} size={28} style={{ position: "absolute", bottom: 8, right: 8, opacity: 0.35 }} />
                   </motion.div>
                 </Card3D>
               ))}
@@ -706,10 +725,11 @@ export default function Landing() {
                 { icon: "🌍", title: "Community Events", desc: "Participating in local STEM fairs, library events, and community festivals to promote robotics and engineering education." },
               ].map((o, i) => (
                 <Card3D key={o.title}>
-                  <motion.div variants={cardItem} whileHover={{ borderColor: "rgba(34,197,94,0.4)" }} style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 10, padding: isMobile ? "22px 18px" : "28px 24px" }}>
+                  <motion.div variants={cardItem} whileHover={{ borderColor: "rgba(34,197,94,0.4)" }} style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 10, padding: isMobile ? "22px 18px" : "28px 24px", position: "relative" }}>
                     <div style={{ fontSize: 28, marginBottom: 10 }}>{o.icon}</div>
                     <div style={{ fontFamily: "'Orbitron', sans-serif", fontSize: 13, fontWeight: 700, color: "#f1f5f9", marginBottom: 10 }}>{o.title}</div>
                     <p style={{ color: "#94a3b8", lineHeight: 1.7, fontSize: 14 }}>{o.desc}</p>
+                    <LogoKnick logos={config.season_logos} index={i + 5} size={26} style={{ position: "absolute", bottom: 8, right: 8, opacity: 0.3 }} />
                   </motion.div>
                 </Card3D>
               ))}
@@ -797,6 +817,7 @@ export default function Landing() {
                     <motion.div variants={cardItem} whileHover={{ borderColor: t.color }} style={{ border: `1px solid ${t.color}`, borderRadius: 20, padding: isMobile ? "5px 14px" : "6px 20px", fontFamily: "'Orbitron', sans-serif", fontSize: isMobile ? 10 : 12, fontWeight: 700, letterSpacing: 2, color: t.color }}>{t.name}</motion.div>
                   </Card3D>
                 ))}
+                <LogoKnick logos={config.season_logos} index={2} size={30} style={{ alignSelf: "center" }} />
               </motion.div>
               <motion.div initial={{ opacity: 0, scale: 0.9 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} transition={{ type: "spring", stiffness: 120, damping: 16, delay: 0.35 }}>
                 <a href={`mailto:${email}`} style={{ display: "inline-block", background: "#ef4444", color: "#fff", textDecoration: "none", padding: isMobile ? "12px 24px" : "14px 32px", borderRadius: 6, fontFamily: "'Orbitron', sans-serif", fontWeight: 700, fontSize: isMobile ? 11 : 13, letterSpacing: 2 }}>CONTACT US TO SPONSOR</a>
@@ -810,20 +831,14 @@ export default function Landing() {
       <section style={{ background: "rgba(239,68,68,0.05)", borderTop: "1px solid rgba(239,68,68,0.2)" }}><div className="sec">
         
           <ProgressSection>
-            <div className="about-grid">
-              <div>
-                <Eyebrow>// SUPPORT THE TEAM</Eyebrow>
-                <SectionTitle>Make a Donation</SectionTitle>
-                <motion.p initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ type: "spring", stiffness: 100, damping: 18, delay: 0.1 }} style={{ color: "#94a3b8", maxWidth: 460, lineHeight: 1.8, fontSize: 15 }}>Every donation goes directly toward robot parts, competition fees, and team travel. Help us compete at the highest level.</motion.p>
-                <motion.div initial={{ opacity: 0, scale: 0.85 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} transition={{ type: "spring", stiffness: 140, damping: 14, delay: 0.25 }} style={{ marginTop: 24 }}>
-                  <a href={donate} target="_blank" rel="noreferrer" style={{ display: "inline-block", background: "#ef4444", color: "#fff", textDecoration: "none", padding: isMobile ? "12px 28px" : "14px 32px", borderRadius: 6, fontFamily: "'Orbitron', sans-serif", fontWeight: 700, fontSize: isMobile ? 11 : 13, letterSpacing: 2 }}>DONATE NOW</a>
-                </motion.div>
-              </div>
-              {config.landing_img_3 && (
-                <motion.div initial={{ opacity: 0, x: 40 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ type: "spring", stiffness: 100, damping: 18, delay: 0.2 }}>
-                  <BlurredImage src={config.landing_img_3} style={{ width: "100%", aspectRatio: "4/3" }} />
-                </motion.div>
-              )}
+            <div style={{ textAlign: "center" }}>
+              <Eyebrow>// SUPPORT THE TEAM</Eyebrow>
+              <SectionTitle>Make a Donation</SectionTitle>
+              <motion.p initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ type: "spring", stiffness: 100, damping: 18, delay: 0.1 }} style={{ color: "#94a3b8", maxWidth: 460, margin: "0 auto 28px", lineHeight: 1.8, fontSize: 15 }}>Every donation goes directly toward robot parts, competition fees, and team travel. Help us compete at the highest level.</motion.p>
+              <motion.div initial={{ opacity: 0, scale: 0.85 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} transition={{ type: "spring", stiffness: 140, damping: 14, delay: 0.25 }} style={{ display: "flex", justifyContent: "center", gap: 16, flexWrap: "wrap" }}>
+                <a href={donate} target="_blank" rel="noreferrer" style={{ display: "inline-block", background: "#ef4444", color: "#fff", textDecoration: "none", padding: isMobile ? "12px 28px" : "14px 32px", borderRadius: 6, fontFamily: "'Orbitron', sans-serif", fontWeight: 700, fontSize: isMobile ? 11 : 13, letterSpacing: 2 }}>DONATE NOW</a>
+                <LogoKnick logos={config.season_logos} index={3} size={40} style={{ alignSelf: "center" }} />
+              </motion.div>
             </div>
           </ProgressSection>
         
@@ -833,23 +848,17 @@ export default function Landing() {
       <section id="contact"><div className="sec">
         
           <ProgressSection>
-            <div className="about-grid">
-              <div>
-                <Eyebrow>// GET IN TOUCH</Eyebrow>
-                <SectionTitle>Contact</SectionTitle>
-                <motion.div className="contact-row" variants={stagger} initial="hidden" whileInView="visible" viewport={{ once: true }}>
-                  {[{ href: `mailto:${email}`, icon: "✉️", label: email }, { href: ig, icon: "📸", label: "@cherrycreek.robotics" }].map((c, i) => (
-                    <motion.a key={c.label} href={c.href} target="_blank" rel="noreferrer" variants={cardItem} whileHover={{ scale: 1.05, borderColor: "rgba(239,68,68,0.4)", color: "#ef4444" }} style={{ display: "flex", alignItems: "center", gap: 8, color: "#94a3b8", textDecoration: "none", fontSize: isMobile ? 13 : 15, fontFamily: "'Share Tech Mono', monospace", padding: isMobile ? "12px 20px" : 0, background: isMobile ? "rgba(255,255,255,0.04)" : "transparent", borderRadius: isMobile ? 8 : 0, border: isMobile ? "1px solid rgba(255,255,255,0.08)" : "none" }}>
-                      <span style={{ fontSize: 18 }}>{c.icon}</span>{c.label}
-                    </motion.a>
-                  ))}
-                </motion.div>
-              </div>
-              {config.landing_img_4 && (
-                <motion.div initial={{ opacity: 0, x: 40 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ type: "spring", stiffness: 100, damping: 18, delay: 0.2 }}>
-                  <BlurredImage src={config.landing_img_4} style={{ width: "100%", aspectRatio: "4/3" }} />
-                </motion.div>
-              )}
+            <div style={{ textAlign: "center" }}>
+              <Eyebrow>// GET IN TOUCH</Eyebrow>
+              <SectionTitle>Contact</SectionTitle>
+              <motion.div className="contact-row" variants={stagger} initial="hidden" whileInView="visible" viewport={{ once: true }}>
+                {[{ href: `mailto:${email}`, icon: "✉️", label: email }, { href: ig, icon: "📸", label: "@cherrycreek.robotics" }].map((c, i) => (
+                  <motion.a key={c.label} href={c.href} target="_blank" rel="noreferrer" variants={cardItem} whileHover={{ scale: 1.05, borderColor: "rgba(239,68,68,0.4)", color: "#ef4444" }} style={{ display: "flex", alignItems: "center", gap: 8, color: "#94a3b8", textDecoration: "none", fontSize: isMobile ? 13 : 15, fontFamily: "'Share Tech Mono', monospace", padding: isMobile ? "12px 20px" : 0, background: isMobile ? "rgba(255,255,255,0.04)" : "transparent", borderRadius: isMobile ? 8 : 0, border: isMobile ? "1px solid rgba(255,255,255,0.08)" : "none" }}>
+                    <span style={{ fontSize: 18 }}>{c.icon}</span>{c.label}
+                  </motion.a>
+                ))}
+                <LogoKnick logos={config.season_logos} index={4} size={38} style={{ alignSelf: "center" }} />
+              </motion.div>
             </div>
           </ProgressSection>
         
