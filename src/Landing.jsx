@@ -74,29 +74,30 @@ function ParallaxLayer({ speed = 0.1, style, children, ...rest }) {
 }
 
 // Text that progressively reveals characters as you scroll through it
-function ScrollTypewriter({ text, style: styleProp }) {
+function ScrollTypewriter({ text, style: styleProp, speed = 28 }) {
   const ref = useRef(null);
-  const { scrollY } = useScroll();
   const [count, setCount] = useState(0);
+  const started = useRef(false);
 
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
-    const update = () => {
-      const rect = el.getBoundingClientRect();
-      const top = rect.top + window.scrollY;
-      const h = rect.height;
-      const winH = window.innerHeight;
-      const revealStart = top - winH + h * 0.15;
-      const revealEnd = top + h + winH * 0.8;
-      const scrollBottom = window.scrollY + winH;
-      const progress = Math.max(0, Math.min(1, (scrollBottom - revealStart) / (revealEnd - revealStart)));
-      setCount(Math.floor(Math.pow(progress, 1.6) * text.length));
-    };
-    const unsub = scrollY.on('change', update);
-    update();
-    return unsub;
-  }, [scrollY, text]);
+    const obs = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting && !started.current) {
+        started.current = true;
+        obs.disconnect();
+        let i = 0;
+        const step = () => {
+          i++;
+          setCount(i);
+          if (i < text.length) setTimeout(step, speed);
+        };
+        step();
+      }
+    }, { threshold: 0.2 });
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, [text, speed]);
 
   return (
     <span ref={ref} style={styleProp}>
