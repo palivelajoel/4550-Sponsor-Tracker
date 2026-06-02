@@ -74,7 +74,7 @@ function ParallaxLayer({ speed = 0.1, style, children, ...rest }) {
 }
 
 // Text that progressively reveals characters as you scroll through it
-function ScrollTypewriter({ text, style: styleProp, speed = 28, initialReveal = 0.4 }) {
+function ScrollTypewriter({ text, style: styleProp, speed = 22, initialReveal = 0.4 }) {
   const ref = useRef(null);
   const [count, setCount] = useState(0);
   const started = useRef(false);
@@ -107,7 +107,6 @@ function ScrollTypewriter({ text, style: styleProp, speed = 28, initialReveal = 
       {count < text.length && text.length > 10 && (
         <span style={{ animation: "cursorBlink 0.7s step-end infinite", color: "#ef4444", fontWeight: 900, fontSize: "1.15em", textShadow: "0 0 8px rgba(239,68,68,0.6)" }}>|</span>
       )}
-      <span style={{ opacity: 0.06, userSelect: "none" }}>{text.slice(count)}</span>
     </span>
   );
 }
