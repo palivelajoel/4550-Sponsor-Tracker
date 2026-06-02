@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { motion, useScroll, useTransform } from 'framer-motion'
+import { motion, useScroll, useTransform, useMotionValue } from 'framer-motion'
 import Starfield from "./Starfield.jsx";
 import { CaptainPhoto } from "./hubUtils.jsx";
 
@@ -107,6 +107,33 @@ function ScrollTypewriter({ text, style: styleProp }) {
       <span style={{ opacity: 0.06, userSelect: "none" }}>{text.slice(count)}</span>
     </span>
   );
+}
+
+// Scroll-driven section reveal — fades in, pauses at full visibility, then subtly exits
+function ProgressSection({ children, style, ...props }) {
+  const ref = useRef(null);
+  const { scrollY } = useScroll();
+  const opacity = useMotionValue(0);
+  const y = useMotionValue(60);
+  const scale = useMotionValue(0.95);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const update = () => {
+      const rect = el.getBoundingClientRect();
+      const winH = window.innerHeight;
+      const p = Math.max(0, Math.min(1, (winH - rect.top) / (winH + rect.height)));
+      opacity.set(p < 0.3 ? p / 0.3 : p > 0.85 ? 1 - (p - 0.85) / 0.15 : 1);
+      y.set(p < 0.3 ? 60 * (1 - p / 0.3) : p > 0.85 ? -12 * (p - 0.85) / 0.15 : 0);
+      scale.set(p < 0.3 ? 0.95 + 0.05 * (p / 0.3) : p > 0.85 ? 1 - 0.03 * (p - 0.85) / 0.15 : 1);
+    };
+    const unsub = scrollY.on('change', update);
+    update();
+    return unsub;
+  }, [scrollY]);
+
+  return <motion.div ref={ref} style={{ opacity, y, scale, ...style }} {...props}>{children}</motion.div>;
 }
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
@@ -436,7 +463,7 @@ export default function Landing() {
       {/* ABOUT */}
       <section id="about"><div className="sec">
         
-          <motion.div {...slideUp}>
+          <ProgressSection>
             <Eyebrow>// WHO WE ARE</Eyebrow>
             <SectionTitle>About the Team</SectionTitle>
             <div className="about-grid">
@@ -457,7 +484,7 @@ export default function Landing() {
                 ))}
               </motion.div>
             </div>
-          </motion.div>
+          </ProgressSection>
         
       </div></section>
 
@@ -465,7 +492,7 @@ export default function Landing() {
       {captains.length > 0 && (
         <section id="team" style={{ background: "rgba(255,255,255,0.015)" }}><div className="sec">
           
-            <motion.div {...slideLeft}>
+            <ProgressSection>
               <Eyebrow>// LEADERSHIP</Eyebrow>
               <SectionTitle>Our Team</SectionTitle>
               <motion.div className="captains-grid" variants={stagger} initial="hidden" whileInView="visible" viewport={{ once: true }}>
@@ -478,7 +505,7 @@ export default function Landing() {
                   </motion.div>
                 ))}
               </motion.div>
-            </motion.div>
+            </ProgressSection>
           
         </div></section>
       )}
@@ -486,7 +513,7 @@ export default function Landing() {
       {/* SUB-TEAMS */}
       <section id="sub-teams"><div className="sec">
         
-          <motion.div {...slideRight}>
+          <ProgressSection>
             <Eyebrow>// HOW WE BUILD</Eyebrow>
             <SectionTitle>Sub-Teams</SectionTitle>
             <motion.div className="subteams-grid" variants={stagger} initial="hidden" whileInView="visible" viewport={{ once: true }}>
@@ -500,14 +527,14 @@ export default function Landing() {
                 </motion.div>
               ))}
             </motion.div>
-          </motion.div>
+          </ProgressSection>
         
       </div></section>
 
       {/* OUTREACH */}
       <section id="outreach" style={{ background: "rgba(255,255,255,0.015)" }}><div className="sec">
         
-          <motion.div {...slideUp}>
+          <ProgressSection>
             <Eyebrow>// COMMUNITY</Eyebrow>
             <SectionTitle>Community Outreach</SectionTitle>
             <motion.div className="outreach-grid" variants={stagger} initial="hidden" whileInView="visible" viewport={{ once: true }}>
@@ -525,28 +552,28 @@ export default function Landing() {
                 </motion.div>
               ))}
             </motion.div>
-          </motion.div>
+          </ProgressSection>
         
       </div></section>
 
       {/* MEDIA */}
       <section id="media-gallery"><div className="sec">
         
-          <motion.div {...slideLeft}>
+          <ProgressSection>
             <Eyebrow>// GALLERY</Eyebrow>
             <SectionTitle>Media Gallery</SectionTitle>
             <motion.p initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ type: "spring", stiffness: 100, damping: 18, delay: 0.15 }} style={{ color: "#94a3b8", maxWidth: 520, margin: "0 auto 28px", lineHeight: 1.8, fontSize: 15, textAlign: "center" }}>Browse photos and videos from competitions, outreach events, build season, and team activities.</motion.p>
             <motion.div initial={{ opacity: 0, scale: 0.9 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} transition={{ type: "spring", stiffness: 120, damping: 16, delay: 0.25 }} style={{ textAlign: "center" }}>
               <a href="/media" style={{ display: "inline-block", background: "#ef4444", color: "#fff", textDecoration: "none", padding: isMobile ? "12px 28px" : "14px 36px", borderRadius: 6, fontFamily: "'Orbitron', sans-serif", fontWeight: 700, fontSize: isMobile ? 11 : 13, letterSpacing: 2 }}>EXPLORE GALLERY →</a>
             </motion.div>
-          </motion.div>
+          </ProgressSection>
         
       </div></section>
 
       {/* SOCIAL MEDIA */}
       <section id="media" style={{ background: "rgba(255,255,255,0.015)" }}><div className="sec">
         
-          <motion.div {...slideRight}>
+          <ProgressSection>
             <Eyebrow>// FOLLOW ALONG</Eyebrow>
             <SectionTitle>Social Media</SectionTitle>
             <motion.div className="media-row" variants={stagger} initial="hidden" whileInView="visible" viewport={{ once: true }}>
@@ -561,7 +588,7 @@ export default function Landing() {
                 </motion.a>
               ))}
             </motion.div>
-          </motion.div>
+          </ProgressSection>
         
       </div></section>
 
@@ -570,7 +597,7 @@ export default function Landing() {
       {/* SPONSORS */}
       <section id="sponsors" style={{ background: "rgba(255,255,255,0.015)" }}><div className="sec">
         
-          <motion.div {...slideUp}>
+          <ProgressSection>
             <div style={{ textAlign: "center" }}>
               <Eyebrow>// PARTNER WITH US</Eyebrow>
               <SectionTitle>Become a Sponsor</SectionTitle>
@@ -584,14 +611,14 @@ export default function Landing() {
                 <a href={`mailto:${email}`} style={{ display: "inline-block", background: "#ef4444", color: "#fff", textDecoration: "none", padding: isMobile ? "12px 24px" : "14px 32px", borderRadius: 6, fontFamily: "'Orbitron', sans-serif", fontWeight: 700, fontSize: isMobile ? 11 : 13, letterSpacing: 2 }}>CONTACT US TO SPONSOR</a>
               </motion.div>
             </div>
-          </motion.div>
+          </ProgressSection>
         
       </div></section>
 
       {/* DONATE */}
       <section style={{ background: "rgba(239,68,68,0.05)", borderTop: "1px solid rgba(239,68,68,0.2)" }}><div className="sec">
         
-          <motion.div {...slideRight}>
+          <ProgressSection>
             <div style={{ textAlign: "center" }}>
               <Eyebrow>// SUPPORT THE TEAM</Eyebrow>
               <SectionTitle>Make a Donation</SectionTitle>
@@ -600,14 +627,14 @@ export default function Landing() {
                 <a href={donate} target="_blank" rel="noreferrer" style={{ display: "inline-block", background: "#ef4444", color: "#fff", textDecoration: "none", padding: isMobile ? "12px 28px" : "14px 32px", borderRadius: 6, fontFamily: "'Orbitron', sans-serif", fontWeight: 700, fontSize: isMobile ? 11 : 13, letterSpacing: 2 }}>DONATE NOW</a>
               </motion.div>
             </div>
-          </motion.div>
+          </ProgressSection>
         
       </div></section>
 
       {/* CONTACT */}
       <section id="contact"><div className="sec">
         
-          <motion.div {...slideUp}>
+          <ProgressSection>
             <div style={{ textAlign: "center" }}>
               <Eyebrow>// GET IN TOUCH</Eyebrow>
               <SectionTitle>Contact</SectionTitle>
@@ -619,7 +646,7 @@ export default function Landing() {
                 ))}
               </motion.div>
             </div>
-          </motion.div>
+          </ProgressSection>
         
       </div></section>
 
