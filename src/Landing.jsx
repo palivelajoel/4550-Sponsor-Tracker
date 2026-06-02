@@ -73,6 +73,45 @@ function ParallaxLayer({ speed = 0.1, style, children, ...rest }) {
   return <motion.div style={{ y, ...style }} {...rest}>{children}</motion.div>;
 }
 
+function Card3D({ children, style: s, className, ...rest }) {
+  const ref = useRef(null);
+  const rx = useMotionValue(0);
+  const ry = useMotionValue(0);
+
+  function handleMouse(e) {
+    const el = ref.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const x = (e.clientX - rect.left) / rect.width;
+    const y = (e.clientY - rect.top) / rect.height;
+    rx.set((y - 0.5) * -8);
+    ry.set((x - 0.5) * 8);
+  }
+
+  function handleLeave() {
+    rx.set(0);
+    ry.set(0);
+  }
+
+  return (
+    <motion.div
+      ref={ref}
+      onMouseMove={handleMouse}
+      onMouseLeave={handleLeave}
+      style={{ perspective: 800, ...s }}
+      className={className}
+      {...rest}
+    >
+      <motion.div
+        style={{ rotateX: rx, rotateY: ry, transformStyle: "preserve-3d" }}
+        transition={{ type: "spring", stiffness: 200, damping: 20 }}
+      >
+        {children}
+      </motion.div>
+    </motion.div>
+  );
+}
+
 // Text that progressively reveals characters as you scroll through it
 function ScrollTypewriter({ text, style: styleProp, speed = 22, initialReveal = 0.4 }) {
   const ref = useRef(null);
@@ -490,10 +529,12 @@ export default function Landing() {
                 </motion.div>
                 <motion.div className="stats-grid" variants={stagger} initial="hidden" whileInView="visible" viewport={{ once: true }}>
                   {[{ num: "12+", label: "Years Competing" }, { num: "40–50", label: "Members" }, { num: "2016", label: "World Championship" }, { num: "3", label: "Sub-Teams" }].map((s, i) => (
-                    <motion.div key={s.label} variants={cardItem} whileHover={{ scale: 1.06, borderColor: "rgba(239,68,68,0.3)" }} style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 10, padding: isMobile ? "18px 14px" : "24px 20px", textAlign: "center" }}>
-                      <div style={{ fontFamily: "'Orbitron', sans-serif", fontSize: isMobile ? 22 : 28, fontWeight: 700, color: "#ef4444" }}>{s.num}</div>
-                      <div style={{ fontSize: 11, color: "#64748b", fontFamily: "'Share Tech Mono', monospace", marginTop: 4 }}>{s.label}</div>
-                    </motion.div>
+                    <Card3D key={s.label}>
+                      <motion.div variants={cardItem} whileHover={{ borderColor: "rgba(239,68,68,0.4)" }} style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 10, padding: isMobile ? "18px 14px" : "24px 20px", textAlign: "center" }}>
+                        <div style={{ fontFamily: "'Orbitron', sans-serif", fontSize: isMobile ? 22 : 28, fontWeight: 700, color: "#ef4444" }}>{s.num}</div>
+                        <div style={{ fontSize: 11, color: "#64748b", fontFamily: "'Share Tech Mono', monospace", marginTop: 4 }}>{s.label}</div>
+                      </motion.div>
+                    </Card3D>
                   ))}
                 </motion.div>
               </div>
@@ -516,12 +557,14 @@ export default function Landing() {
               <SectionTitle>Our Team</SectionTitle>
               <motion.div className="captains-grid" variants={stagger} initial="hidden" whileInView="visible" viewport={{ once: true }}>
                 {captains.map((c, i) => (
-                  <motion.div key={c.id} variants={cardItem} whileHover={{ scale: 1.04, borderColor: "rgba(239,68,68,0.3)" }} style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 12, padding: isMobile ? "20px 14px" : "26px 20px", textAlign: "center" }}>
+                    <Card3D key={c.id}>
+                    <motion.div variants={cardItem} whileHover={{ borderColor: "rgba(239,68,68,0.4)" }} style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 12, padding: isMobile ? "20px 14px" : "26px 20px", textAlign: "center" }}>
                     <CaptainPhoto photoUrl={c.photo_url} name={c.name} size={isMobile ? 70 : 88} style={{ display: "block", margin: "0 auto 12px", borderWidth: 2, borderStyle: "solid", borderColor: "rgba(239,68,68,0.4)" }} />
                     <div style={{ fontFamily: "'Orbitron', sans-serif", fontSize: isMobile ? 11 : 13, fontWeight: 700, color: "#f1f5f9", marginBottom: 4 }}>{c.name}</div>
                     <div style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 10, color: "#ef4444", letterSpacing: 2, marginBottom: c.bio ? 8 : 0 }}>{c.position}</div>
                     {c.bio && <p style={{ color: "#64748b", fontSize: 12, lineHeight: 1.6 }}>{c.bio}</p>}
                   </motion.div>
+                    </Card3D>
                 ))}
               </motion.div>
             </ProgressSection>
@@ -537,11 +580,13 @@ export default function Landing() {
             <SectionTitle>Sub-Teams</SectionTitle>
             <motion.div className="subteams-grid" variants={stagger} initial="hidden" whileInView="visible" viewport={{ once: true }}>
               {SUB_TEAMS.map((st, i) => (
-                <motion.div key={st.name} variants={cardItem} whileHover={{ scale: 1.04, borderTopColor: st.color }} style={{ background: "rgba(255,255,255,0.03)", border: `1px solid rgba(255,255,255,0.08)`, borderTop: `3px solid ${st.color}`, borderRadius: 10, padding: isMobile ? "22px 18px" : "28px 24px" }}>
-                  <div style={{ fontSize: 28, marginBottom: 10 }}>{st.icon}</div>
-                  <div style={{ fontFamily: "'Orbitron', sans-serif", fontSize: 14, fontWeight: 700, color: "#f1f5f9", marginBottom: 12, letterSpacing: 1 }}>{st.name}</div>
-                  <p style={{ color: "#94a3b8", lineHeight: 1.75, fontSize: 14 }}>{st.description}</p>
-                </motion.div>
+                <Card3D key={st.name}>
+                  <motion.div variants={cardItem} whileHover={{ borderTopColor: st.color }} style={{ background: "rgba(255,255,255,0.03)", border: `1px solid rgba(255,255,255,0.08)`, borderTop: `3px solid ${st.color}`, borderRadius: 10, padding: isMobile ? "22px 18px" : "28px 24px" }}>
+                    <div style={{ fontSize: 28, marginBottom: 10 }}>{st.icon}</div>
+                    <div style={{ fontFamily: "'Orbitron', sans-serif", fontSize: 14, fontWeight: 700, color: "#f1f5f9", marginBottom: 12, letterSpacing: 1 }}>{st.name}</div>
+                    <p style={{ color: "#94a3b8", lineHeight: 1.75, fontSize: 14 }}>{st.description}</p>
+                  </motion.div>
+                </Card3D>
               ))}
             </motion.div>
           </ProgressSection>
@@ -568,11 +613,13 @@ export default function Landing() {
                 { icon: "🏫", title: "School Outreach", desc: "Visiting local elementary and middle schools to inspire the next generation of engineers through hands-on robotics demos." },
                 { icon: "🌍", title: "Community Events", desc: "Participating in local STEM fairs, library events, and community festivals to promote robotics and engineering education." },
               ].map((o, i) => (
-                <motion.div key={o.title} variants={cardItem} whileHover={{ scale: 1.04, borderColor: "rgba(34,197,94,0.3)" }} style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 10, padding: isMobile ? "22px 18px" : "28px 24px" }}>
-                  <div style={{ fontSize: 28, marginBottom: 10 }}>{o.icon}</div>
-                  <div style={{ fontFamily: "'Orbitron', sans-serif", fontSize: 13, fontWeight: 700, color: "#f1f5f9", marginBottom: 10 }}>{o.title}</div>
-                  <p style={{ color: "#94a3b8", lineHeight: 1.7, fontSize: 14 }}>{o.desc}</p>
-                </motion.div>
+                <Card3D key={o.title}>
+                  <motion.div variants={cardItem} whileHover={{ borderColor: "rgba(34,197,94,0.4)" }} style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 10, padding: isMobile ? "22px 18px" : "28px 24px" }}>
+                    <div style={{ fontSize: 28, marginBottom: 10 }}>{o.icon}</div>
+                    <div style={{ fontFamily: "'Orbitron', sans-serif", fontSize: 13, fontWeight: 700, color: "#f1f5f9", marginBottom: 10 }}>{o.title}</div>
+                    <p style={{ color: "#94a3b8", lineHeight: 1.7, fontSize: 14 }}>{o.desc}</p>
+                  </motion.div>
+                </Card3D>
               ))}
             </motion.div>
           </ProgressSection>
@@ -654,7 +701,9 @@ export default function Landing() {
               <motion.p initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ type: "spring", stiffness: 100, damping: 18, delay: 0.1 }} style={{ color: "#94a3b8", maxWidth: 560, margin: "0 auto 28px", lineHeight: 1.8, fontSize: 15 }}>Sponsoring FRC Team 4550 connects your organization with motivated young engineers and demonstrates your commitment to STEM education. Multiple sponsorship tiers are available with recognition at competitions, on our robot, and across our platforms.</motion.p>
               <motion.div className="tier-row" variants={stagger} initial="hidden" whileInView="visible" viewport={{ once: true }}>
                 {[{ name: "Bronze", color: "#b45309" }, { name: "Silver", color: "#94a3b8" }, { name: "Gold", color: "#eab308" }, { name: "Platinum", color: "#818cf8" }].map((t, i) => (
-                  <motion.div key={t.name} variants={cardItem} whileHover={{ scale: 1.12, borderColor: t.color }} style={{ border: `1px solid ${t.color}`, borderRadius: 20, padding: isMobile ? "5px 14px" : "6px 20px", fontFamily: "'Orbitron', sans-serif", fontSize: isMobile ? 10 : 12, fontWeight: 700, letterSpacing: 2, color: t.color }}>{t.name}</motion.div>
+                  <Card3D key={t.name}>
+                    <motion.div variants={cardItem} whileHover={{ borderColor: t.color }} style={{ border: `1px solid ${t.color}`, borderRadius: 20, padding: isMobile ? "5px 14px" : "6px 20px", fontFamily: "'Orbitron', sans-serif", fontSize: isMobile ? 10 : 12, fontWeight: 700, letterSpacing: 2, color: t.color }}>{t.name}</motion.div>
+                  </Card3D>
                 ))}
               </motion.div>
               <motion.div initial={{ opacity: 0, scale: 0.9 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} transition={{ type: "spring", stiffness: 120, damping: 16, delay: 0.35 }}>
