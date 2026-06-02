@@ -241,6 +241,17 @@ function SponsorBar({ sponsors = [], isMobile }) {
   );
 }
 
+function BlurredImage({ src, style: s, ...rest }) {
+  if (!src) return null;
+  return (
+    <div style={{ position: "relative", borderRadius: 16, overflow: "hidden", ...s }} {...rest}>
+      <img src={src} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+        onError={e => { e.target.style.display = "none"; }} />
+      <div style={{ position: "absolute", inset: 0, borderRadius: 16, boxShadow: "inset 0 0 50px 15px #080a0f", pointerEvents: "none" }} />
+    </div>
+  );
+}
+
 export default function Landing() {
   const isMobile = useDeviceSize();
   const [config, setConfig] = useState({});
@@ -465,26 +476,6 @@ export default function Landing() {
         
       </section>
 
-      {/* TEAM IMAGES */}
-      {([1,2,3,4].some(i => config[`landing_img_${i}`])) && (
-        <section style={{ padding: isMobile ? "40px 16px" : "60px 24px", position: "relative" }}>
-          <div style={{ maxWidth: 1100, margin: "0 auto" }}>
-            <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(4,1fr)", gap: isMobile ? 10 : 16 }}>
-              {[1,2,3,4].map(i => {
-                const url = config[`landing_img_${i}`];
-                if (!url) return null;
-                return (
-                  <div key={i} style={{ borderRadius: 12, overflow: "hidden", aspectRatio: "4/3", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)" }}>
-                    <img src={url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
-                      onError={e => { e.target.style.display = "none"; }} />
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </section>
-      )}
-
       {/* ABOUT */}
       <section id="about"><div className="sec">
         
@@ -492,19 +483,26 @@ export default function Landing() {
             <Eyebrow>// WHO WE ARE</Eyebrow>
             <SectionTitle>About the Team</SectionTitle>
             <div className="about-grid">
-              <motion.div initial={{ opacity: 0, y: 50 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ type: "spring", stiffness: 100, damping: 18, delay: 0.1 }}>
-                <p style={{ color: "#94a3b8", lineHeight: 1.8, fontSize: 15, minHeight: "5em" }}>
-                  <ScrollTypewriter text={`FRC Team 4550 "Something's Bruin" has been competing since 2012, representing Cherry Creek High School in FIRST Robotics Competition. Our team of 40–50 student engineers, programmers, and designers builds competition-ready robots each season — from scratch, in six weeks. We've competed at the 2016 World Championship and continue to push the boundaries of what student-built robots can achieve. Beyond the robot, we're deeply committed to STEM outreach and community impact across the Denver metro area.`} />
-                </p>
-              </motion.div>
-              <motion.div className="stats-grid" variants={stagger} initial="hidden" whileInView="visible" viewport={{ once: true }}>
-                {[{ num: "12+", label: "Years Competing" }, { num: "40–50", label: "Members" }, { num: "2016", label: "World Championship" }, { num: "3", label: "Sub-Teams" }].map((s, i) => (
-                  <motion.div key={s.label} variants={cardItem} whileHover={{ scale: 1.06, borderColor: "rgba(239,68,68,0.3)" }} style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 10, padding: isMobile ? "18px 14px" : "24px 20px", textAlign: "center" }}>
-                    <div style={{ fontFamily: "'Orbitron', sans-serif", fontSize: isMobile ? 22 : 28, fontWeight: 700, color: "#ef4444" }}>{s.num}</div>
-                    <div style={{ fontSize: 11, color: "#64748b", fontFamily: "'Share Tech Mono', monospace", marginTop: 4 }}>{s.label}</div>
-                  </motion.div>
-                ))}
-              </motion.div>
+              <div>
+                <motion.div initial={{ opacity: 0, y: 50 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ type: "spring", stiffness: 100, damping: 18, delay: 0.1 }}>
+                  <p style={{ color: "#94a3b8", lineHeight: 1.8, fontSize: 15, minHeight: "5em" }}>
+                    <ScrollTypewriter text={`FRC Team 4550 "Something's Bruin" has been competing since 2012, representing Cherry Creek High School in FIRST Robotics Competition. Our team of 40–50 student engineers, programmers, and designers builds competition-ready robots each season — from scratch, in six weeks. We've competed at the 2016 World Championship and continue to push the boundaries of what student-built robots can achieve. Beyond the robot, we're deeply committed to STEM outreach and community impact across the Denver metro area.`} />
+                  </p>
+                </motion.div>
+                <motion.div className="stats-grid" variants={stagger} initial="hidden" whileInView="visible" viewport={{ once: true }}>
+                  {[{ num: "12+", label: "Years Competing" }, { num: "40–50", label: "Members" }, { num: "2016", label: "World Championship" }, { num: "3", label: "Sub-Teams" }].map((s, i) => (
+                    <motion.div key={s.label} variants={cardItem} whileHover={{ scale: 1.06, borderColor: "rgba(239,68,68,0.3)" }} style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 10, padding: isMobile ? "18px 14px" : "24px 20px", textAlign: "center" }}>
+                      <div style={{ fontFamily: "'Orbitron', sans-serif", fontSize: isMobile ? 22 : 28, fontWeight: 700, color: "#ef4444" }}>{s.num}</div>
+                      <div style={{ fontSize: 11, color: "#64748b", fontFamily: "'Share Tech Mono', monospace", marginTop: 4 }}>{s.label}</div>
+                    </motion.div>
+                  ))}
+                </motion.div>
+              </div>
+              {config.landing_img_1 && (
+                <motion.div initial={{ opacity: 0, x: 40 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ type: "spring", stiffness: 100, damping: 18, delay: 0.2 }}>
+                  <BlurredImage src={config.landing_img_1} style={{ width: "100%", aspectRatio: "4/3" }} />
+                </motion.div>
+              )}
             </div>
           </ProgressSection>
         
@@ -550,6 +548,14 @@ export default function Landing() {
           </ProgressSection>
         
       </div></section>
+
+      {config.landing_img_2 && (
+        <section style={{ padding: isMobile ? "0 0 40px" : "0 0 60px" }}>
+          <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 24px" }}>
+            <BlurredImage src={config.landing_img_2} style={{ width: "100%", aspectRatio: isMobile ? "16/9" : "21/9", borderRadius: 20 }} />
+          </div>
+        </section>
+      )}
 
       {/* OUTREACH */}
       <section id="outreach" style={{ background: "rgba(255,255,255,0.015)" }}><div className="sec">
@@ -664,13 +670,20 @@ export default function Landing() {
       <section style={{ background: "rgba(239,68,68,0.05)", borderTop: "1px solid rgba(239,68,68,0.2)" }}><div className="sec">
         
           <ProgressSection>
-            <div style={{ textAlign: "center" }}>
-              <Eyebrow>// SUPPORT THE TEAM</Eyebrow>
-              <SectionTitle>Make a Donation</SectionTitle>
-              <motion.p initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ type: "spring", stiffness: 100, damping: 18, delay: 0.1 }} style={{ color: "#94a3b8", maxWidth: 460, margin: "0 auto 28px", lineHeight: 1.8, fontSize: 15 }}>Every donation goes directly toward robot parts, competition fees, and team travel. Help us compete at the highest level.</motion.p>
-              <motion.div initial={{ opacity: 0, scale: 0.85 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} transition={{ type: "spring", stiffness: 140, damping: 14, delay: 0.25 }}>
-                <a href={donate} target="_blank" rel="noreferrer" style={{ display: "inline-block", background: "#ef4444", color: "#fff", textDecoration: "none", padding: isMobile ? "12px 28px" : "14px 32px", borderRadius: 6, fontFamily: "'Orbitron', sans-serif", fontWeight: 700, fontSize: isMobile ? 11 : 13, letterSpacing: 2 }}>DONATE NOW</a>
-              </motion.div>
+            <div className="about-grid">
+              <div>
+                <Eyebrow>// SUPPORT THE TEAM</Eyebrow>
+                <SectionTitle>Make a Donation</SectionTitle>
+                <motion.p initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ type: "spring", stiffness: 100, damping: 18, delay: 0.1 }} style={{ color: "#94a3b8", maxWidth: 460, lineHeight: 1.8, fontSize: 15 }}>Every donation goes directly toward robot parts, competition fees, and team travel. Help us compete at the highest level.</motion.p>
+                <motion.div initial={{ opacity: 0, scale: 0.85 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} transition={{ type: "spring", stiffness: 140, damping: 14, delay: 0.25 }} style={{ marginTop: 24 }}>
+                  <a href={donate} target="_blank" rel="noreferrer" style={{ display: "inline-block", background: "#ef4444", color: "#fff", textDecoration: "none", padding: isMobile ? "12px 28px" : "14px 32px", borderRadius: 6, fontFamily: "'Orbitron', sans-serif", fontWeight: 700, fontSize: isMobile ? 11 : 13, letterSpacing: 2 }}>DONATE NOW</a>
+                </motion.div>
+              </div>
+              {config.landing_img_3 && (
+                <motion.div initial={{ opacity: 0, x: 40 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ type: "spring", stiffness: 100, damping: 18, delay: 0.2 }}>
+                  <BlurredImage src={config.landing_img_3} style={{ width: "100%", aspectRatio: "4/3" }} />
+                </motion.div>
+              )}
             </div>
           </ProgressSection>
         
@@ -680,16 +693,23 @@ export default function Landing() {
       <section id="contact"><div className="sec">
         
           <ProgressSection>
-            <div style={{ textAlign: "center" }}>
-              <Eyebrow>// GET IN TOUCH</Eyebrow>
-              <SectionTitle>Contact</SectionTitle>
-              <motion.div className="contact-row" variants={stagger} initial="hidden" whileInView="visible" viewport={{ once: true }}>
-                {[{ href: `mailto:${email}`, icon: "✉️", label: email }, { href: ig, icon: "📸", label: "@cherrycreek.robotics" }].map((c, i) => (
-                  <motion.a key={c.label} href={c.href} target="_blank" rel="noreferrer" variants={cardItem} whileHover={{ scale: 1.05, borderColor: "rgba(239,68,68,0.4)", color: "#ef4444" }} style={{ display: "flex", alignItems: "center", gap: 8, color: "#94a3b8", textDecoration: "none", fontSize: isMobile ? 13 : 15, fontFamily: "'Share Tech Mono', monospace", padding: isMobile ? "12px 20px" : 0, background: isMobile ? "rgba(255,255,255,0.04)" : "transparent", borderRadius: isMobile ? 8 : 0, border: isMobile ? "1px solid rgba(255,255,255,0.08)" : "none" }}>
-                    <span style={{ fontSize: 18 }}>{c.icon}</span>{c.label}
-                  </motion.a>
-                ))}
-              </motion.div>
+            <div className="about-grid">
+              <div>
+                <Eyebrow>// GET IN TOUCH</Eyebrow>
+                <SectionTitle>Contact</SectionTitle>
+                <motion.div className="contact-row" variants={stagger} initial="hidden" whileInView="visible" viewport={{ once: true }}>
+                  {[{ href: `mailto:${email}`, icon: "✉️", label: email }, { href: ig, icon: "📸", label: "@cherrycreek.robotics" }].map((c, i) => (
+                    <motion.a key={c.label} href={c.href} target="_blank" rel="noreferrer" variants={cardItem} whileHover={{ scale: 1.05, borderColor: "rgba(239,68,68,0.4)", color: "#ef4444" }} style={{ display: "flex", alignItems: "center", gap: 8, color: "#94a3b8", textDecoration: "none", fontSize: isMobile ? 13 : 15, fontFamily: "'Share Tech Mono', monospace", padding: isMobile ? "12px 20px" : 0, background: isMobile ? "rgba(255,255,255,0.04)" : "transparent", borderRadius: isMobile ? 8 : 0, border: isMobile ? "1px solid rgba(255,255,255,0.08)" : "none" }}>
+                      <span style={{ fontSize: 18 }}>{c.icon}</span>{c.label}
+                    </motion.a>
+                  ))}
+                </motion.div>
+              </div>
+              {config.landing_img_4 && (
+                <motion.div initial={{ opacity: 0, x: 40 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ type: "spring", stiffness: 100, damping: 18, delay: 0.2 }}>
+                  <BlurredImage src={config.landing_img_4} style={{ width: "100%", aspectRatio: "4/3" }} />
+                </motion.div>
+              )}
             </div>
           </ProgressSection>
         
