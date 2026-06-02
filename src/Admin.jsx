@@ -1074,15 +1074,21 @@ function SiteConfig({ config, logoUrl, setLogoUrl, reload, showToast, isMobile }
     }, [vals.season_logos]);
 
     async function handleFile(e) {
-      const file = e.target.files?.[0];
-      if (!file) return;
+      const files = Array.from(e.target.files || []);
+      if (files.length === 0) return;
       setUploading(true);
-      const url = await uploadFile(file, 'team-assets');
-      if (!url) { showToast("Upload failed.", "#ef4444"); setUploading(false); return; }
-      const updated = [...logos, url];
+      let updated = [...logos];
+      let ok = 0, fail = 0;
+      for (const file of files) {
+        const url = await uploadFile(file, 'team-assets');
+        if (url) { updated.push(url); ok++; }
+        else fail++;
+      }
       setLogos(updated);
       setVals(v => ({ ...v, season_logos: JSON.stringify(updated) }));
       setUploading(false);
+      if (fail > 0) showToast(`Uploaded ${ok}, ${fail} failed.`, "#ef4444");
+      else showToast(`Uploaded ${ok} logo${ok !== 1 ? 's' : ''}.`);
     }
 
     function remove(idx) {
@@ -1096,8 +1102,8 @@ function SiteConfig({ config, logoUrl, setLogoUrl, reload, showToast, isMobile }
         <div style={S.cardTitle}>Season Logo Pack (floating logos)</div>
         <div style={{ fontSize: 12, color: "#94a3b8", fontFamily: "monospace", marginBottom: 10 }}>Upload FRC season logos — they'll float around the landing page as draggable knickknacks with a glow.</div>
         <div style={{ display: "flex", gap: 8, marginBottom: 12, alignItems: "center", flexWrap: "wrap" }}>
-          <button onClick={() => fileRef.current?.click()} style={{ ...S.btnPrimary, width: isMobile ? '100%' : undefined }}>{uploading ? "Uploading..." : "Upload Logo"}</button>
-          <input ref={fileRef} type="file" accept="image/*" style={{ display: "none" }} onChange={handleFile} />
+          <button onClick={() => fileRef.current?.click()} style={{ ...S.btnPrimary, width: isMobile ? '100%' : undefined }}>{uploading ? `Uploading ${fileRef.current?.files?.length || 0}...` : "Upload Logos"}</button>
+          <input ref={fileRef} type="file" accept="image/*" multiple style={{ display: "none" }} onChange={handleFile} />
           {uploading && <span style={{ fontSize: 12, color: "#a78bfa", fontFamily: "monospace" }}>Uploading...</span>}
         </div>
         {logos.length === 0 && <div style={{ fontSize: 12, color: "#475569", fontFamily: "monospace", marginBottom: 10 }}>No logos uploaded yet.</div>}
