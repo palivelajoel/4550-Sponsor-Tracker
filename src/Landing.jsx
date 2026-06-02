@@ -87,11 +87,11 @@ function ScrollTypewriter({ text, style: styleProp }) {
       const top = rect.top + window.scrollY;
       const h = rect.height;
       const winH = window.innerHeight;
-      const revealStart = top - winH + h * 0.2;
-      const revealEnd = top + h + winH * 0.2;
+      const revealStart = top - winH + h * 0.15;
+      const revealEnd = top + h + winH * 0.8;
       const scrollBottom = window.scrollY + winH;
       const progress = Math.max(0, Math.min(1, (scrollBottom - revealStart) / (revealEnd - revealStart)));
-      setCount(Math.floor(progress * text.length));
+      setCount(Math.floor(Math.pow(progress, 1.6) * text.length));
     };
     const unsub = scrollY.on('change', update);
     update();
@@ -102,7 +102,7 @@ function ScrollTypewriter({ text, style: styleProp }) {
     <span ref={ref} style={styleProp}>
       {text.slice(0, count)}
       {count < text.length && text.length > 10 && (
-        <span style={{ animation: "cursorBlink 0.8s step-end infinite", color: "#ef4444", fontWeight: 300 }}>|</span>
+        <span style={{ animation: "cursorBlink 0.7s step-end infinite", color: "#ef4444", fontWeight: 900, fontSize: "1.15em", textShadow: "0 0 8px rgba(239,68,68,0.6)" }}>|</span>
       )}
       <span style={{ opacity: 0.06, userSelect: "none" }}>{text.slice(count)}</span>
     </span>
