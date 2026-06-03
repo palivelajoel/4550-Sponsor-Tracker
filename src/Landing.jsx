@@ -209,6 +209,76 @@ function useScrollY(disabled) {
   return y;
 }
 
+function SpaceRocket() {
+  return (
+    <div style={{
+      position: "absolute",
+      bottom: "20%",
+      right: "10%",
+      opacity: 0.15,
+      pointerEvents: "none",
+      animation: "rocketDrift 24s ease-in-out infinite",
+      zIndex: 1,
+    }}>
+      <svg viewBox="0 0 140 220" width={80} height={126} style={{ display: "block" }}>
+        {/* Bear ears on nose cone */}
+        <circle cx="52" cy="16" r="14" fill="#b91c1c" />
+        <circle cx="88" cy="16" r="14" fill="#b91c1c" />
+        {/* Inner ear */}
+        <circle cx="52" cy="16" r="7" fill="#fca5a5" />
+        <circle cx="88" cy="16" r="7" fill="#fca5a5" />
+        {/* Nose cone */}
+        <path d="M70 4 C30 50 20 60 20 70 L20 90 L120 90 L120 70 C120 60 110 50 70 4Z" fill="#ef4444" />
+        {/* Rocket body */}
+        <rect x="24" y="90" width="92" height="80" rx="2" fill="#e2e8f0" />
+        {/* Body stripe */}
+        <rect x="24" y="90" width="92" height="14" fill="#b91c1c" />
+        {/* Window/porthole */}
+        <circle cx="70" cy="120" r="16" fill="#1e293b" />
+        <circle cx="70" cy="120" r="12" fill="#3b82f6" />
+        <circle cx="66" cy="116" r="4" fill="rgba(255,255,255,0.3)" />
+        {/* Paw print decal */}
+        <g transform="translate(100,130) scale(0.5)" opacity="0.3">
+          <circle cx="0" cy="0" r="10" fill="#475569" />
+          <circle cx="-10" cy="-14" r="5" fill="#475569" />
+          <circle cx="0" cy="-16" r="5" fill="#475569" />
+          <circle cx="10" cy="-14" r="5" fill="#475569" />
+          <circle cx="0" cy="-14" r="5" fill="#475569" />
+        </g>
+        {/* BRUIN-1 text */}
+        <text x="70" y="152" textAnchor="middle" fontFamily="monospace" fontSize="10" fontWeight="bold" fill="#1e293b" letterSpacing="1">BRUIN-1</text>
+        {/* Left fin */}
+        <path d="M24 150 L8 195 L24 170Z" fill="#ef4444" />
+        {/* Right fin */}
+        <path d="M116 150 L132 195 L116 170Z" fill="#ef4444" />
+        {/* Center fin */}
+        <path d="M66 158 L56 200 L70 170Z" fill="#b91c1c" />
+        <path d="M74 158 L84 200 L70 170Z" fill="#b91c1c" />
+        {/* Exhaust flame */}
+        <path d="M50 170 Q70 210 90 170Z" fill="#f97316" opacity="0.8">
+          <animate attributeName="d" values="M50 170 Q70 210 90 170Z;M52 170 Q70 220 88 170Z;M50 170 Q70 210 90 170Z" dur="0.6s" repeatCount="indefinite" />
+        </path>
+        <path d="M58 170 Q70 195 82 170Z" fill="#fbbf24" opacity="0.9">
+          <animate attributeName="d" values="M58 170 Q70 195 82 170Z;M60 170 Q70 200 80 170Z;M58 170 Q70 195 82 170Z" dur="0.4s" repeatCount="indefinite" />
+        </path>
+        {/* Small exhaust particles */}
+        <circle cx="70" cy="205" r="3" fill="#f97316" opacity="0.5">
+          <animate attributeName="cy" values="205;230" dur="1.2s" repeatCount="indefinite" />
+          <animate attributeName="opacity" values="0.5;0" dur="1.2s" repeatCount="indefinite" />
+        </circle>
+        <circle cx="60" cy="208" r="2" fill="#fbbf24" opacity="0.4">
+          <animate attributeName="cy" values="208;240" dur="1.8s" repeatCount="indefinite" />
+          <animate attributeName="opacity" values="0.4;0" dur="1.8s" repeatCount="indefinite" />
+        </circle>
+        <circle cx="80" cy="206" r="2" fill="#f97316" opacity="0.4">
+          <animate attributeName="cy" values="206;238" dur="1.5s" repeatCount="indefinite" />
+          <animate attributeName="opacity" values="0.4;0" dur="1.5s" repeatCount="indefinite" />
+        </circle>
+      </svg>
+    </div>
+  );
+}
+
 function ParticleCanvas({ isMobile }) {
   const canvasRef = useRef(null);
   const animRef = useRef(null);
@@ -475,6 +545,7 @@ export default function Landing() {
         @keyframes glitch{0%,90%,100%{text-shadow:none;}92%{text-shadow:-3px 0 #ef4444,3px 0 #3b82f6;}95%{text-shadow:3px 0 #ef4444,-3px 0 #3b82f6;}97%{text-shadow:none;}}
         @keyframes cursorBlink{0%,100%{opacity:1}50%{opacity:0}}
         @keyframes logoKnick{0%,100%{transform:translateY(0) rotate(0deg)}25%{transform:translateY(-6px) rotate(3deg)}75%{transform:translateY(2px) rotate(-2deg)}}
+        @keyframes rocketDrift{0%,100%{transform:translate(0,0) rotate(-4deg)}20%{transform:translate(15px,-20px) rotate(-1deg)}40%{transform:translate(-8px,-40px) rotate(2deg)}60%{transform:translate(-25px,-15px) rotate(0deg)}80%{transform:translate(10px,-10px) rotate(-3deg)}}
       `}</style>
 
       {/* NAV */}
@@ -512,6 +583,7 @@ export default function Landing() {
       {/* HERO */}
       <section style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "linear-gradient(180deg,rgba(8,10,15,1) 0%,rgba(13,17,23,0.85) 100%)", paddingTop: isMobile ? 130 : 70, position: "relative", overflow: "hidden" }}>
         <ParticleCanvas isMobile={isMobile} />
+        <SpaceRocket />
         <div style={{ position: "absolute", inset: 0, backgroundImage: "linear-gradient(rgba(239,68,68,0.04) 1px,transparent 1px),linear-gradient(90deg,rgba(239,68,68,0.04) 1px,transparent 1px)", backgroundSize: isMobile ? "40px 40px" : "60px 60px", pointerEvents: "none" }} />
         
           <div ref={heroParallaxRef} style={{ textAlign: "center", zIndex: 1, padding: isMobile ? "0 20px" : "0 24px", transform: isMobile ? "none" : "none" }}>
