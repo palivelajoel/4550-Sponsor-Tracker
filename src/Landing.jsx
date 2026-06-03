@@ -218,12 +218,13 @@ function ParticleCanvas({ isMobile }) {
     let W = canvas.width = window.innerWidth;
     let H = canvas.height = window.innerHeight;
 
-    // ── drifting particles ──
-    const ptCount = Math.min(Math.floor((W * H) / (isMobile ? 30000 : 20000)), 120);
+    // ── drifting particles (more, with constellation connections) ──
+    const maxDist = 110;
+    const ptCount = Math.min(Math.floor((W * H) / (isMobile ? 12000 : 8000)), 400);
     const pts = Array.from({ length: ptCount }, () => ({
       x: Math.random() * W, y: Math.random() * H,
-      vx: (Math.random() - 0.5) * 0.3, vy: (Math.random() - 0.5) * 0.3,
-      r: Math.random() * 1.5 + 0.5,
+      vx: (Math.random() - 0.5) * 0.25, vy: (Math.random() - 0.5) * 0.25,
+      r: Math.random() * 2 + 0.8,
     }));
 
     // ── shooting stars ──
@@ -248,6 +249,23 @@ function ParticleCanvas({ isMobile }) {
       if (frameSkip === 0) { animRef.current = requestAnimationFrame(draw); return; }
       ctx.clearRect(0, 0, W, H);
 
+      // ── constellation lines (connect nearby particles) ──
+      for (let i = 0; i < pts.length; i++) {
+        for (let j = i + 1; j < pts.length; j++) {
+          const dx = pts[i].x - pts[j].x, dy = pts[i].y - pts[j].y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          if (dist < maxDist) {
+            const alpha = (1 - dist / maxDist) * 0.3;
+            ctx.beginPath();
+            ctx.moveTo(pts[i].x, pts[i].y);
+            ctx.lineTo(pts[j].x, pts[j].y);
+            ctx.strokeStyle = `rgba(255,255,255,${alpha})`;
+            ctx.lineWidth = 0.5;
+            ctx.stroke();
+          }
+        }
+      }
+
       // ── drifting particles ──
       for (let i = 0; i < pts.length; i++) {
         const p = pts[i];
@@ -255,7 +273,8 @@ function ParticleCanvas({ isMobile }) {
         if (p.x < 0) p.x = W; if (p.x > W) p.x = 0;
         if (p.y < 0) p.y = H; if (p.y > H) p.y = 0;
         ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-        ctx.fillStyle = "rgba(255,255,255,0.5)"; ctx.fill();
+        ctx.fillStyle = `rgba(255,255,255,${0.4 + p.r / 6})`;
+        ctx.fill();
       }
 
       // ── shooting stars ──
