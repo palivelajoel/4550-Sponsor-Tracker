@@ -209,76 +209,6 @@ function useScrollY(disabled) {
   return y;
 }
 
-function SpaceRocket() {
-  return (
-    <div style={{
-      position: "absolute",
-      bottom: "20%",
-      right: "10%",
-      opacity: 0.15,
-      pointerEvents: "none",
-      animation: "rocketDrift 24s ease-in-out infinite",
-      zIndex: 1,
-    }}>
-      <svg viewBox="0 0 140 220" width={80} height={126} style={{ display: "block" }}>
-        {/* Bear ears on nose cone */}
-        <circle cx="52" cy="16" r="14" fill="#b91c1c" />
-        <circle cx="88" cy="16" r="14" fill="#b91c1c" />
-        {/* Inner ear */}
-        <circle cx="52" cy="16" r="7" fill="#fca5a5" />
-        <circle cx="88" cy="16" r="7" fill="#fca5a5" />
-        {/* Nose cone */}
-        <path d="M70 4 C30 50 20 60 20 70 L20 90 L120 90 L120 70 C120 60 110 50 70 4Z" fill="#ef4444" />
-        {/* Rocket body */}
-        <rect x="24" y="90" width="92" height="80" rx="2" fill="#e2e8f0" />
-        {/* Body stripe */}
-        <rect x="24" y="90" width="92" height="14" fill="#b91c1c" />
-        {/* Window/porthole */}
-        <circle cx="70" cy="120" r="16" fill="#1e293b" />
-        <circle cx="70" cy="120" r="12" fill="#3b82f6" />
-        <circle cx="66" cy="116" r="4" fill="rgba(255,255,255,0.3)" />
-        {/* Paw print decal */}
-        <g transform="translate(100,130) scale(0.5)" opacity="0.3">
-          <circle cx="0" cy="0" r="10" fill="#475569" />
-          <circle cx="-10" cy="-14" r="5" fill="#475569" />
-          <circle cx="0" cy="-16" r="5" fill="#475569" />
-          <circle cx="10" cy="-14" r="5" fill="#475569" />
-          <circle cx="0" cy="-14" r="5" fill="#475569" />
-        </g>
-        {/* BRUIN-1 text */}
-        <text x="70" y="152" textAnchor="middle" fontFamily="monospace" fontSize="10" fontWeight="bold" fill="#1e293b" letterSpacing="1">BRUIN-1</text>
-        {/* Left fin */}
-        <path d="M24 150 L8 195 L24 170Z" fill="#ef4444" />
-        {/* Right fin */}
-        <path d="M116 150 L132 195 L116 170Z" fill="#ef4444" />
-        {/* Center fin */}
-        <path d="M66 158 L56 200 L70 170Z" fill="#b91c1c" />
-        <path d="M74 158 L84 200 L70 170Z" fill="#b91c1c" />
-        {/* Exhaust flame */}
-        <path d="M50 170 Q70 210 90 170Z" fill="#f97316" opacity="0.8">
-          <animate attributeName="d" values="M50 170 Q70 210 90 170Z;M52 170 Q70 220 88 170Z;M50 170 Q70 210 90 170Z" dur="0.6s" repeatCount="indefinite" />
-        </path>
-        <path d="M58 170 Q70 195 82 170Z" fill="#fbbf24" opacity="0.9">
-          <animate attributeName="d" values="M58 170 Q70 195 82 170Z;M60 170 Q70 200 80 170Z;M58 170 Q70 195 82 170Z" dur="0.4s" repeatCount="indefinite" />
-        </path>
-        {/* Small exhaust particles */}
-        <circle cx="70" cy="205" r="3" fill="#f97316" opacity="0.5">
-          <animate attributeName="cy" values="205;230" dur="1.2s" repeatCount="indefinite" />
-          <animate attributeName="opacity" values="0.5;0" dur="1.2s" repeatCount="indefinite" />
-        </circle>
-        <circle cx="60" cy="208" r="2" fill="#fbbf24" opacity="0.4">
-          <animate attributeName="cy" values="208;240" dur="1.8s" repeatCount="indefinite" />
-          <animate attributeName="opacity" values="0.4;0" dur="1.8s" repeatCount="indefinite" />
-        </circle>
-        <circle cx="80" cy="206" r="2" fill="#f97316" opacity="0.4">
-          <animate attributeName="cy" values="206;238" dur="1.5s" repeatCount="indefinite" />
-          <animate attributeName="opacity" values="0.4;0" dur="1.5s" repeatCount="indefinite" />
-        </circle>
-      </svg>
-    </div>
-  );
-}
-
 function ParticleCanvas({ isMobile }) {
   const canvasRef = useRef(null);
   const animRef = useRef(null);
@@ -287,17 +217,133 @@ function ParticleCanvas({ isMobile }) {
     const ctx = canvas.getContext("2d");
     let W = canvas.width = window.innerWidth;
     let H = canvas.height = window.innerHeight;
+
+    // ── letter patterns (4col x 6row, 1=star) ──
+    const L = {};
+    const pat = (rows) => { const p = []; rows.forEach((r, ri) => [...r].forEach((c, ci) => { if (c === '1') p.push([ci, ri]); })); return p; };
+    L.B = pat(["1111","1001","1111","1001","1111","1001"]);
+    L.R = pat(["1111","1001","1111","1010","1010","1001"]);
+    L.U = pat(["1001","1001","1001","1001","1001","0110"]);
+    L.I = pat(["1111","0010","0010","0010","0010","1111"]);
+    L.N = pat(["1001","1101","1101","1011","1011","1001"]);
+    L.C = pat(["0111","1000","1000","1000","1000","0111"]);
+    L.H = pat(["1001","1001","1111","1001","1001","1001"]);
+    L.S = pat(["1111","1000","1111","0001","0001","1111"]);
+    L.O = pat(["1110","1001","1001","1001","1001","1110"]);
+    L.L = pat(["1000","1000","1000","1000","1000","1111"]);
+    L.A = pat(["0110","1001","1001","1111","1001","1001"]);
+    L.D = pat(["1110","1001","1001","1001","1001","1110"]);
+    L[' '] = pat(["0000","0000","0000","0000","0000","0000"]);
+
+    // ── build constellation words ──
+    function buildWord(word, ox, oy, scale) {
+      const cw = 5 * scale, ch = 6 * scale;
+      const stars = [], conns = [];
+      let cx = ox;
+      for (const ch of word) {
+        const pts = L[ch] || L[' '];
+        const offset = stars.length;
+        for (const [ci, ri] of pts) {
+          stars.push({ x: cx + ci * scale + scale/2, y: oy + ri * scale + scale/2 });
+        }
+        // horizontal connections within this char
+        const grid = {};
+        pts.forEach(([ci, ri], idx) => { grid[`${ci},${ri}`] = offset + idx; });
+        for (const [ci, ri] of pts) {
+          const a = grid[`${ci},${ri}`];
+          const b = grid[`${ci+1},${ri}`];
+          if (b !== undefined) conns.push([a, b]);
+          const c = grid[`${ci},${ri+1}`];
+          if (c !== undefined) conns.push([a, c]);
+        }
+        // connect to previous char
+        if (stars.length > offset) {
+          const prevLast = stars.length - 1;
+          conns.push([prevLast - (pts.length > 0 ? 1 : 0), offset]);
+        }
+        cx += cw;
+      }
+      return { stars, conns, count: stars.length };
+    }
+
+    // ── constellation data ──
+    const constWords = [
+      buildWord("BRUIN", W * 0.08, H * 0.22, Math.min(W, H) * 0.018),
+      buildWord("CCHS", W * 0.08, H * 0.36, Math.min(W, H) * 0.016),
+      buildWord("COLORADO", W * 0.08, H * 0.48, Math.min(W, H) * 0.014),
+    ];
+    // Merge all constellation stars and connections
+    let constStars = [];
+    let constConns = [];
+    for (const w of constWords) {
+      const offset = constStars.length;
+      constStars.push(...w.stars);
+      constConns.push(...w.conns.map(([a, b]) => [a + offset, b + offset]));
+      // connect words vertically (make a constellation line between last star of prev word and first of next)
+    }
+    // Connect the words: last star of each word to first star of next
+    let ptr = 0;
+    for (const w of constWords) {
+      ptr += w.stars.length;
+      const next = constWords[constWords.indexOf(w) + 1];
+      if (next) {
+        constConns.push([ptr - 1, ptr]);
+      }
+    }
+
+    // ── drifting particles ──
     const ptCount = Math.min(Math.floor((W * H) / (isMobile ? 30000 : 20000)), 120);
     const pts = Array.from({ length: ptCount }, () => ({
       x: Math.random() * W, y: Math.random() * H,
       vx: (Math.random() - 0.5) * 0.3, vy: (Math.random() - 0.5) * 0.3,
       r: Math.random() * 1.5 + 0.5,
     }));
+
+    // ── shooting stars ──
+    let shootingStars = [];
+    let nextShootTimer = 2000 + Math.random() * 4000;
+
+    function spawnShootingStar() {
+      const angle = -Math.PI / 4 + (Math.random() - 0.5) * 0.3;
+      const speed = 4 + Math.random() * 3;
+      const len = 60 + Math.random() * 80;
+      const x = Math.random() * W * 1.2 - W * 0.1;
+      const y = Math.random() * H * 0.5;
+      shootingStars.push({
+        x, y, vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed,
+        len, life: 1, r: 2 + Math.random() * 1.5,
+      });
+    }
+
     let frameSkip = 0;
     function draw() {
       frameSkip = (frameSkip + 1) % 2;
       if (frameSkip === 0) { animRef.current = requestAnimationFrame(draw); return; }
       ctx.clearRect(0, 0, W, H);
+
+      // ── constellation lines ──
+      ctx.strokeStyle = "rgba(255,255,255,0.06)";
+      ctx.lineWidth = 0.5;
+      for (const [a, b] of constConns) {
+        ctx.beginPath();
+        ctx.moveTo(constStars[a].x, constStars[a].y);
+        ctx.lineTo(constStars[b].x, constStars[b].y);
+        ctx.stroke();
+      }
+
+      // ── constellation stars ──
+      for (const s of constStars) {
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, 2, 0, Math.PI * 2);
+        ctx.fillStyle = "rgba(255,255,255,0.35)";
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, 4, 0, Math.PI * 2);
+        ctx.fillStyle = "rgba(255,255,255,0.08)";
+        ctx.fill();
+      }
+
+      // ── drifting particles ──
       for (let i = 0; i < pts.length; i++) {
         const p = pts[i];
         p.x += p.vx; p.y += p.vy;
@@ -306,10 +352,67 @@ function ParticleCanvas({ isMobile }) {
         ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
         ctx.fillStyle = "rgba(255,255,255,0.5)"; ctx.fill();
       }
+
+      // ── shooting stars ──
+      for (let i = shootingStars.length - 1; i >= 0; i--) {
+        const s = shootingStars[i];
+        s.x += s.vx; s.y += s.vy;
+        s.life -= 0.008;
+        if (s.life <= 0 || s.x > W + 50 || s.y > H + 50) { shootingStars.splice(i, 1); continue; }
+        // tail
+        const tailX = s.x - s.vx * (s.len / s.vx);
+        const tailY = s.y - s.vy * (s.len / s.vy);
+        const grad = ctx.createLinearGradient(s.x, s.y, tailX, tailY);
+        grad.addColorStop(0, `rgba(255,255,255,${s.life * 0.9})`);
+        grad.addColorStop(0.3, `rgba(255,255,255,${s.life * 0.4})`);
+        grad.addColorStop(1, `rgba(255,255,255,0)`);
+        ctx.strokeStyle = grad;
+        ctx.lineWidth = s.r;
+        ctx.beginPath();
+        ctx.moveTo(s.x, s.y);
+        ctx.lineTo(tailX, tailY);
+        ctx.stroke();
+        // head glow
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, s.r * 3, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(255,255,255,${s.life * 0.15})`;
+        ctx.fill();
+      }
+
+      // ── spawn timer ──
+      nextShootTimer -= 16;
+      if (nextShootTimer <= 0) {
+        spawnShootingStar();
+        if (Math.random() < 0.3) spawnShootingStar(); // sometimes double
+        nextShootTimer = 2000 + Math.random() * 5000;
+      }
+
       animRef.current = requestAnimationFrame(draw);
     }
     draw();
-    const onResize = () => { W = canvas.width = window.innerWidth; H = canvas.height = window.innerHeight; };
+
+    const onResize = () => { W = canvas.width = window.innerWidth; H = canvas.height = window.innerHeight;
+      // rebuild constellations at new size
+      const ns = (w) => Math.min(W, H) * w;
+      const newWords = [
+        buildWord("BRUIN", W * 0.08, H * 0.22, ns(0.018)),
+        buildWord("CCHS", W * 0.08, H * 0.36, ns(0.016)),
+        buildWord("COLORADO", W * 0.08, H * 0.48, ns(0.014)),
+      ];
+      constStars = []; constConns = [];
+      for (const w of newWords) {
+        const offset = constStars.length;
+        constStars.push(...w.stars);
+        constConns.push(...w.conns.map(([a, b]) => [a + offset, b + offset]));
+      }
+      let ptr = 0;
+      for (const w of newWords) {
+        ptr += w.stars.length;
+        const idx = newWords.indexOf(w);
+        const next = newWords[idx + 1];
+        if (next) constConns.push([ptr - 1, ptr]);
+      }
+    };
     window.addEventListener("resize", onResize);
     return () => { cancelAnimationFrame(animRef.current); window.removeEventListener("resize", onResize); };
   }, [isMobile]);
@@ -545,7 +648,7 @@ export default function Landing() {
         @keyframes glitch{0%,90%,100%{text-shadow:none;}92%{text-shadow:-3px 0 #ef4444,3px 0 #3b82f6;}95%{text-shadow:3px 0 #ef4444,-3px 0 #3b82f6;}97%{text-shadow:none;}}
         @keyframes cursorBlink{0%,100%{opacity:1}50%{opacity:0}}
         @keyframes logoKnick{0%,100%{transform:translateY(0) rotate(0deg)}25%{transform:translateY(-6px) rotate(3deg)}75%{transform:translateY(2px) rotate(-2deg)}}
-        @keyframes rocketDrift{0%,100%{transform:translate(0,0) rotate(-4deg)}20%{transform:translate(15px,-20px) rotate(-1deg)}40%{transform:translate(-8px,-40px) rotate(2deg)}60%{transform:translate(-25px,-15px) rotate(0deg)}80%{transform:translate(10px,-10px) rotate(-3deg)}}
+
       `}</style>
 
       {/* NAV */}
@@ -583,7 +686,6 @@ export default function Landing() {
       {/* HERO */}
       <section style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "linear-gradient(180deg,rgba(8,10,15,1) 0%,rgba(13,17,23,0.85) 100%)", paddingTop: isMobile ? 130 : 70, position: "relative", overflow: "hidden" }}>
         <ParticleCanvas isMobile={isMobile} />
-        <SpaceRocket />
         <div style={{ position: "absolute", inset: 0, backgroundImage: "linear-gradient(rgba(239,68,68,0.04) 1px,transparent 1px),linear-gradient(90deg,rgba(239,68,68,0.04) 1px,transparent 1px)", backgroundSize: isMobile ? "40px 40px" : "60px 60px", pointerEvents: "none" }} />
         
           <div ref={heroParallaxRef} style={{ textAlign: "center", zIndex: 1, padding: isMobile ? "0 20px" : "0 24px", transform: isMobile ? "none" : "none" }}>
