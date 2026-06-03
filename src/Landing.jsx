@@ -218,79 +218,6 @@ function ParticleCanvas({ isMobile }) {
     let W = canvas.width = window.innerWidth;
     let H = canvas.height = window.innerHeight;
 
-    // ── letter patterns (4col x 6row, 1=star) ──
-    const L = {};
-    const pat = (rows) => { const p = []; rows.forEach((r, ri) => [...r].forEach((c, ci) => { if (c === '1') p.push([ci, ri]); })); return p; };
-    L.B = pat(["1111","1001","1111","1001","1111","1001"]);
-    L.R = pat(["1111","1001","1111","1010","1010","1001"]);
-    L.U = pat(["1001","1001","1001","1001","1001","0110"]);
-    L.I = pat(["1111","0010","0010","0010","0010","1111"]);
-    L.N = pat(["1001","1101","1101","1011","1011","1001"]);
-    L.C = pat(["0111","1000","1000","1000","1000","0111"]);
-    L.H = pat(["1001","1001","1111","1001","1001","1001"]);
-    L.S = pat(["1111","1000","1111","0001","0001","1111"]);
-    L.O = pat(["1110","1001","1001","1001","1001","1110"]);
-    L.L = pat(["1000","1000","1000","1000","1000","1111"]);
-    L.A = pat(["0110","1001","1001","1111","1001","1001"]);
-    L.D = pat(["1110","1001","1001","1001","1001","1110"]);
-    L[' '] = pat(["0000","0000","0000","0000","0000","0000"]);
-
-    // ── build constellation words ──
-    function buildWord(word, ox, oy, scale) {
-      const cw = 5 * scale, ch = 6 * scale;
-      const stars = [], conns = [];
-      let cx = ox;
-      for (const ch of word) {
-        const pts = L[ch] || L[' '];
-        const offset = stars.length;
-        for (const [ci, ri] of pts) {
-          stars.push({ x: cx + ci * scale + scale/2, y: oy + ri * scale + scale/2 });
-        }
-        // horizontal connections within this char
-        const grid = {};
-        pts.forEach(([ci, ri], idx) => { grid[`${ci},${ri}`] = offset + idx; });
-        for (const [ci, ri] of pts) {
-          const a = grid[`${ci},${ri}`];
-          const b = grid[`${ci+1},${ri}`];
-          if (b !== undefined) conns.push([a, b]);
-          const c = grid[`${ci},${ri+1}`];
-          if (c !== undefined) conns.push([a, c]);
-        }
-        // connect to previous char
-        if (stars.length > offset) {
-          const prevLast = stars.length - 1;
-          conns.push([prevLast - (pts.length > 0 ? 1 : 0), offset]);
-        }
-        cx += cw;
-      }
-      return { stars, conns, count: stars.length };
-    }
-
-    // ── constellation data ──
-    const constWords = [
-      buildWord("BRUIN", W * 0.08, H * 0.22, Math.min(W, H) * 0.018),
-      buildWord("CCHS", W * 0.08, H * 0.36, Math.min(W, H) * 0.016),
-      buildWord("COLORADO", W * 0.08, H * 0.48, Math.min(W, H) * 0.014),
-    ];
-    // Merge all constellation stars and connections
-    let constStars = [];
-    let constConns = [];
-    for (const w of constWords) {
-      const offset = constStars.length;
-      constStars.push(...w.stars);
-      constConns.push(...w.conns.map(([a, b]) => [a + offset, b + offset]));
-      // connect words vertically (make a constellation line between last star of prev word and first of next)
-    }
-    // Connect the words: last star of each word to first star of next
-    let ptr = 0;
-    for (const w of constWords) {
-      ptr += w.stars.length;
-      const next = constWords[constWords.indexOf(w) + 1];
-      if (next) {
-        constConns.push([ptr - 1, ptr]);
-      }
-    }
-
     // ── drifting particles ──
     const ptCount = Math.min(Math.floor((W * H) / (isMobile ? 30000 : 20000)), 120);
     const pts = Array.from({ length: ptCount }, () => ({
@@ -320,28 +247,6 @@ function ParticleCanvas({ isMobile }) {
       frameSkip = (frameSkip + 1) % 2;
       if (frameSkip === 0) { animRef.current = requestAnimationFrame(draw); return; }
       ctx.clearRect(0, 0, W, H);
-
-      // ── constellation lines ──
-      ctx.strokeStyle = "rgba(255,255,255,0.06)";
-      ctx.lineWidth = 0.5;
-      for (const [a, b] of constConns) {
-        ctx.beginPath();
-        ctx.moveTo(constStars[a].x, constStars[a].y);
-        ctx.lineTo(constStars[b].x, constStars[b].y);
-        ctx.stroke();
-      }
-
-      // ── constellation stars ──
-      for (const s of constStars) {
-        ctx.beginPath();
-        ctx.arc(s.x, s.y, 2, 0, Math.PI * 2);
-        ctx.fillStyle = "rgba(255,255,255,0.35)";
-        ctx.fill();
-        ctx.beginPath();
-        ctx.arc(s.x, s.y, 4, 0, Math.PI * 2);
-        ctx.fillStyle = "rgba(255,255,255,0.08)";
-        ctx.fill();
-      }
 
       // ── drifting particles ──
       for (let i = 0; i < pts.length; i++) {
@@ -391,28 +296,7 @@ function ParticleCanvas({ isMobile }) {
     }
     draw();
 
-    const onResize = () => { W = canvas.width = window.innerWidth; H = canvas.height = window.innerHeight;
-      // rebuild constellations at new size
-      const ns = (w) => Math.min(W, H) * w;
-      const newWords = [
-        buildWord("BRUIN", W * 0.08, H * 0.22, ns(0.018)),
-        buildWord("CCHS", W * 0.08, H * 0.36, ns(0.016)),
-        buildWord("COLORADO", W * 0.08, H * 0.48, ns(0.014)),
-      ];
-      constStars = []; constConns = [];
-      for (const w of newWords) {
-        const offset = constStars.length;
-        constStars.push(...w.stars);
-        constConns.push(...w.conns.map(([a, b]) => [a + offset, b + offset]));
-      }
-      let ptr = 0;
-      for (const w of newWords) {
-        ptr += w.stars.length;
-        const idx = newWords.indexOf(w);
-        const next = newWords[idx + 1];
-        if (next) constConns.push([ptr - 1, ptr]);
-      }
-    };
+    const onResize = () => { W = canvas.width = window.innerWidth; H = canvas.height = window.innerHeight; };
     window.addEventListener("resize", onResize);
     return () => { cancelAnimationFrame(animRef.current); window.removeEventListener("resize", onResize); };
   }, [isMobile]);
