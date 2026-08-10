@@ -355,22 +355,6 @@ function SponsorBar({ sponsors = [], isMobile }) {
   );
 }
 
-function LogoKnick({ logos, index = 0, size = 36, style: s }) {
-  const list = (() => { try { return JSON.parse(logos || "[]"); } catch { return []; } })();
-  const url = list[index % list.length];
-  if (!url || list.length === 0) return null;
-  return (
-    <img src={url} alt="" draggable={false}
-      style={{
-        width: size, height: size, objectFit: "contain", borderRadius: 6,
-        filter: "drop-shadow(0 0 8px rgba(239,68,68,0.45))",
-        animation: `logoKnick ${6 + (index % 3) * 1.5}s ease-in-out ${index * 0.7}s infinite`,
-        opacity: 0.6, pointerEvents: "none", userSelect: "none",
-        ...s,
-      }} />
-  );
-}
-
 function BlurredImage({ src, style: s, ...rest }) {
   if (!src) return null;
   return (
@@ -550,7 +534,7 @@ export default function Landing() {
         }
         @keyframes glitch{0%,90%,100%{text-shadow:none;}92%{text-shadow:-3px 0 #ef4444,3px 0 #3b82f6;}95%{text-shadow:3px 0 #ef4444,-3px 0 #3b82f6;}97%{text-shadow:none;}}
         @keyframes cursorBlink{0%,100%{opacity:1}50%{opacity:0}}
-        @keyframes logoKnick{0%,100%{transform:translateY(0) rotate(0deg)}25%{transform:translateY(-6px) rotate(3deg)}75%{transform:translateY(2px) rotate(-2deg)}}
+        
 
       `}</style>
 
@@ -630,7 +614,7 @@ export default function Landing() {
                       </motion.div>
                     </Card3D>
                   ))}
-                  <LogoKnick logos={config.season_logos} index={0} size={32} style={{ margin: "0 auto" }} />
+                  
                 </motion.div>
               </div>
               {config.landing_img_1 && (
@@ -680,7 +664,7 @@ export default function Landing() {
                     <div style={{ fontSize: 28, marginBottom: 10 }}>{st.icon}</div>
                     <div style={{ fontFamily: "'Orbitron', sans-serif", fontSize: 14, fontWeight: 700, color: "#f1f5f9", marginBottom: 12, letterSpacing: 1 }}>{st.name}</div>
                     <p style={{ color: "#94a3b8", lineHeight: 1.75, fontSize: 14 }}>{st.description}</p>
-                    <LogoKnick logos={config.season_logos} index={i + 1} size={28} style={{ position: "absolute", bottom: 8, right: 8, opacity: 0.35 }} />
+                    
                   </motion.div>
                 </Card3D>
               ))}
@@ -714,7 +698,7 @@ export default function Landing() {
                     <div style={{ fontSize: 28, marginBottom: 10 }}>{o.icon}</div>
                     <div style={{ fontFamily: "'Orbitron', sans-serif", fontSize: 13, fontWeight: 700, color: "#f1f5f9", marginBottom: 10 }}>{o.title}</div>
                     <p style={{ color: "#94a3b8", lineHeight: 1.7, fontSize: 14 }}>{o.desc}</p>
-                    <LogoKnick logos={config.season_logos} index={i + 5} size={26} style={{ position: "absolute", bottom: 8, right: 8, opacity: 0.3 }} />
+                    
                   </motion.div>
                 </Card3D>
               ))}
@@ -802,7 +786,7 @@ export default function Landing() {
                     <motion.div variants={cardItem} whileHover={{ borderColor: t.color }} style={{ border: `1px solid ${t.color}`, borderRadius: 20, padding: isMobile ? "5px 14px" : "6px 20px", fontFamily: "'Orbitron', sans-serif", fontSize: isMobile ? 10 : 12, fontWeight: 700, letterSpacing: 2, color: t.color }}>{t.name}</motion.div>
                   </Card3D>
                 ))}
-                <LogoKnick logos={config.season_logos} index={2} size={30} style={{ alignSelf: "center" }} />
+                
               </motion.div>
               <motion.div initial={{ opacity: 0, scale: 0.9 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} transition={{ type: "spring", stiffness: 120, damping: 16, delay: 0.35 }}>
                 <a href={`mailto:${email}`} style={{ display: "inline-block", background: "#ef4444", color: "#fff", textDecoration: "none", padding: isMobile ? "12px 24px" : "14px 32px", borderRadius: 6, fontFamily: "'Orbitron', sans-serif", fontWeight: 700, fontSize: isMobile ? 11 : 13, letterSpacing: 2 }}>CONTACT US TO SPONSOR</a>
@@ -822,7 +806,7 @@ export default function Landing() {
               <motion.p initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ type: "spring", stiffness: 100, damping: 18, delay: 0.1 }} style={{ color: "#94a3b8", maxWidth: 460, margin: "0 auto 28px", lineHeight: 1.8, fontSize: 15 }}>Every donation goes directly toward robot parts, competition fees, and team travel. Help us compete at the highest level.</motion.p>
               <motion.div initial={{ opacity: 0, scale: 0.85 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} transition={{ type: "spring", stiffness: 140, damping: 14, delay: 0.25 }} style={{ display: "flex", justifyContent: "center", gap: 16, flexWrap: "wrap" }}>
                 <a href={donate} target="_blank" rel="noreferrer" style={{ display: "inline-block", background: "#ef4444", color: "#fff", textDecoration: "none", padding: isMobile ? "12px 28px" : "14px 32px", borderRadius: 6, fontFamily: "'Orbitron', sans-serif", fontWeight: 700, fontSize: isMobile ? 11 : 13, letterSpacing: 2 }}>DONATE NOW</a>
-                <LogoKnick logos={config.season_logos} index={3} size={40} style={{ alignSelf: "center" }} />
+                
               </motion.div>
             </div>
           </ProgressSection>
@@ -842,7 +826,7 @@ export default function Landing() {
                     <span style={{ fontSize: 18 }}>{c.icon}</span>{c.label}
                   </motion.a>
                 ))}
-                <LogoKnick logos={config.season_logos} index={4} size={38} style={{ alignSelf: "center" }} />
+                
               </motion.div>
             </div>
           </ProgressSection>
