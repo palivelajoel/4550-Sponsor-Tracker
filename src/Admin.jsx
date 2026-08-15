@@ -1198,6 +1198,7 @@ function SiteConfig({ config, logoUrl, setLogoUrl, reload, showToast, isMobile }
           </div>
         </div>
       </div>
+      <BannerManager />
       <div style={S.card}>
         <div style={S.cardTitle}>Hub Tile Order — Drag to reorder</div>
         <div style={{ display: "flex", flexDirection: isMobile ? 'column' : 'row', gap: 8, marginBottom: 14 }}>
@@ -1269,66 +1270,78 @@ function SiteConfig({ config, logoUrl, setLogoUrl, reload, showToast, isMobile }
         ))}
       </div>
       <SponsorRibbonManager />
-      <SeasonLogoPack />
     </div>
   );
 
-  // ── SEASON LOGO PACK (nested) ────────────────────────────
-  function SeasonLogoPack() {
-    const [logos, setLogos] = useState(() => {
-      try { return JSON.parse(vals.season_logos || "[]"); } catch { return []; }
+  // ── LANDING BANNERS / POSTERS MANAGER (nested) ──────────
+  function BannerManager() {
+    const [banners, setBanners] = useState(() => {
+      try { return JSON.parse(vals.landing_banners || "[]"); } catch { return []; }
     });
     const [uploading, setUploading] = useState(false);
     const fileRef = useRef(null);
 
     useEffect(() => {
-      try { setLogos(JSON.parse(vals.season_logos || "[]")); } catch { setLogos([]); }
-    }, [vals.season_logos]);
+      try { setBanners(JSON.parse(vals.landing_banners || "[]")); } catch { setBanners([]); }
+    }, [vals.landing_banners]);
 
-    async function handleFile(e) {
-      const files = Array.from(e.target.files || []);
-      if (files.length === 0) return;
+    async function handleFiles(e) {
+      const files = e.target.files;
+      if (!files || !files.length) return;
       setUploading(true);
-      let updated = [...logos];
-      let ok = 0, fail = 0;
+      const uploaded = [];
       for (const file of files) {
-        const url = await uploadFile(file, 'team-assets');
-        if (url) { updated.push(url); ok++; }
-        else fail++;
+        try {
+          const url = await uploadFile(file, 'team-assets');
+          if (url) uploaded.push(url);
+        } catch {}
       }
-      setLogos(updated);
-      setVals(v => ({ ...v, season_logos: JSON.stringify(updated) }));
+      if (uploaded.length) {
+        const updated = [...banners, ...uploaded];
+        setBanners(updated);
+        setVals(v => ({ ...v, landing_banners: JSON.stringify(updated) }));
+        showToast(`✅ Uploaded ${uploaded.length} banner${uploaded.length > 1 ? "s" : ""}.`);
+      } else {
+        showToast("Upload failed.", "#ef4444");
+      }
       setUploading(false);
-      if (fail > 0) showToast(`Uploaded ${ok}, ${fail} failed.`, "#ef4444");
-      else showToast(`Uploaded ${ok} logo${ok !== 1 ? 's' : ''}.`);
+      e.target.value = "";
     }
 
-    function remove(idx) {
-      const updated = logos.filter((_, i) => i !== idx);
-      setLogos(updated);
-      setVals(v => ({ ...v, season_logos: JSON.stringify(updated) }));
+    function removeBanner(idx) {
+      const updated = banners.filter((_, i) => i !== idx);
+      setBanners(updated);
+      setVals(v => ({ ...v, landing_banners: JSON.stringify(updated) }));
     }
 
     return (
       <div style={{ ...S.card, marginTop: 16 }}>
-        <div style={S.cardTitle}>Season Logo Pack (floating logos)</div>
-        <div style={{ fontSize: 12, color: "#94a3b8", fontFamily: "monospace", marginBottom: 10 }}>Upload FRC season logos — they'll float around the landing page as draggable knickknacks with a glow.</div>
+        <div style={S.cardTitle}>Landing Banners / Posters</div>
+        <div style={{ display: "flex", flexDirection: isMobile ? 'column' : 'row', gap: isMobile ? 6 : 10, marginBottom: 12, alignItems: isMobile ? 'stretch' : 'center' }}>
+          <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: 13, color: "#e2e8f0", flexShrink: 0 }}>
+            <input type="checkbox" checked={vals.landing_banners_enabled !== "false"} onChange={e => setVals({ ...vals, landing_banners_enabled: e.target.checked ? "true" : "false" })} style={{ width: 16, height: 16, cursor: "pointer" }} />
+            Show on homepage
+          </label>
+          <button onClick={() => saveKey("landing_banners_enabled")} style={{ ...S.btnGhost, width: isMobile ? '100%' : undefined }}>Save Toggle</button>
+        </div>
+        <div style={{ fontSize: 12, color: "#94a3b8", fontFamily: "monospace", marginBottom: 10 }}>Upload one or more banner/poster images:</div>
         <div style={{ display: "flex", gap: 8, marginBottom: 12, alignItems: "center", flexWrap: "wrap" }}>
-          <button onClick={() => fileRef.current?.click()} style={{ ...S.btnPrimary, width: isMobile ? '100%' : undefined }}>{uploading ? `Uploading ${fileRef.current?.files?.length || 0}...` : "Upload Logos"}</button>
-          <input ref={fileRef} type="file" accept="image/*" multiple style={{ display: "none" }} onChange={handleFile} />
+          <button onClick={() => fileRef.current?.click()} style={{ ...S.btnPrimary, width: isMobile ? '100%' : undefined }}>{uploading ? "Uploading..." : "Upload Banner Images"}</button>
+          <input ref={fileRef} type="file" accept="image/*" multiple style={{ display: "none" }} onChange={handleFiles} />
           {uploading && <span style={{ fontSize: 12, color: "#a78bfa", fontFamily: "monospace" }}>Uploading...</span>}
         </div>
-        {logos.length === 0 && <div style={{ fontSize: 12, color: "#475569", fontFamily: "monospace", marginBottom: 10 }}>No logos uploaded yet.</div>}
-        {logos.length > 0 && (
+        <div style={{ fontSize: 12, color: "#94a3b8", fontFamily: "monospace", marginBottom: 10 }}>Current banners:</div>
+        {banners.length === 0 && <div style={{ fontSize: 12, color: "#475569", fontFamily: "monospace", marginBottom: 10 }}>No banners yet.</div>}
+        {banners.length > 0 && (
           <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 12 }}>
-            {logos.map((url, i) => (
+            {banners.map((url, i) => (
               <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 10px", background: "rgba(255,255,255,0.03)", borderRadius: 8, border: "1px solid rgba(255,255,255,0.06)" }}>
-                <img src={url} alt="" style={{ width: 36, height: 36, borderRadius: 4, objectFit: "contain", background: "rgba(255,255,255,0.05)" }} />
-                <span style={{ flex: 1, fontSize: 12, color: "#94a3b8", fontFamily: "monospace" }}>Logo {i + 1}</span>
-                <button onClick={() => remove(i)} style={{ background: "transparent", border: "none", color: "#ef4444", cursor: "pointer", fontSize: 16 }}>&times;</button>
+                <img src={url} alt="" style={{ width: 36, height: 48, borderRadius: 6, objectFit: "cover", background: "rgba(255,255,255,0.05)", flexShrink: 0 }} />
+                <span style={{ flex: 1, fontSize: 12, color: "#94a3b8", fontFamily: "monospace", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{url}</span>
+                <button onClick={() => removeBanner(i)} style={{ background: "transparent", border: "none", color: "#ef4444", cursor: "pointer", fontSize: 16 }}>&times;</button>
               </div>
             ))}
-            <button onClick={() => saveKey("season_logos", JSON.stringify(logos))} style={{ ...S.btnGhost, alignSelf: 'flex-start' }}>Save Logo Pack</button>
+            <button onClick={async () => { try { await saveKey("landing_banners", JSON.stringify(banners)); } catch (e) { showToast("Save failed: " + (e.message || e), "#ef4444"); } }} style={{ ...S.btnGhost, alignSelf: 'flex-start' }}>Save Banners</button>
           </div>
         )}
       </div>

@@ -19,6 +19,7 @@ export const getSubteam = () => localStorage.getItem("hub_subteam") || "General"
 export const isAdmin = () => getRole() === "Admin";
 export const isCaptainOrAbove = () => ["Captain","Admin"].includes(getRole());
 export const canEditHub = () => isCaptainOrAbove();
+export const canEditInventory = () => isCaptainOrAbove() || getSubteam() === "Build";
 export const getToken = () => localStorage.getItem("hub_token");
 
 function decodeTokenPayload(token) {

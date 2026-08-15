@@ -418,6 +418,8 @@ export default function Landing() {
   const yt = config.youtube || "https://www.youtube.com/channel/UC4_P1A5xYb7A7rCdEXdKzBQ";
   const donate = config.donate_url || "https://www.vancoevents.com/us/events/landing/46671";
 
+  const banners = (() => { try { return JSON.parse(config.landing_banners || "[]"); } catch { return []; } })();
+
   const navItems = ["About", "Team", "Sub-Teams", "Outreach", "Media Gallery", "Sponsors", "Contact"];
 
   const SUB_TEAMS = [
@@ -591,6 +593,22 @@ export default function Landing() {
           </div>
         
       </section>
+
+      {/* BANNERS / POSTERS */}
+      {config.landing_banners_enabled !== "false" && banners.length > 0 && (
+        <section style={{ background: "#0a0f1e", padding: isMobile ? "48px 18px" : "64px 24px", position: "relative", zIndex: 1 }}>
+          <motion.div style={{ maxWidth: 1100, margin: "0 auto" }} {...slideUp}>
+            <div style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: isMobile ? 10 : 12, color: "#ef4444", letterSpacing: isMobile ? 2 : 3, marginBottom: isMobile ? 16 : 24 }}>// BANNERS &amp; POSTERS</div>
+            <div style={{ display: "flex", gap: isMobile ? 12 : 16, overflowX: "auto", paddingBottom: 10, WebkitOverflowScrolling: "touch" }}>
+              {banners.map((u, i) => (
+                <div key={i} style={{ flex: "0 0 auto", width: isMobile ? 190 : 230, aspectRatio: "3/4", borderRadius: 12, overflow: "hidden", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", boxShadow: "0 6px 30px rgba(0,0,0,0.35)" }}>
+                  <img src={u} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} onError={e => { e.target.parentElement.style.display = "none"; }} />
+                </div>
+              ))}
+            </div>
+          </motion.div>
+        </section>
+      )}
 
       {/* ABOUT */}
       <section id="about"><div className="sec">

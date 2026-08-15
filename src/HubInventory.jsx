@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { motion } from 'framer-motion'
-import { FONTS, C, sbFetch, isAuthed, canEditHub, HubHeader, toastStyle, inputStyle, selectStyle, overlayStyle, modalStyle, addBtnStyle, ghostBtn, dangerBtn, hubProxy, getTokenUserId } from "./hubUtils.jsx";
+import { FONTS, C, sbFetch, isAuthed, canEditInventory, HubHeader, toastStyle, inputStyle, selectStyle, overlayStyle, modalStyle, addBtnStyle, ghostBtn, dangerBtn, hubProxy, getTokenUserId } from "./hubUtils.jsx";
 import Starfield from "./Starfield.jsx";
 
 const CATEGORIES = [
@@ -22,7 +22,7 @@ const CATEGORY_MAP = Object.fromEntries(CATEGORIES.map(c => [c.value, c]));
 
 export default function HubInventory() {
   const [authed] = useState(isAuthed());
-  const [canEdit] = useState(canEditHub());
+  const [canEdit] = useState(canEditInventory());
   const [items, setItems] = useState([]);
   const [transactions, setTransactions] = useState([]);
   const [modal, setModal] = useState(null);

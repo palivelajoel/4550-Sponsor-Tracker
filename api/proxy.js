@@ -17,9 +17,23 @@ export default async function handler(req, res) {
     const isHub = path === 'hub-proxy';
 
     if (isAdmin && payload.role !== 'Admin') return res.status(403).json({ error: 'Forbidden: admin role required' });
-    if (isHub && !['Captain', 'Admin'].includes(payload.role)) return res.status(403).json({ error: 'Forbidden: captain or admin role required' });
 
     const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE);
+
+    const INVENTORY_TABLES = ['inventory_items', 'inventory_transactions'];
+    const { table: reqTable } = req.body || {};
+    const isInventoryTable = INVENTORY_TABLES.includes(reqTable);
+
+    if (isHub && !['Captain', 'Admin'].includes(payload.role)) {
+      if (payload.role === 'Member' && isInventoryTable) {
+        const { data: memberRow } = await supabase.from('members').select('subteam').eq('id', payload.userId).maybeSingle();
+        if (memberRow?.subteam !== 'Build') {
+          return res.status(403).json({ error: 'Forbidden: build team membership required for inventory' });
+        }
+      } else {
+        return res.status(403).json({ error: 'Forbidden: captain or admin role required' });
+      }
+    }
 
     const { table, action, payload: bodyPayload } = req.body || {};
     if (!table) return res.status(400).json({ error: 'Missing table' });
