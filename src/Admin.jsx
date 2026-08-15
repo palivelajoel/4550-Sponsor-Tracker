@@ -1324,7 +1324,7 @@ function SiteConfig({ config, logoUrl, setLogoUrl, reload, showToast, isMobile }
           </label>
           <button onClick={() => saveKey("landing_banners_enabled")} style={{ ...S.btnGhost, width: isMobile ? '100%' : undefined }}>Save Toggle</button>
         </div>
-        <div style={{ fontSize: 12, color: "#94a3b8", fontFamily: "monospace", marginBottom: 10 }}>Upload one or more banner/poster images:</div>
+        <div style={{ fontSize: 12, color: "#94a3b8", fontFamily: "monospace", marginBottom: 10 }}>Upload one or more banner/poster images (optimal size: 1200px × 400px):</div>
         <div style={{ display: "flex", gap: 8, marginBottom: 12, alignItems: "center", flexWrap: "wrap" }}>
           <button onClick={() => fileRef.current?.click()} style={{ ...S.btnPrimary, width: isMobile ? '100%' : undefined }}>{uploading ? "Uploading..." : "Upload Banner Images"}</button>
           <input ref={fileRef} type="file" accept="image/*" multiple style={{ display: "none" }} onChange={handleFiles} />
