@@ -596,12 +596,12 @@ export default function Landing() {
 
       {/* BANNERS / POSTERS */}
       {config.landing_banners_enabled !== "false" && banners.length > 0 && (
-        <section style={{ background: "#0a0f1e", padding: isMobile ? "48px 18px" : "64px 24px", position: "relative", zIndex: 1 }}>
-          <motion.div style={{ maxWidth: 1100, margin: "0 auto" }} {...slideUp}>
+        <section style={{ background: "rgba(255,255,255,0.015)", padding: isMobile ? "48px 18px" : "64px 24px", display: "flex", flexDirection: "column", alignItems: "center" }}>
+          <motion.div style={{ maxWidth: 1100, width: "100%" }} {...slideUp}>
             <div style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: isMobile ? 10 : 12, color: "#ef4444", letterSpacing: isMobile ? 2 : 3, marginBottom: isMobile ? 16 : 24 }}>// BANNERS &amp; POSTERS</div>
-            <div style={{ display: "flex", gap: isMobile ? 12 : 16, overflowX: "auto", paddingBottom: 10, WebkitOverflowScrolling: "touch" }}>
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: isMobile ? 16 : 24 }}>
               {banners.map((u, i) => (
-                <div key={i} style={{ flex: "0 0 auto", width: isMobile ? 190 : 230, aspectRatio: "3/4", borderRadius: 12, overflow: "hidden", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", boxShadow: "0 6px 30px rgba(0,0,0,0.35)" }}>
+                <div key={i} style={{ width: "100%", maxWidth: 900, aspectRatio: "3/1", borderRadius: 14, overflow: "hidden", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", boxShadow: "0 6px 30px rgba(0,0,0,0.35)" }}>
                   <img src={u} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} onError={e => { e.target.parentElement.style.display = "none"; }} />
                 </div>
               ))}
