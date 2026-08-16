@@ -601,8 +601,8 @@ export default function Landing() {
             <div style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: isMobile ? 10 : 12, color: "#ef4444", letterSpacing: isMobile ? 2 : 3, marginBottom: isMobile ? 16 : 24 }}>// BANNERS &amp; POSTERS</div>
             <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: isMobile ? 16 : 24 }}>
               {banners.map((u, i) => (
-                <div key={i} style={{ width: "100%", maxWidth: 900, aspectRatio: "3/1", borderRadius: 14, overflow: "hidden", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", boxShadow: "0 6px 30px rgba(0,0,0,0.35)" }}>
-                  <img src={u} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} onError={e => { e.target.parentElement.style.display = "none"; }} />
+                <div key={i} style={{ width: "100%", maxWidth: 900, borderRadius: 14, overflow: "hidden", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", boxShadow: "0 6px 30px rgba(0,0,0,0.35)" }}>
+                  <img src={u} alt="" style={{ width: "100%", height: "auto", display: "block", objectFit: "contain" }} onLoad={e => { const img = e.target; const w = img.naturalWidth, h = img.naturalHeight; if (h && w && w / h > 2) { img.parentElement.style.aspectRatio = "2/1"; img.style.height = "100%"; img.style.objectFit = "cover"; } }} onError={e => { e.target.parentElement.style.display = "none"; }} />
                 </div>
               ))}
             </div>
