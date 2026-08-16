@@ -1121,6 +1121,44 @@ const HUB_TILES = [
   { id:"sponsor-tracker", icon:"🤝", label:"Sponsor Tracker" },
 ];
 
+// ── BANNER ROW (admin preview with crop-cut tiles) ──────
+function BannerRow({ url, isMobile, onRemove }) {
+  const [dims, setDims] = useState(null);
+  const thumbW = isMobile ? 90 : 120;
+  const ratio = dims && dims.w && dims.h ? dims.w / dims.h : 0;
+  const needsCrop = ratio > 0 && ratio < 2;
+  const cutH = needsCrop ? dims.h - dims.w / 2 : 0;
+  const scale = thumbW / dims.w;
+  const tileH = f => Math.max(6, Math.round(f / scale));
+  const vtile = (pos) => ({
+    width: thumbW,
+    height: tileH(cutH / 2),
+    backgroundImage: `url(${url})`,
+    backgroundSize: `${thumbW}px ${Math.round(dims.h / scale)}px`,
+    backgroundPosition: `0 ${pos}`,
+    backgroundRepeat: 'no-repeat',
+    overflow: 'hidden',
+  });
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 10px", background: "rgba(255,255,255,0.03)", borderRadius: 8, border: "1px solid rgba(255,255,255,0.06)", flexWrap: 'wrap' }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <div style={{ width: thumbW, height: needsCrop ? thumbW / 2 : undefined, borderRadius: 6, overflow: "hidden", background: "rgba(255,255,255,0.05)", flexShrink: 0, position: "relative" }}>
+          <img src={url} alt="" onLoad={e => setDims({ w: e.target.naturalWidth, h: e.target.naturalHeight })} style={{ width: "100%", height: needsCrop ? "100%" : "auto", objectFit: needsCrop ? "cover" : "contain", display: "block" }} />
+        </div>
+        {needsCrop && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+            <div style={{ fontSize: 10, color: "#f87171", fontFamily: "monospace" }}>cut off:</div>
+            <div style={{ ...vtile('0%'), borderRadius: 4, border: "1px solid rgba(248,113,113,0.4)" }} />
+            <div style={{ ...vtile('100%'), borderRadius: 4, border: "1px solid rgba(248,113,113,0.4)" }} />
+          </div>
+        )}
+      </div>
+      <span style={{ fontSize: 12, color: "#94a3b8", fontFamily: "monospace", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }}>{url}</span>
+      {onRemove && <button onClick={onRemove} style={{ background: "transparent", border: "none", color: "#ef4444", cursor: "pointer", fontSize: 16 }}>&times;</button>}
+    </div>
+  );
+}
+
 // ── SITE CONFIG ───────────────────────────────────────────
 function SiteConfig({ config, logoUrl, setLogoUrl, reload, showToast, isMobile }) {
   const [vals, setVals] = useState({});
@@ -1335,11 +1373,7 @@ function SiteConfig({ config, logoUrl, setLogoUrl, reload, showToast, isMobile }
         {banners.length > 0 && (
           <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 12 }}>
             {banners.map((url, i) => (
-              <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 10px", background: "rgba(255,255,255,0.03)", borderRadius: 8, border: "1px solid rgba(255,255,255,0.06)" }}>
-                <img src={url} alt="" style={{ width: 36, height: 48, borderRadius: 6, objectFit: "cover", background: "rgba(255,255,255,0.05)", flexShrink: 0 }} />
-                <span style={{ flex: 1, fontSize: 12, color: "#94a3b8", fontFamily: "monospace", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{url}</span>
-                <button onClick={() => removeBanner(i)} style={{ background: "transparent", border: "none", color: "#ef4444", cursor: "pointer", fontSize: 16 }}>&times;</button>
-              </div>
+              <BannerRow key={i} url={url} isMobile={isMobile} onRemove={() => removeBanner(i)} />
             ))}
             <button onClick={async () => { try { await saveKey("landing_banners", JSON.stringify(banners)); } catch (e) { showToast("Save failed: " + (e.message || e), "#ef4444"); } }} style={{ ...S.btnGhost, alignSelf: 'flex-start' }}>Save Banners</button>
           </div>
