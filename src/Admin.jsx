@@ -1128,7 +1128,7 @@ function BannerRow({ url, isMobile, onRemove }) {
   const ratio = dims && dims.w && dims.h ? dims.w / dims.h : 0;
   const needsCrop = ratio > 0 && ratio < 2;
   const cutH = needsCrop ? dims.h - dims.w / 2 : 0;
-  const scale = thumbW / dims.w;
+  const scale = dims && dims.w ? thumbW / dims.w : 0;
   const tileH = f => Math.max(6, Math.round(f / scale));
   const vtile = (pos) => ({
     width: thumbW,
