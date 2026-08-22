@@ -9,7 +9,7 @@ const ORBS = [
 export default function HubBackground({ density = 11000, opacity = 0.28 }) {
   return (
     <>
-      <div style={{ position: "absolute", inset: 0, pointerEvents: "none", overflow: "hidden", zIndex: 0, filter: "blur(0.3)" }}>
+      <div style={{ position: "absolute", inset: 0, pointerEvents: "none", overflow: "hidden", zIndex: 0, filter: "blur(0.5)" }}>
         <Starfield density={density} opacity={opacity} />
         {ORBS.map((o, i) => (
           <div key={i} style={{ position: "absolute", width: o.s, height: o.s, top: o.t, bottom: o.b, left: o.l, right: o.r, borderRadius: "50%", background: `radial-gradient(circle, ${o.c}, transparent)`, animation: `orbFloat ${6 + i}s ease-in-out infinite`, animationDelay: o.d }} />
