@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { FONTS, C, sbFetch, isAuthed, canEditHub, HubHeader, toastStyle, inputStyle, selectStyle, overlayStyle, addBtnStyle, ghostBtn, dangerBtn } from "./hubUtils.jsx";
-import Starfield from "./Starfield.jsx";
+import HubBackground from "./HubBackground.jsx";
 
 // ─────────────────────────────────────────────────────────
 // REBUILT 2026 — game config (fetched dynamically, falls back to this)
@@ -923,7 +923,7 @@ export default function HubScouting() {
 
   return (
     <div style={{ minHeight:"100vh", background:C.bg, color:C.text, fontFamily:"'Exo 2',sans-serif", position:"relative" }}>
-      <Starfield density={11500} opacity={0.3} />
+      <HubBackground density={11500} opacity={0.3} />
       <style>{FONTS}</style>
       {toast && <div style={toastStyle}>{toast}</div>}
       <HubHeader title="🔭 Scouting" />

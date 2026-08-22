@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { motion } from 'framer-motion'
 import { FONTS, C, sbFetch, isAuthed, canEditInventory, HubHeader, toastStyle, inputStyle, selectStyle, overlayStyle, modalStyle, addBtnStyle, ghostBtn, dangerBtn, hubProxy, getTokenUserId } from "./hubUtils.jsx";
-import Starfield from "./Starfield.jsx";
+import HubBackground from "./HubBackground.jsx";
 
 const CATEGORIES = [
   { value: "structural", label: "Structural", icon: "🔩" },
@@ -368,7 +368,7 @@ export default function HubInventory() {
 
   return (
     <div style={{ minHeight: "100vh", background: C.bg, color: C.text, fontFamily: "'Exo 2',sans-serif", position: "relative" }}>
-      <Starfield density={11000} opacity={0.28} />
+      <HubBackground density={11000} opacity={0.28} />
       <style>{FONTS}</style>
       <HubHeader title="📦 Inventory" subtitle="Parts, Tools & Supplies" />
       {toast && <div style={{ position: "fixed", bottom: 24, right: 24, background: toast.color, color: "#fff", padding: "12px 20px", borderRadius: 8, zIndex: 9999, boxShadow: "0 4px 20px rgba(0,0,0,0.4)" }}>{toast.msg}</div>}

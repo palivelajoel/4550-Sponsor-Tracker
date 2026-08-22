@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { motion } from 'framer-motion'
 import { FONTS, C, sbFetch, isAuthed, canEditHub, SUBTEAMS, HubHeader, toastStyle, inputStyle, selectStyle, overlayStyle, modalStyle, addBtnStyle, ghostBtn, dangerBtn, hubProxy } from "./hubUtils.jsx";
+import HubBackground from "./HubBackground.jsx";
 
 const STATUSES = ["Backlog", "To Do", "In Progress", "Review", "Done"];
 const PRIORITIES = ["Low", "Medium", "High", "Critical"];
@@ -206,7 +207,8 @@ export default function HubTasks() {
   if (!authed) return null;
 
   return (
-    <div style={{ minHeight: "100vh", background: C.bg, color: C.text, fontFamily: "'Exo 2', sans-serif" }}>
+    <div style={{ minHeight: "100vh", background: C.bg, color: C.text, fontFamily: "'Exo 2', sans-serif", position: "relative" }}>
+      <HubBackground density={11000} opacity={0.28} />
       <style>{FONTS}</style>
       {toast && <div style={toastStyle}>{toast}</div>}
       <HubHeader title="✅ Task Board" />

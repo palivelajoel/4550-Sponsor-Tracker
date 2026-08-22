@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { motion } from 'framer-motion'
 import { FONTS, C, sbFetch, isAuthed, canEditHub, HubHeader, toastStyle, inputStyle, selectStyle, overlayStyle, modalStyle, addBtnStyle, ghostBtn, dangerBtn } from "./hubUtils.jsx";
-import Starfield from "./Starfield.jsx";
+import HubBackground from "./HubBackground.jsx";
 
 const EVENT_TYPES = [
   { value: "event", label: "Event", color: "#3b82f6" },
@@ -251,7 +251,7 @@ export default function HubCalendar() {
 
   return (
     <div style={{ minHeight: "100vh", background: C.bg, color: C.text, fontFamily: "'Exo 2', sans-serif", position: "relative" }}>
-      <Starfield density={11500} opacity={0.28} />
+      <HubBackground density={11500} opacity={0.28} />
       <style>{FONTS}</style>
       {toast && <div style={toastStyle}>{toast}</div>}
       <HubHeader title="📅 Calendar" />

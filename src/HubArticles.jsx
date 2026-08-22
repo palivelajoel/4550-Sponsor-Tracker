@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { sbFetch, hubProxy, isCaptainOrAbove } from "./hubUtils.jsx";
+import HubBackground from "./HubBackground.jsx";
 
 const C = {
   bg: "#080a0f", text: "#f1f5f9", border: "rgba(255,255,255,0.08)",
@@ -66,7 +67,8 @@ export default function HubArticles() {
   }
 
   return (
-    <div style={{ minHeight: "100vh", background: C.bg, color: C.text, fontFamily: "'Exo 2',sans-serif", padding: isMobile ? "16px" : "24px 32px" }}>
+    <div style={{ minHeight: "100vh", background: C.bg, color: C.text, fontFamily: "'Exo 2',sans-serif", padding: isMobile ? "16px" : "24px 32px", position: "relative" }}>
+      <HubBackground density={11000} opacity={0.28} />
       <style>{paperStyles}</style>
 
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24, flexWrap: "wrap", gap: 10 }}>

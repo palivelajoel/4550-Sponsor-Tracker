@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { motion } from 'framer-motion'
 import { FONTS, C, sbFetch, isAuthed, canEditHub, HubHeader, toastStyle, inputStyle, selectStyle, overlayStyle, addBtnStyle, ghostBtn, dangerBtn, hubProxy } from "./hubUtils.jsx";
+import HubBackground from "./HubBackground.jsx";
 
 const TAGS = ["General", "Build", "Programming", "Marketing & Outreach", "Competition", "Reminder", "Urgent"];
 const tagColor = { General: "#64748b", Build: "#f59e0b", Programming: "#3b82f6", "Marketing & Outreach": "#22c55e", Competition: "#ef4444", Reminder: "#a855f7", Urgent: "#ef4444" };
@@ -91,7 +92,8 @@ export default function HubAnnouncements() {
   if (!authed) return null;
 
   return (
-    <div style={{ minHeight: "100vh", background: C.bg, color: C.text, fontFamily: "'Exo 2', sans-serif" }}>
+    <div style={{ minHeight: "100vh", background: C.bg, color: C.text, fontFamily: "'Exo 2', sans-serif", position: "relative" }}>
+      <HubBackground density={11000} opacity={0.28} />
       <style>{FONTS}</style>
       {toast && <div style={toastStyle}>{toast}</div>}
       <HubHeader title="📣 Announcements" />

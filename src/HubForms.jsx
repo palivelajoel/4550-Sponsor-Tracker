@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { motion } from 'framer-motion'
 import { FONTS, C, sbFetch, isAuthed, canEditHub, getUsername, HubHeader, toastStyle, inputStyle, selectStyle, addBtnStyle, ghostBtn, hubProxy } from "./hubUtils.jsx";
+import HubBackground from "./HubBackground.jsx";
 
 let qid = 1;
 function nextQid() { return "q_" + (qid++); }
@@ -34,7 +35,8 @@ export default function HubForms() {
   const username = getUsername();
 
   return (
-    <div style={{ minHeight: "100vh", background: C.bg, color: C.text, fontFamily: "'Exo 2', sans-serif" }}>
+    <div style={{ minHeight: "100vh", background: C.bg, color: C.text, fontFamily: "'Exo 2', sans-serif", position: "relative" }}>
+      <HubBackground density={11000} opacity={0.28} />
       <style>{FONTS}</style>
       {toast && <div style={toastStyle}>{toast}</div>}
       <HubHeader title="📋 Forms" />
