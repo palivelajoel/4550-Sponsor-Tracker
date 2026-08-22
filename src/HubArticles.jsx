@@ -68,7 +68,7 @@ export default function HubArticles() {
 
   return (
     <div style={{ minHeight: "100vh", background: C.bg, color: C.text, fontFamily: "'Exo 2',sans-serif", padding: isMobile ? "16px" : "24px 32px", position: "relative" }}>
-      <HubBackground density={11000} opacity={0.28} />
+      <HubBackground density={11000} opacity={0.28} animated={false} />
       <style>{paperStyles}</style>
 
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24, flexWrap: "wrap", gap: 10 }}>

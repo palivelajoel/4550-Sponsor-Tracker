@@ -368,7 +368,7 @@ export default function HubInventory() {
 
   return (
     <div style={{ minHeight: "100vh", background: C.bg, color: C.text, fontFamily: "'Exo 2',sans-serif", position: "relative" }}>
-      <HubBackground density={11000} opacity={0.28} />
+      <HubBackground density={11000} opacity={0.28} animated={false} />
       <style>{FONTS}</style>
       <HubHeader title="📦 Inventory" subtitle="Parts, Tools & Supplies" />
       {toast && <div style={{ position: "fixed", bottom: 24, right: 24, background: toast.color, color: "#fff", padding: "12px 20px", borderRadius: 8, zIndex: 9999, boxShadow: "0 4px 20px rgba(0,0,0,0.4)" }}>{toast.msg}</div>}

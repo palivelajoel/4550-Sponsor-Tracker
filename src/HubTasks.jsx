@@ -208,7 +208,7 @@ export default function HubTasks() {
 
   return (
     <div style={{ minHeight: "100vh", background: C.bg, color: C.text, fontFamily: "'Exo 2', sans-serif", position: "relative" }}>
-      <HubBackground density={11000} opacity={0.28} />
+      <HubBackground density={11000} opacity={0.28} animated={false} />
       <style>{FONTS}</style>
       {toast && <div style={toastStyle}>{toast}</div>}
       <HubHeader title="✅ Task Board" />
