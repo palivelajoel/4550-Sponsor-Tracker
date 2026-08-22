@@ -189,6 +189,13 @@ export default function HubInventory() {
     loadItems();
   }
 
+  async function toggleLowStock(item) {
+    const newThreshold = (item.low_stock_threshold ?? 5) === -1 ? 5 : -1;
+    await hubProxy("inventory_items", "update", { id: item.id, updates: { low_stock_threshold: newThreshold } });
+    showToast(newThreshold === -1 ? "⚠️ Marked as low stock." : "✅ Low stock cleared.");
+    loadItems();
+  }
+
   async function handleQtyChange() {
     const item = form;
     const change = parseInt(form.qtyChange);
@@ -340,11 +347,11 @@ export default function HubInventory() {
     const matchSearch = !q || i.name?.toLowerCase().includes(q) || i.description?.toLowerCase().includes(q) || i.location?.toLowerCase().includes(q) || i.bin_location?.toLowerCase().includes(q) || i.manufacturer?.toLowerCase().includes(q) || i.part_number?.toLowerCase().includes(q);
     const matchCategory = categoryFilter === "all" || i.category === categoryFilter;
     const matchTag = !tagFilter || (Array.isArray(i.tags) ? i.tags : (i.tags || "").split(",").map(t => t.trim())).includes(tagFilter);
-    const matchLowStock = !lowStockOnly || (i.quantity ?? 0) <= (i.low_stock_threshold ?? 5);
+    const matchLowStock = !lowStockOnly || (i.low_stock_threshold ?? 5) === -1;
     return matchSearch && matchCategory && matchTag && matchLowStock;
   });
 
-  const lowStockCount = items.filter(i => (i.quantity ?? 0) <= (i.low_stock_threshold ?? 5)).length;
+  const lowStockCount = items.filter(i => (i.low_stock_threshold ?? 5) === -1).length;
 
   function toggleSelect(id) {
     const next = new Set(selectedItems);
@@ -370,7 +377,7 @@ export default function HubInventory() {
         {/* Low stock banner */}
         {lowStockCount > 0 && (
           <div style={{ background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.3)", borderRadius: 8, padding: "10px 16px", marginBottom: 16, display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-            <span style={{ color: "#fca5a5", fontSize: 14 }}>⚠️ {lowStockCount} item{lowStockCount > 1 ? "s" : ""} low on stock</span>
+            <span style={{ color: "#fca5a5", fontSize: 14 }}>⚠️ {lowStockCount} item{lowStockCount > 1 ? "s" : ""} manually marked low stock</span>
             <button onClick={() => { setLowStockOnly(true); setCategoryFilter("all"); setTagFilter(""); }} style={{ ...ghostBtn, fontSize: 11, color: "#ef4444", border: "1px solid rgba(239,68,68,0.3)" }}>Show only low stock</button>
             {lowStockOnly && <button onClick={() => setLowStockOnly(false)} style={{ ...ghostBtn, fontSize: 11 }}>Show all</button>}
           </div>
@@ -412,7 +419,7 @@ export default function HubInventory() {
         {/* Inventory grid */}
         <div style={{ display: "grid", gap: 12, gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))" }}>
           {filtered.map((item, i) => {
-            const isLow = (item.quantity ?? 0) <= (item.low_stock_threshold ?? 5);
+            const isLow = (item.low_stock_threshold ?? 5) === -1;
             const itemTags = Array.isArray(item.tags) ? item.tags : (item.tags ? item.tags.split(",").map(t => t.trim()).filter(Boolean) : []);
             const catInfo = CATEGORY_MAP[item.category];
             return (
@@ -455,12 +462,13 @@ export default function HubInventory() {
                     <div style={{ display: "flex", gap: 12, marginTop: 6, fontSize: 11, color: C.dim, fontFamily: "monospace", flexWrap: "wrap" }}>
                       {item.location && <span>📍 {item.location}</span>}
                       {item.bin_location && <span>🗄️ {item.bin_location}</span>}
-                      {isLow && <span style={{ color: "#fca5a5" }}>⚠️ Low stock</span>}
+                      {isLow && <span style={{ color: "#fca5a5" }}>⚠️ Manually marked low stock</span>}
                     </div>
                   </div>
                 </div>
                 {canEdit && (
                   <div style={{ display: "flex", gap: 6, marginTop: 12, justifyContent: "flex-end", flexWrap: "wrap" }}>
+                    <button onClick={() => toggleLowStock(item)} style={{ ...ghostBtn, color: isLow ? C.green : "#ef4444", border: `1px solid ${isLow ? C.green + "44" : "rgba(239,68,68,0.3)"}` }}>{isLow ? "✓ Clear Low Stock" : "⚠ Mark Low Stock"}</button>
                     <button onClick={() => openQtyModal(item)} style={{ ...ghostBtn, color: C.green, border: `1px solid ${C.green}44` }}>± Qty</button>
                     <button onClick={() => openEdit(item)} style={ghostBtn}>Edit</button>
                     <button onClick={() => handleDelete(item.id)} style={dangerBtn}>Delete</button>
@@ -504,7 +512,6 @@ export default function HubInventory() {
                 <select value={form.category} onChange={e => setForm({ ...form, category: e.target.value })} style={{ ...selectStyle, flex: 1 }}>
                   {CATEGORIES.map(c => <option key={c.value} value={c.value}>{c.icon} {c.label}</option>)}
                 </select>
-                <input type="number" placeholder="Low stock at" value={form.low_stock_threshold} onChange={e => setForm({ ...form, low_stock_threshold: parseInt(e.target.value) || 0 })} style={{ ...inputStyle, width: 90 }} />
               </div>
               <div style={{ display: "flex", gap: 10 }}>
                 <input placeholder="Location (e.g., Shelf A2)" value={form.location} onChange={e => setForm({ ...form, location: e.target.value })} style={{ ...inputStyle, flex: 1 }} />
