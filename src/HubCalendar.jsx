@@ -251,7 +251,7 @@ export default function HubCalendar() {
 
   return (
     <div style={{ minHeight: "100vh", background: C.bg, color: C.text, fontFamily: "'Exo 2', sans-serif", position: "relative" }}>
-      <HubBackground density={11500} opacity={0.28} animated={false} />
+      <HubBackground density={11500} opacity={0.28} />
       <style>{FONTS}</style>
       {toast && <div style={toastStyle}>{toast}</div>}
       <HubHeader title="📅 Calendar" />

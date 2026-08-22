@@ -202,7 +202,7 @@ export default function HubMedia() {
 
   return (
     <div style={{ minHeight: "100vh", background: C.bg, color: C.text, fontFamily: "'Exo 2', sans-serif", position: "relative" }}>
-      <HubBackground density={11000} opacity={0.28} animated={false} />
+      <HubBackground density={11000} opacity={0.28} />
       <style>{FONTS + `
         .media-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; }
         @media(max-width:600px){ .media-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; } }
