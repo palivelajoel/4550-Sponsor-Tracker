@@ -83,6 +83,17 @@ export default function HubForms() {
             try {
               await hubProxy("hub_form_submissions", "insert", { form_id: fillForm.id, submitted_by: username, answers });
               showToast("Response submitted.");
+              fetch("/api/sheets-sync", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  formTitle: fillForm.title,
+                  questions: fillForm.questions || [],
+                  answers,
+                  submittedBy: username,
+                  timestamp: new Date().toISOString(),
+                }),
+              }).catch(() => {});
               loadData();
               setView("list");
             } catch (e) { showToast("Submit failed: " + (e.message || e)); }
@@ -402,6 +413,32 @@ function FormResponses({ form, submissions }) {
   const questions = form.questions || [];
   const hasSubmissions = submissions.length > 0;
 
+  function downloadCSV() {
+    if (!hasSubmissions) return;
+    const header = ["#", ...questions.map(q => q.label), "Submitted By", "Date"];
+    const rows = submissions.map((s, si) => {
+      return [
+        si + 1,
+        ...questions.map(q => {
+          const ans = s.answers?.[q.id];
+          return Array.isArray(ans) ? ans.join(", ") : (ans || "");
+        }),
+        s.submitted_by || "",
+        s.created_at ? new Date(s.created_at).toLocaleDateString() : "",
+      ];
+    });
+    const csvContent = [header, ...rows]
+      .map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(","))
+      .join("\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${form.title.replace(/[^a-z0-9]/gi, "_")}_responses.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
   return (
     <div style={{ maxWidth: 900, margin: "0 auto", padding: "24px 20px" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 20 }}>
@@ -412,6 +449,11 @@ function FormResponses({ form, submissions }) {
             {submissions.length} response{submissions.length !== 1 ? "s" : ""}
           </div>
         </div>
+        {hasSubmissions && (
+          <button onClick={downloadCSV} style={{ ...ghostBtn, fontSize: 11, padding: "8px 14px", marginLeft: "auto" }}>
+            ↓ Download CSV
+          </button>
+        )}
       </div>
 
       {!hasSubmissions ? (

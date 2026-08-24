@@ -26,6 +26,7 @@
     { "source": "/api/hub-login", "destination": "/api/auth" },
     { "source": "/api/admin-proxy", "destination": "/api/proxy" },
     { "source": "/api/hub-proxy", "destination": "/api/proxy" },
+    { "source": "/api/sheets-sync", "destination": "/api/sheets" },
     { "source": "/api/identify-item", "destination": "/api/ai" },
     { "source": "/api/extract-brands", "destination": "/api/ai" },
     { "source": "/api/lookup", "destination": "/api/ai" },
