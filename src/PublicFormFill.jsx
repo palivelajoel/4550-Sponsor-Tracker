@@ -124,7 +124,7 @@ export default function PublicFormFill() {
 
         <form onSubmit={handleSubmit}>
           <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
-            {(form.questions || []).map((q) => (
+            {(form.questions || []).map((q, qi) => (
               <div key={q.id} style={{ background: "rgba(255,255,255,0.03)", border: `1px solid ${errors[q.id] ? "#ef4444" : "rgba(255,255,255,0.08)"}`, borderRadius: 10, padding: "16px 18px" }}>
                 <div style={{ display: "flex", alignItems: "flex-start", gap: 4, marginBottom: 10 }}>
                   <span style={{ fontSize: 13, fontWeight: 600, color: "#e2e8f0" }}>{q.label}</span>
