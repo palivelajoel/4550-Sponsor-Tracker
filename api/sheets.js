@@ -22,9 +22,14 @@ export default async function handler(req, res) {
 
     const sheets = google.sheets({ version: 'v4', auth });
 
-    // Build the row: Form, Submitter, Timestamp, then each question's answer
+    // Tab name = form title, sanitized for Google Sheets (max 100 chars, no : \ / ? * [ ])
+    const tabName = (formTitle || 'Form Submissions')
+      .replace(/[:\\/?*[\]]/g, ' ')
+      .trim()
+      .slice(0, 100) || 'Form Submissions';
+
+    // Build the row: Submitter, Timestamp, then each question's answer
     const row = [
-      formTitle,
       submittedBy || '',
       timestamp || new Date().toISOString(),
       ...questions.map(q => {
@@ -33,8 +38,8 @@ export default async function handler(req, res) {
       }),
     ];
 
-    // Build header row if sheet is empty: Form, Submitter, Timestamp, Q1, Q2, ...
-    const header = ['Form', 'Submitter', 'Timestamp', ...questions.map(q => q.label)];
+    // Build header row if tab is empty: Submitter, Timestamp, Q1, Q2, ...
+    const header = ['Submitter', 'Timestamp', ...questions.map(q => q.label)];
 
     // Try to read first row to check if header exists
     let needsHeader = false;
@@ -42,13 +47,13 @@ export default async function handler(req, res) {
     try {
       const existing = await sheets.spreadsheets.values.get({
         spreadsheetId: sheetId,
-        range: 'Form Submissions!A1:Z1',
+        range: `'${tabName}'!A1:Z1`,
       });
       if (!existing.data.values || existing.data.values.length === 0) {
         needsHeader = true;
       }
     } catch {
-      // Sheet or tab doesn't exist yet — create the tab below
+      // Tab doesn't exist yet — create it below
       needsHeader = true;
       tabExists = false;
     }
@@ -57,7 +62,7 @@ export default async function handler(req, res) {
       await sheets.spreadsheets.batchUpdate({
         spreadsheetId: sheetId,
         requestBody: {
-          requests: [{ addSheet: { properties: { title: 'Form Submissions' } } }],
+          requests: [{ addSheet: { properties: { title: tabName } } }],
         },
       });
     }
@@ -66,7 +71,7 @@ export default async function handler(req, res) {
 
     await sheets.spreadsheets.values.append({
       spreadsheetId: sheetId,
-      range: 'Form Submissions!A:A',
+      range: `'${tabName}'!A:A`,
       valueInputOption: 'RAW',
       insertDataOption: 'INSERT_ROWS',
       requestBody: { values },
