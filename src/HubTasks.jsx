@@ -21,7 +21,7 @@ export default function HubTasks() {
   const [filterTeam, setFilterTeam] = useState("All");
   const [filterMember, setFilterMember] = useState("");
   const [viewMode, setViewMode] = useState("board");
-  const [form, setForm] = useState({ title: "", description: "", subteam: "All", assigned_to: "", assigned_name: "", start_date: "", start_time: "", due_date: "", due_time: "", priority: "Medium", status: "To Do" });
+  const [form, setForm] = useState({ title: "", description: "", subteam: "General", assigned_to: "", assigned_name: "", start_date: "", start_time: "", due_date: "", due_time: "", priority: "Medium", status: "To Do" });
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState("");
   const [dragId, setDragId] = useState(null);
@@ -64,7 +64,7 @@ export default function HubTasks() {
     if (m) setMembers(m);
   }
 
-  function openAdd(status = "To Do") {    if (!canEdit) return;    setForm({ title: "", description: "", subteam: "All", assigned_to: "", assigned_name: "", start_date: "", start_time: "", due_date: "", due_time: "", priority: "Medium", status });
+  function openAdd(status = "To Do") {    if (!canEdit) return;    setForm({ title: "", description: "", subteam: "General", assigned_to: "", assigned_name: "", start_date: "", start_time: "", due_date: "", due_time: "", priority: "Medium", status });
     setModal({ mode: "add" });
   }
 
@@ -227,7 +227,7 @@ export default function HubTasks() {
         </div>
         {canEdit ? <button onClick={() => openAdd()} style={addBtnStyle}>+ New Task</button> : <div style={{ color: C.dim, fontSize: 12, fontFamily: "monospace", padding: "10px 0" }}>View only</div>}
         <select value={filterTeam} onChange={e => setFilterTeam(e.target.value)} style={{ ...selectStyle, width: "auto" }}>
-          {["All", "Build", "Programming", "Marketing & Outreach"].map(s => <option key={s}>{s}</option>)}
+          {["All", "General", "Build", "Programming", "Marketing & Outreach"].map(s => <option key={s}>{s}</option>)}
         </select>
         <select value={filterMember} onChange={e => setFilterMember(e.target.value)} style={{ ...selectStyle, width: "auto" }}>
           <option value="">All Members</option>
@@ -356,6 +356,7 @@ export default function HubTasks() {
                 </select>
               </div>
               <select value={form.subteam} onChange={e => setForm({ ...form, subteam: e.target.value })} style={selectStyle}>
+                <option value="General">General</option>
                 <option value="All">All Sub-Teams</option>
                 {["Build", "Programming", "Marketing & Outreach"].map(s => <option key={s}>{s}</option>)}
               </select>
