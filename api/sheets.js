@@ -35,18 +35,17 @@ export default async function handler(req, res) {
       .trim()
       .slice(0, 100) || 'Form Submissions';
 
-    // Build the row: Submitter, Timestamp, then each question's answer
+    // Build the row: Date, then each question's answer
     const row = [
-      submittedBy || '',
-      timestamp || new Date().toISOString(),
+      new Date(timestamp || Date.now()).toISOString().slice(0, 10),
       ...questions.map(q => {
         const ans = answers[q.id];
         return Array.isArray(ans) ? ans.join(', ') : (ans || '');
       }),
     ];
 
-    // Build header row if tab is empty: Submitter, Timestamp, Q1, Q2, ...
-    const header = ['Submitter', 'Timestamp', ...questions.map(q => q.label)];
+    // Build header row if tab is empty: Date, Q1, Q2, ...
+    const header = ['Date', ...questions.map(q => q.label)];
 
     // Try to read first row to check if header exists
     let needsHeader = false;
