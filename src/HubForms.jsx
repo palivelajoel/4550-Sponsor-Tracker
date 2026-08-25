@@ -390,6 +390,18 @@ function FormFill({ form, username, onSubmit, onCancel }) {
     setErrors({ ...errors, [qid]: "" });
   }
 
+  function serializeAnswers() {
+    const out = {};
+    (form.questions || []).forEach(q => {
+      const val = answers[q.id];
+      if (val === undefined) return;
+      if (q.type === "radio") out[q.id] = (q.options || [])[Number(val)] ?? "";
+      else if (q.type === "checkbox") out[q.id] = (Array.isArray(val) ? val : []).map(i => (q.options || [])[Number(i)] ?? "");
+      else out[q.id] = val;
+    });
+    return out;
+  }
+
   function handleSubmit() {
     const newErrors = {};
     (form.questions || []).forEach(q => {
@@ -403,7 +415,7 @@ function FormFill({ form, username, onSubmit, onCancel }) {
     setErrors(newErrors);
     if (Object.keys(newErrors).length > 0) return;
     setSubmitting(true);
-    onSubmit(answers);
+    onSubmit(serializeAnswers());
   }
 
   return (
@@ -442,9 +454,9 @@ function FormFill({ form, username, onSubmit, onCancel }) {
 
             {q.type === "radio" && (
               <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                {(q.options || []).filter(o => o.trim()).map((o, oi) => (
+                {(q.options || []).map((o, oi) => ({ o, oi })).filter(x => x.o.trim()).map(({ o, oi }) => (
                   <label key={oi} style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: 13, color: C.text }}>
-                    <input type="radio" name={`${form.id}_${qi}`} value={o} checked={answers[q.id] === o}
+                    <input type="radio" name={`${form.id}_${qi}`} value={String(oi)} checked={answers[q.id] === String(oi)}
                       onChange={e => setAnswer(q.id, e.target.value)} style={{ accentColor: C.red }} />
                     {o}
                   </label>
@@ -454,14 +466,14 @@ function FormFill({ form, username, onSubmit, onCancel }) {
 
             {q.type === "checkbox" && (
               <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                {(q.options || []).filter(o => o.trim()).map((o, oi) => {
-                  const checked = (answers[q.id] || []).includes(o);
+                {(q.options || []).map((o, oi) => ({ o, oi })).filter(x => x.o.trim()).map(({ o, oi }) => {
+                  const checked = (answers[q.id] || []).includes(String(oi));
                   return (
                     <label key={oi} style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: 13, color: C.text }}>
-                      <input type="checkbox" value={o} checked={checked}
+                      <input type="checkbox" value={String(oi)} checked={checked}
                         onChange={e => {
-                          const arr = answers[q.id] || [];
-                          setAnswer(q.id, e.target.checked ? [...arr, o] : arr.filter(x => x !== o));
+                          const arr = (answers[q.id] || []).map(String);
+                          setAnswer(q.id, e.target.checked ? [...arr, String(oi)] : arr.filter(x => x !== String(oi)));
                         }} style={{ accentColor: C.red }} />
                       {o}
                     </label>

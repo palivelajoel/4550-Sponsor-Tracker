@@ -32,6 +32,18 @@ export default function PublicFormFill() {
     setErrors({ ...errors, [qid]: "" });
   }
 
+  function serializeAnswers() {
+    const out = {};
+    (form.questions || []).forEach(q => {
+      const val = answers[q.id];
+      if (val === undefined) return;
+      if (q.type === "radio") out[q.id] = (q.options || [])[Number(val)] ?? "";
+      else if (q.type === "checkbox") out[q.id] = (Array.isArray(val) ? val : []).map(i => (q.options || [])[Number(i)] ?? "");
+      else out[q.id] = val;
+    });
+    return out;
+  }
+
   async function handleSubmit(e) {
     e.preventDefault();
     const newErrors = {};
@@ -46,11 +58,12 @@ export default function PublicFormFill() {
     setErrors(newErrors);
     if (Object.keys(newErrors).length > 0) return;
     setSubmitting(true);
+    const payload = serializeAnswers();
     try {
       const res = await fetch("/api/public-form-submit", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ formId: form.id, answers }),
+        body: JSON.stringify({ formId: form.id, answers: payload }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Submit failed");
@@ -61,7 +74,7 @@ export default function PublicFormFill() {
         body: JSON.stringify({
           formTitle: form.title,
           questions: form.questions || [],
-          answers,
+          answers: payload,
           submittedBy: "public",
           timestamp: new Date().toISOString(),
         }),
@@ -152,9 +165,9 @@ export default function PublicFormFill() {
 
                 {q.type === "radio" && (
                   <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                    {(q.options || []).filter(o => o.trim()).map((o, oi) => (
+                    {(q.options || []).map((o, oi) => ({ o, oi })).filter(x => x.o.trim()).map(({ o, oi }) => (
                       <label key={oi} style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: 13, color: "#e2e8f0" }}>
-                        <input type="radio" name={`${form.id}_${qi}`} value={o} checked={answers[q.id] === o}
+                        <input type="radio" name={`${form.id}_${qi}`} value={String(oi)} checked={answers[q.id] === String(oi)}
                           onChange={e => setAnswer(q.id, e.target.value)} style={{ accentColor: "#22d3ee" }} />
                         {o}
                       </label>
@@ -164,14 +177,14 @@ export default function PublicFormFill() {
 
                 {q.type === "checkbox" && (
                   <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                    {(q.options || []).filter(o => o.trim()).map((o, oi) => {
-                      const checked = (answers[q.id] || []).includes(o);
+                    {(q.options || []).map((o, oi) => ({ o, oi })).filter(x => x.o.trim()).map(({ o, oi }) => {
+                      const checked = (answers[q.id] || []).includes(String(oi));
                       return (
                         <label key={oi} style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: 13, color: "#e2e8f0" }}>
-                          <input type="checkbox" value={o} checked={checked}
+                          <input type="checkbox" value={String(oi)} checked={checked}
                             onChange={e => {
-                              const arr = answers[q.id] || [];
-                              setAnswer(q.id, e.target.checked ? [...arr, o] : arr.filter(x => x !== o));
+                              const arr = (answers[q.id] || []).map(String);
+                              setAnswer(q.id, e.target.checked ? [...arr, String(oi)] : arr.filter(x => x !== String(oi)));
                             }} style={{ accentColor: "#22d3ee" }} />
                           {o}
                         </label>
