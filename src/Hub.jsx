@@ -85,11 +85,15 @@ export default function Hub() {
   }, []);
 
   const [tileOrder, setTileOrder] = useState([]);
+  const [hiddenTiles, setHiddenTiles] = useState([]);
 
   useEffect(() => {
     loadLogo();
     sbFetch("site_config?key=eq.hub_tile_order&select=value").then(r => {
       if (r?.[0]?.value) setTileOrder(r[0].value.split(",").map(s => s.trim()).filter(Boolean));
+    });
+    sbFetch("site_config?key=eq.hub_tiles_hidden&select=value").then(r => {
+      if (r?.[0]?.value) setHiddenTiles(r[0].value.split(",").map(s => s.trim()).filter(Boolean));
     });
     if (localStorage.getItem("hub_authed") === "true") {
       const r = localStorage.getItem("hub_role") || "Member";
@@ -290,11 +294,11 @@ export default function Hub() {
         {/* Feature grid */}
         <div style={{ display:"grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(auto-fill,minmax(260px,1fr))", gap:isMobile?10:16 }}>
           {(() => {
-            let list = FEATURES.filter(f => f.id !== "projector" && f.id !== "forms" && f.id !== "articles");
+            let list = FEATURES.filter(f => f.id !== "projector" && f.id !== "forms" && f.id !== "articles" && !hiddenTiles.includes(f.id));
             if (isOutreach) {
               list = list.filter(f => f.id !== "inventory");
               const art = FEATURES.find(f => f.id === "articles");
-              if (art) list.push(art);
+              if (art && !hiddenTiles.includes("articles")) list.push(art);
             }
             return list.sort((a, b) => {
               const ai = tileOrder.indexOf(a.id); const bi = tileOrder.indexOf(b.id);
@@ -305,8 +309,8 @@ export default function Hub() {
           ))}
         </div>
 
-        {/* Admin articles card (thin, above Forms) */}
-        {isAdminUser && (
+        {/* Admin articles card (thin, above Forms) — hidden if articles is hidden */}
+        {isAdminUser && !hiddenTiles.includes("articles") && (
           <a href="/member-hub/articles" style={{ textDecoration: "none", display: "block", marginTop: 20 }}>
             <div style={{ background: "linear-gradient(135deg,rgba(168,85,247,0.08),rgba(59,130,246,0.05))", border: "1px solid rgba(168,85,247,0.25)", borderRadius: 10, padding: isMobile ? "10px 14px" : "12px 22px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, cursor: "pointer", transition: "all 0.25s" }}
               onMouseEnter={e => e.currentTarget.style.borderColor = "rgba(168,85,247,0.6)"}
@@ -323,7 +327,8 @@ export default function Hub() {
           </a>
         )}
 
-        {/* Forms card */}
+        {/* Forms card — hidden if forms is hidden */}
+        {!hiddenTiles.includes("forms") && (
         <div style={{ marginTop: 20, position: "relative" }}>
           {pendingForms > 0 && (
             <div style={{ position: "absolute", inset: 0, border: `2px solid ${C.red}`, borderRadius: 14, zIndex: 2, pointerEvents: "none" }}>
@@ -347,6 +352,7 @@ export default function Hub() {
             </div>
           </a>
         </div>
+        )}
       </main>
 
       <div style={{ textAlign:"center", padding:"20px 14px 4px", color:"#1e293b", fontSize:11, fontFamily:"monospace", letterSpacing:2 }}>

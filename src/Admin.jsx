@@ -1119,6 +1119,8 @@ const HUB_TILES = [
   { id:"resources", icon:"📁", label:"Resources" },
   { id:"inventory", icon:"📦", label:"Inventory" },
   { id:"sponsor-tracker", icon:"🤝", label:"Sponsor Tracker" },
+  { id:"forms", icon:"📋", label:"Forms" },
+  { id:"articles", icon:"📝", label:"Articles" },
 ];
 
 // ── BANNER ROW (admin preview with crop-cut tiles) ──────
@@ -1169,6 +1171,8 @@ function SiteConfig({ config, logoUrl, setLogoUrl, reload, showToast, isMobile }
   const [dragId, setDragId] = useState(null);
   const [dragOverId, setDragOverId] = useState(null);
   const [tileSaving, setTileSaving] = useState(false);
+  const [hiddenTiles, setHiddenTiles] = useState([]);
+  const [hiddenSaving, setHiddenSaving] = useState(false);
   const [pendingImgUploads, setPendingImgUploads] = useState({});
   const [uploadingImg, setUploadingImg] = useState(null);
   const imgFileRefs = useRef({});
@@ -1176,6 +1180,9 @@ function SiteConfig({ config, logoUrl, setLogoUrl, reload, showToast, isMobile }
   useEffect(() => {
     sbFetch("site_config?key=eq.hub_tile_order&select=value").then(r => {
       if (r?.[0]?.value) setTileOrder(r[0].value.split(",").map(s => s.trim()).filter(Boolean));
+    });
+    sbFetch("site_config?key=eq.hub_tiles_hidden&select=value").then(r => {
+      if (r?.[0]?.value) setHiddenTiles(r[0].value.split(",").map(s => s.trim()).filter(Boolean));
     });
   }, []);
 
@@ -1238,7 +1245,7 @@ function SiteConfig({ config, logoUrl, setLogoUrl, reload, showToast, isMobile }
       </div>
       <BannerManager />
       <div style={S.card}>
-        <div style={S.cardTitle}>Hub Tile Order — Drag to reorder</div>
+        <div style={S.cardTitle}>Hub Tiles — Reorder & Toggle Visibility</div>
         <div style={{ display: "flex", flexDirection: isMobile ? 'column' : 'row', gap: 8, marginBottom: 14 }}>
           <button onClick={async () => {
             setTileSaving(true);
@@ -1248,14 +1255,24 @@ function SiteConfig({ config, logoUrl, setLogoUrl, reload, showToast, isMobile }
             else await adminProxy("site_config", "insert", { key: "hub_tile_order", value: order.join(",") });
             setTileSaving(false); reload(); showToast("✅ Tile order saved.");
           }} disabled={tileSaving} style={{ ...S.btnPrimary, opacity: tileSaving ? 0.6 : 1 }}>{tileSaving ? "Saving..." : "Save Order"}</button>
+          <button onClick={async () => {
+            setHiddenSaving(true);
+            const val = hiddenTiles.join(",");
+            const existing = (await sbFetch("site_config?key=eq.hub_tiles_hidden&select=key")) || [];
+            if (existing?.length) await adminProxy("site_config", "update", { id: existing[0].id, updates: { value: val } });
+            else await adminProxy("site_config", "insert", { key: "hub_tiles_hidden", value: val });
+            setHiddenSaving(false); reload(); showToast("✅ Tile visibility saved.");
+          }} disabled={hiddenSaving} style={{ ...S.btnPrimary, opacity: hiddenSaving ? 0.6 : 1, background: "#a855f7" }}>{hiddenSaving ? "Saving..." : "Save Visibility"}</button>
           <button onClick={() => {
             setTileOrder(HUB_TILES.map(t => t.id));
+            setHiddenTiles([]);
           }} style={S.btnGhost}>Reset to Default</button>
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
           {(tileOrder.length ? tileOrder : HUB_TILES.map(t => t.id)).map((id, i) => {
             const tile = HUB_TILES.find(t => t.id === id);
             if (!tile) return null;
+            const isHidden = hiddenTiles.includes(tile.id);
             return (
               <div key={tile.id} draggable
                 onDragStart={() => setDragId(tile.id)}
@@ -1275,7 +1292,14 @@ function SiteConfig({ config, logoUrl, setLogoUrl, reload, showToast, isMobile }
                 style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 12px", background: dragOverId === tile.id && dragId !== tile.id ? "rgba(239,68,68,0.08)" : "rgba(255,255,255,0.03)", border: dragOverId === tile.id && dragId !== tile.id ? "1px dashed rgba(239,68,68,0.4)" : "1px solid rgba(255,255,255,0.06)", borderRadius: 8, cursor: "grab", opacity: dragId === tile.id ? 0.4 : 1 }}>
                 <span style={{ color: "#475569", fontSize: 16, cursor: "grab" }}>⠿</span>
                 <span style={{ fontSize: 18 }}>{tile.icon}</span>
-                <span style={{ fontSize: 13, color: "#f1f5f9", flex: 1 }}>{tile.label}</span>
+                <span style={{ fontSize: 13, color: isHidden ? "#64748b" : "#f1f5f9", flex: 1, textDecoration: isHidden ? "line-through" : "none" }}>{tile.label}</span>
+                <label style={{ display: "flex", alignItems: "center", gap: 4, cursor: "pointer", fontSize: 11, color: isHidden ? "#ef4444" : "#22c55e", fontFamily: "monospace", userSelect: "none" }}
+                  onClick={e => e.stopPropagation()}>
+                  <input type="checkbox" checked={!isHidden}
+                    onChange={() => setHiddenTiles(prev => isHidden ? prev.filter(x => x !== tile.id) : [...prev, tile.id])}
+                    style={{ accentColor: isHidden ? "#ef4444" : "#22c55e" }} />
+                  {isHidden ? "Hidden" : "Visible"}
+                </label>
                 <span style={{ fontSize: 11, color: "#64748b", fontFamily: "monospace" }}>#{i + 1}</span>
               </div>
             );
