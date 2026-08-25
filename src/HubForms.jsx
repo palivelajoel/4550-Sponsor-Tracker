@@ -33,6 +33,20 @@ export default function HubForms() {
 
   const username = getUsername();
 
+  async function testSheets() {
+    showToast("Testing Google Sheets connection...");
+    try {
+      const res = await fetch("/api/sheets-sync", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "test" }),
+      });
+      const j = await res.json();
+      if (res.ok && j.ok) showToast(`Sheets OK — "${j.spreadsheet}" tabs: ${j.tabs.join(", ")}`);
+      else showToast("Sheets error: " + (j.error || res.status));
+    } catch (e) { showToast("Sheets error: " + (e.message || e)); }
+  }
+
   return (
     <div style={{ minHeight: "100vh", background: C.bg, color: C.text, fontFamily: "'Exo 2', sans-serif", position: "relative" }}>
       <HubBackground density={11000} opacity={0.28} />
@@ -43,6 +57,7 @@ export default function HubForms() {
       {view === "list" && (
         <ListForms
           forms={forms} submissions={submissions} canEdit={canEdit} username={username}
+          onTestSheets={testSheets}
           onFill={f => { setFillForm(f); setView("fill"); }}
           onEdit={f => {
             const seen = {};
@@ -141,13 +156,14 @@ function qTypeLabel(t) {
   return { text: "Short Text", textarea: "Paragraph", select: "Dropdown", radio: "Multiple Choice", checkbox: "Checkboxes" }[t] || t;
 }
 
-function ListForms({ forms, submissions, canEdit, username, onFill, onEdit, onDelete, onResponses, onNew }) {
+function ListForms({ forms, submissions, canEdit, username, onFill, onEdit, onDelete, onResponses, onNew, onTestSheets }) {
   const userSubmitted = formId => submissions.some(s => s.form_id === formId && s.submitted_by === username);
   const submissionCount = formId => submissions.filter(s => s.form_id === formId).length;
 
   return (
     <div style={{ maxWidth: 800, margin: "0 auto", padding: "24px 20px" }}>
-      <div style={{ marginBottom: 24, display: "flex", justifyContent: "flex-end" }}>
+      <div style={{ marginBottom: 24, display: "flex", justifyContent: "flex-end", gap: 8 }}>
+        {canEdit && <button onClick={onTestSheets} style={ghostBtn}>Test Sheets</button>}
         <button onClick={onNew} style={addBtnStyle}>+ Create Form</button>
       </div>
 
@@ -263,6 +279,21 @@ function FormBuilder({ form: initial, onSave, onCancel }) {
     setQuestions(questions.map(q => q.id === qid ? { ...q, options: (q.options || []).filter((_, i) => i !== oi) } : q));
   }
 
+  function isCorrect(q, oi) {
+    return Array.isArray(q.correct) ? q.correct.includes(oi) : q.correct === oi;
+  }
+
+  function toggleCorrect(qid, oi) {
+    setQuestions(questions.map(q => {
+      if (q.id !== qid) return q;
+      if (q.type === "checkbox") {
+        const arr = Array.isArray(q.correct) ? q.correct : [];
+        return { ...q, correct: arr.includes(oi) ? arr.filter(x => x !== oi) : [...arr, oi] };
+      }
+      return { ...q, correct: q.correct === oi ? undefined : oi };
+    }));
+  }
+
   function handleSave() {
     if (!title.trim()) { setErrors("Title required."); return; }
     const valid = questions.filter(q => q.label.trim());
@@ -336,13 +367,15 @@ function FormBuilder({ form: initial, onSave, onCancel }) {
 
             {["select", "radio", "checkbox"].includes(q.type) && (
               <div style={{ marginTop: 8 }}>
-                <div style={{ fontSize: 10, color: C.dim, fontFamily: "monospace", marginBottom: 6 }}>Options</div>
+                <div style={{ fontSize: 10, color: C.dim, fontFamily: "monospace", marginBottom: 6 }}>Options — click ✓ to mark the correct answer</div>
                 {(q.options || []).map((o, oi) => (
                   <div key={oi} style={{ display: "flex", gap: 6, marginBottom: 4, alignItems: "center" }}>
                     <span style={{ fontSize: 10, color: C.dim }}>{oi + 1}.</span>
                     <input value={o} onChange={e => updateOption(q.id, oi, e.target.value)}
                       placeholder={`Option ${oi + 1}`}
                       style={{ ...inputStyle, flex: 1, fontSize: 12, padding: "6px 10px" }} />
+                    <button onClick={() => toggleCorrect(q.id, oi)} title="Mark as correct answer"
+                      style={{ background: "none", border: "none", cursor: "pointer", fontSize: 13, padding: "2px", color: isCorrect(q, oi) ? "#22c55e" : C.dim, fontWeight: isCorrect(q, oi) ? 700 : 400 }}>✓</button>
                     <button onClick={() => removeOption(q.id, oi)} style={{ background: "none", border: "none", color: C.dim, cursor: "pointer", fontSize: 12, padding: "2px" }}>✕</button>
                   </div>
                 ))}
@@ -371,6 +404,12 @@ function FormBuilder({ form: initial, onSave, onCancel }) {
           </div>
         ))}
       </div>
+
+      {visibility === "public" && questions.some(q => q.correct !== undefined && (!Array.isArray(q.correct) || q.correct.length > 0)) && (
+        <div style={{ color: "#f59e0b", fontSize: 11, fontFamily: "monospace", marginBottom: 12 }}>
+          ⚠ Correct answers are stored with the form and viewable in the page source by anyone on a public form.
+        </div>
+      )}
 
       <div style={{ display: "flex", gap: 10, marginTop: 24 }}>
         <button onClick={handleSave} style={addBtnStyle}>Save Form</button>
@@ -527,6 +566,18 @@ function FormResponses({ form, submissions }) {
     URL.revokeObjectURL(url);
   }
 
+  const answerKey = questions
+    .map((q, qi) => {
+      if (q.correct === undefined) return null;
+      if (q.type === "checkbox") {
+        if (!Array.isArray(q.correct) || q.correct.length === 0) return null;
+        return `Q${qi + 1}: ${q.correct.map(i => (q.options || [])[i]).filter(Boolean).join(", ")}`;
+      }
+      const opt = (q.options || [])[q.correct];
+      return opt ? `Q${qi + 1}: ${opt}` : null;
+    })
+    .filter(Boolean);
+
   return (
     <div style={{ maxWidth: 900, margin: "0 auto", padding: "24px 20px" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 20 }}>
@@ -543,6 +594,12 @@ function FormResponses({ form, submissions }) {
           </button>
         )}
       </div>
+
+      {answerKey.length > 0 && (
+        <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 10, padding: "12px 16px", marginBottom: 16, fontSize: 11, fontFamily: "monospace", color: "#22c55e" }}>
+          ✓ Answer key — {answerKey.join(" · ")}
+        </div>
+      )}
 
       {!hasSubmissions ? (
         <div style={{ textAlign: "center", padding: "60px 0", color: C.dim, fontFamily: "monospace", fontSize: 14 }}>

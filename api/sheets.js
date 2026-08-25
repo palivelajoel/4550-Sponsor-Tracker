@@ -17,10 +17,17 @@ export default async function handler(req, res) {
     const sheetId = process.env.GOOGLE_SHEET_ID;
     if (!sheetId) return res.status(500).json({ error: 'GOOGLE_SHEET_ID env var not set.' });
 
-    const { formTitle, questions, answers, submittedBy, timestamp } = req.body || {};
-    if (!formTitle || !answers) return res.status(400).json({ error: 'Missing formTitle or answers' });
+    const { formTitle, questions, answers, submittedBy, timestamp, action } = req.body || {};
 
     const sheets = google.sheets({ version: 'v4', auth });
+
+    if (action === 'test') {
+      const meta = await sheets.spreadsheets.get({ spreadsheetId: sheetId });
+      const tabs = meta.data.sheets.map(s => s.properties.title);
+      return res.status(200).json({ ok: true, spreadsheet: meta.data.properties.title, tabs });
+    }
+
+    if (!formTitle || !answers) return res.status(400).json({ error: 'Missing formTitle or answers' });
 
     // Tab name = form title, sanitized for Google Sheets (max 100 chars, no : \ / ? * [ ])
     const tabName = (formTitle || 'Form Submissions')
