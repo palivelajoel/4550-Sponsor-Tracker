@@ -14,8 +14,9 @@ export default function PublicFormFill() {
 
   useEffect(() => {
     document.title = "Form · Team 4550";
-    const params = new URLSearchParams(window.location.search);
-    const formId = params.get("id");
+    const formId = window.location.pathname.startsWith("/forms/")
+      ? window.location.pathname.split("/")[2]
+      : new URLSearchParams(window.location.search).get("id");
     if (!formId) { setLoading(false); return; }
     (async () => {
       const data = await sbFetch(`hub_forms?id=eq.${formId}&select=*`);
