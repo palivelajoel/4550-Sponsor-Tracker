@@ -173,8 +173,7 @@ export default function Hub() {
     { id:"calendar", icon:"📅", label:"Team Calendar", description:"Events, deadlines, and meetings.", href:"/member-hub/calendar", accent:"#3b82f6" },
     { id:"tasks", icon:"✅", label:"Task Board", description:"Kanban board. View, update, and complete your assigned tasks.", href:"/member-hub/tasks", accent:"#22c55e" },
     { id:"announcements", icon:"📣", label:"Announcements", description:"Team-wide updates from captains.", href:"/member-hub/announcements", accent:"#f59e0b" },
-    { id:"competitions", icon:"🏆", label:"Competitions", description:"Match & pit scouting, venue maps, and AI analysis.", href:"/member-hub/scout-map", accent:"#a855f7" },
-    { id:"media", icon:"📸", label:"Media Gallery", description:"Photos and videos from competitions and events.", href:"/member-hub/media", accent:"#ec4899" },
+    { id:"media", icon:"📸", label:"Media Gallery", description:"Photos and videos from events.", href:"/member-hub/media", accent:"#ec4899" },
     { id:"resources", icon:"📁", label:"Resources", description:"CAD files, documents, and team guides.", href:"/member-hub/resources", accent:"#64748b" },
     { id:"inventory", icon:"📦", label:"Inventory", description:"Track parts, tools, and supplies with AI identification.", href:"/member-hub/inventory", accent:"#22d3ee" },
     { id:"forms", icon:"📋", label:"Forms", description:"Team forms, surveys, and feedback.", href:"/member-hub/forms", accent:"#22d3ee" },
@@ -294,11 +293,9 @@ export default function Hub() {
         {/* Feature grid */}
         <div style={{ display:"grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(auto-fill,minmax(260px,1fr))", gap:isMobile?10:16 }}>
           {(() => {
-            let list = FEATURES.filter(f => f.id !== "projector" && f.id !== "forms" && f.id !== "articles" && !hiddenTiles.includes(f.id));
+            let list = FEATURES.filter(f => f.id !== "projector" && f.id !== "forms" && !hiddenTiles.includes(f.id));
             if (isOutreach) {
               list = list.filter(f => f.id !== "inventory");
-              const art = FEATURES.find(f => f.id === "articles");
-              if (art && !hiddenTiles.includes("articles")) list.push(art);
             }
             return list.sort((a, b) => {
               const ai = tileOrder.indexOf(a.id); const bi = tileOrder.indexOf(b.id);
@@ -308,24 +305,6 @@ export default function Hub() {
             <FeatureCard key={f.id} feature={f} index={i} isMobile={isMobile} />
           ))}
         </div>
-
-        {/* Admin articles card (thin, above Forms) — hidden if articles is hidden */}
-        {isAdminUser && !hiddenTiles.includes("articles") && (
-          <a href="/member-hub/articles" style={{ textDecoration: "none", display: "block", marginTop: 20 }}>
-            <div style={{ background: "linear-gradient(135deg,rgba(168,85,247,0.08),rgba(59,130,246,0.05))", border: "1px solid rgba(168,85,247,0.25)", borderRadius: 10, padding: isMobile ? "10px 14px" : "12px 22px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, cursor: "pointer", transition: "all 0.25s" }}
-              onMouseEnter={e => e.currentTarget.style.borderColor = "rgba(168,85,247,0.6)"}
-              onMouseLeave={e => e.currentTarget.style.borderColor = "rgba(168,85,247,0.25)"}>
-              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <div style={{ fontSize: isMobile ? 18 : 22 }}>📝</div>
-                <div>
-                  <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: isMobile ? 11 : 12, fontWeight: 700, color: "#a855f7", letterSpacing: 1 }}>ARTICLES</div>
-                  <div style={{ color: C.muted, fontSize: isMobile ? 10 : 11 }}>Write and manage blog posts.</div>
-                </div>
-              </div>
-              <div style={{ background: "#a855f7", color: "#fff", padding: isMobile ? "4px 12px" : "5px 16px", borderRadius: 5, fontFamily: "'Orbitron',sans-serif", fontSize: 10, fontWeight: 700, letterSpacing: 1, flexShrink: 0 }}>OPEN →</div>
-            </div>
-          </a>
-        )}
 
         {/* Forms card — hidden if forms is hidden */}
         {!hiddenTiles.includes("forms") && (

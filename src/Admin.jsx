@@ -52,7 +52,6 @@ const SUBTEAM_COLORS = { Build: "#f59e0b", Programming: "#3b82f6", "Marketing & 
 const NAV = [
   { id: "overview", label: "📊 Overview" },
   { id: "accounts", label: "👥 Accounts" },
-  { id: "competitions", label: "🏆 Competitions" },
   { id: "hub-tasks", label: "📋 Hub Tasks" },
   { id: "hub-calendar", label: "📅 Hub Calendar" },
   { id: "sponsors-assign", label: "🤝 Sponsors" },
@@ -77,7 +76,6 @@ export default function Admin() {
   const [config, setConfig] = useState({});
   const [logoUrl, setLogoUrl] = useState("/logo.jpg");
   const [toast, setToast] = useState("");
-  const [editMapId, setEditMapId] = useState(null);
   const [showMobileNav, setShowMobileNav] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 760);
   const [forms, setForms] = useState([]);
@@ -187,15 +185,10 @@ export default function Admin() {
             <button type="submit" style={S.loginBtn}>ENTER →</button>
           </form>
           <a href="/" style={S.loginBack}>← Back to site</a>
-      </div>
-      {editMapId && (
-        <div style={{ marginTop: 24, borderTop: "2px solid #ef4444", paddingTop: 24 }}>
-          <PitMapEditor comp={competitions.find(c => c.id === editMapId)} reload={loadAll} showToast={showToast} />
         </div>
-      )}
-    </div>
-  );
-}
+      </div>
+    );
+  }
 
   const overdue = tasks.filter(t => t.due_date && t.status !== "Done" && new Date(t.due_date) < new Date()).length;
 
@@ -283,7 +276,6 @@ export default function Admin() {
       <main className="admin-main" style={{ ...S.main, ...(isMobile ? { marginLeft: 0, padding: "calc(60px + env(safe-area-inset-top, 0px)) 10px 18px" } : {}) }}>
         {page === "overview" && <Overview members={members} tasks={tasks} suggestions={suggestions} sponsors={sponsors} events={hubCalendar} overdue={overdue} competitions={competitions} captains={captains} forms={forms} formSubmissions={formSubmissions} announcements={announcements} inventory={inventory} media={media} isMobile={isMobile} />}
         {page === "accounts" && <Accounts members={members} reload={loadAll} showToast={showToast} adminProxy={adminProxy} isMobile={isMobile} />}
-        {page === "competitions" && <CompetitionsAdmin competitions={competitions} config={config} reload={loadAll} showToast={showToast} isMobile={isMobile} />}
         {page === "hub-tasks" && <Tasks tasks={tasks} members={members} reload={loadAll} showToast={showToast} isMobile={isMobile} />}
         {page === "hub-calendar" && <HubCalendarAdmin events={hubCalendar} reload={loadAll} showToast={showToast} isMobile={isMobile} />}
         {page === "sponsors-assign" && <SponsorAssign sponsors={sponsors} members={members} reload={loadAll} showToast={showToast} isMobile={isMobile} />}
@@ -1253,7 +1245,6 @@ const HUB_TILES = [
   { id:"calendar", icon:"📅", label:"Team Calendar" },
   { id:"tasks", icon:"✅", label:"Task Board" },
   { id:"announcements", icon:"📣", label:"Announcements" },
-  { id:"competitions", icon:"🏆", label:"Competitions" },
   { id:"media", icon:"📸", label:"Media Gallery" },
   { id:"resources", icon:"📁", label:"Resources" },
   { id:"inventory", icon:"📦", label:"Inventory" },
@@ -1642,261 +1633,6 @@ function SiteConfig({ config, logoUrl, setLogoUrl, reload, showToast, isMobile }
   }
 }
 
-// ── PIT MAP EDITOR ────────────────────────────────────────
-function PitMapEditor({ comp, reload, showToast }) {
-  const [pits, setPits] = useState(comp.schematic_data?.pits || []);
-  const [img, setImg] = useState(null);
-  const [dragging, setDragging] = useState(null);
-
-  const addPit = (e) => {
-    const rect = e.target.getBoundingClientRect();
-    const x = ((e.clientX - rect.left) / rect.width) * 100;
-    const y = ((e.clientY - rect.top) / rect.height) * 100;
-    setPits([...pits, { x, y, team: "" }]);
-  };
-
-  async function save() {
-    await adminProxy('competitions', 'update', { id: comp.id, updates: { schematic_data: { pits } } });
-    reload(); showToast("✅ Schematic saved.");
-  }
-
-  async function traceMap() {
-    if (!comp.pit_map_url) return showToast("No pit map URL found to trace.", "#ef4444");
-    showToast("🤖 AI is analyzing map... please wait.");
-    try {
-      const res = await fetch('/api/trace-pit-map', { 
-        method: 'POST', 
-        headers: { 'Content-Type': 'application/json' }, 
-        body: JSON.stringify({ imageUrl: comp.pit_map_url }) 
-      });
-      if (!res.ok) throw new Error(await res.text());
-      const { pits: aiPits } = await res.json();
-      // Convert normalized (0-1) to percentage (0-100)
-      const normalizedPits = aiPits.map(p => ({ ...p, x: p.x * 100, y: p.y * 100 }));
-      setPits([...pits, ...normalizedPits]);
-      showToast("✅ AI trace complete!");
-    } catch (err) {
-      showToast("AI Trace failed: " + err.message, "#ef4444");
-    }
-  }
-
-  return (
-    <div style={S.card}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-        <div style={S.cardTitle}>Map: {comp.name}</div>
-        <button onClick={traceMap} style={{ ...S.btnGhost, fontSize: 11, color: "#a855f7", border: "1px solid #a855f7" }}>✨ AI Trace Map</button>
-      </div>
-      <div style={{ position: "relative", cursor: "crosshair", border: "1px solid #444" }} onClick={addPit}>
-        {comp.pit_map_url && <img src={comp.pit_map_url} style={{ width: "100%", opacity: 0.5 }} />}
-        {pits.map((p, i) => (
-          <div key={i} style={{ position: "absolute", left: `${p.x}%`, top: `${p.y}%`, background: "red", color: "white", padding: "2px 5px", fontSize: "10px", borderRadius: 4, transform: "translate(-50%, -50%)" }}>
-            <input value={p.team} onChange={e => { pits[i].team = e.target.value; setPits([...pits]); }} style={{ width: 30, background: "transparent", border: "none", color: "white", textAlign: "center" }} placeholder="#" />
-          </div>
-        ))}
-      </div>
-      <button onClick={save} style={{ ...S.btnPrimary, marginTop: 10 }}>Save Layout</button>
-    </div>
-  );
-}
-
-// ── COMPETITIONS ADMIN ─────────────────────────────────────
-function CompetitionsAdmin({ competitions, config, reload, showToast, isMobile }) {
-  const [search, setSearch] = useState("");
-  const [eventSearch, setEventSearch] = useState("");
-  const [frcEvents, setFrcEvents] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [savingKey, setSavingKey] = useState(false);
-  const [findingId, setFindingId] = useState(null);
-  const [editMapId, setEditMapId] = useState(null);
-  const [tbaKey, setTbaKey] = useState(config.tba_api_key || "");
-
-  async function saveTbaKey() {
-    if (!tbaKey.trim()) return;
-    setSavingKey(true);
-    const existing = await sbFetch("site_config?key=eq.tba_api_key&select=key");
-    if (existing?.length) await sbFetch("site_config?key=eq.tba_api_key", { method: "PATCH", body: JSON.stringify({ value: tbaKey.trim() }) });
-    else await sbFetch("site_config", { method: "POST", body: JSON.stringify({ key: "tba_api_key", value: tbaKey.trim() }) });
-    setSavingKey(false);
-    reload();
-    showToast("TBA key saved.");
-  }
-
-  async function fetchFrcEvents() {
-    if (!tbaKey) { showToast("TBA API key required.", "#ef4444"); return; }
-    setLoading(true);
-    try {
-      const year = new Date().getFullYear();
-      const res = await fetch(`https://www.thebluealliance.com/api/v3/events/${year}/simple`, { headers: { "X-TBA-Auth-Key": tbaKey } });
-      if (!res.ok) throw new Error("Failed to fetch");
-      const events = await res.json();
-      setFrcEvents(events);
-      showToast(`✅ Fetched ${events.length} events.`);
-    } catch (e) {
-      showToast("Failed to fetch events.", "#ef4444");
-    }
-    setLoading(false);
-  }
-
-  async function addCompetition(event) {
-    const existing = competitions.find(c => c.event_key === event.key);
-    if (existing) { showToast("Already added.", "#ef4444"); return; }
-    const basePayload = {
-      event_key: event.key,
-      name: event.name,
-      start_date: event.start_date,
-      end_date: event.end_date,
-      location: `${event.city}, ${event.state_prov}, ${event.country}`,
-      attending: false,
-      venue_map_url: "",
-      pit_map_url: ""
-    };
-    const fullPayload = {
-      ...basePayload,
-      stream_url: "",
-      map_status: "Pit map not posted yet.",
-      last_map_check: null
-    };
-    let saved = await sbFetch("competitions", { method: "POST", body: JSON.stringify(fullPayload) });
-    if (!saved) saved = await sbFetch("competitions", { method: "POST", body: JSON.stringify(basePayload) });
-    if (!saved) { showToast("Competition save failed. Check Supabase table columns/RLS.", "#ef4444"); return; }
-    reload(); showToast("✅ Competition added.");
-  }
-
-  async function toggleAttending(id, attending) {
-    await sbFetch(`competitions?id=eq.${id}`, { method: "PATCH", body: JSON.stringify({ attending }) });
-    reload();
-    if (attending) {
-      // Add to calendar
-      const comp = competitions.find(c => c.id === id);
-      if (comp) {
-        const dupes = await sbFetch(`hub_calendar?title=eq.${encodeURIComponent(comp.name)}&date=eq.${comp.start_date}&select=id`);
-        if (!dupes?.length) {
-          await sbFetch("hub_calendar", { method: "POST", body: JSON.stringify({
-            title: comp.name,
-            type: "competition",
-            date: comp.start_date,
-            end_date: comp.end_date,
-            description: `FRC Competition at ${comp.location}`
-          }) });
-        }
-        showToast("✅ Added to calendar.");
-      }
-    }
-  }
-
-  async function updateMap(id, field, url) {
-    await sbFetch(`competitions?id=eq.${id}`, { method: "PATCH", body: JSON.stringify({ [field]: url }) });
-    reload(); showToast("✅ Map updated.");
-  }
-
-  async function saveCompetitionFields(id, payload, msg = "Competition updated.") {
-    const saved = await sbFetch(`competitions?id=eq.${id}`, { method: "PATCH", body: JSON.stringify(payload) });
-    if (!saved) { showToast("Save failed. Run the Admin Settings SQL for the new columns.", "#ef4444"); return; }
-    reload(); showToast(msg);
-  }
-
-  async function autoFindLinks(comp) {
-    setFindingId(comp.id);
-    try {
-      const res = await fetch("/api/find-event-links", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ event: comp, tbaKey }),
-      });
-      const links = await res.json();
-      if (!res.ok) throw new Error(links.error || "Lookup failed");
-      const payload = {
-        venue_map_url: links.venue_map_url || comp.venue_map_url || "",
-        pit_map_url: links.pit_map_url || comp.pit_map_url || "",
-        stream_url: links.stream_url || comp.stream_url || "",
-        map_status: links.map_status || "AI assist checked likely sources.",
-        last_map_check: new Date().toISOString(),
-      };
-      await saveCompetitionFields(comp.id, payload, "AI link search saved.");
-    } catch (e) {
-      showToast("AI link search failed.", "#ef4444");
-    }
-    setFindingId(null);
-  }
-
-  const filtered = competitions.filter(c => c.name.toLowerCase().includes(search.toLowerCase()));
-  const eventFiltered = frcEvents.filter(ev => {
-    const q = eventSearch.toLowerCase();
-    return !q || ev.name?.toLowerCase().includes(q) || ev.city?.toLowerCase().includes(q) || ev.state_prov?.toLowerCase().includes(q) || ev.key?.toLowerCase().includes(q);
-  });
-
-  return (
-    <div>
-      <h1 style={{ ...S.pageTitle, fontSize: isMobile ? 16 : 20 }}>Competitions</h1>
-
-      <div style={S.card}>
-        <div style={S.cardTitle}>Fetch FRC Events</div>
-        <div style={{ ...S.formRow, flexDirection: isMobile ? 'column' : 'row' }}>
-          <input placeholder="TBA API Key" value={tbaKey} onChange={e => setTbaKey(e.target.value)} style={S.input} />
-          <button onClick={saveTbaKey} disabled={savingKey} style={{ ...S.btnGhost, width: isMobile ? '100%' : undefined }}>{savingKey ? "Saving..." : "Save Key"}</button>
-          <button onClick={fetchFrcEvents} disabled={loading} style={{ ...S.btnPrimary, width: isMobile ? '100%' : undefined }}>{loading ? "Fetching..." : "Fetch Events"}</button>
-        </div>
-        {frcEvents.length > 0 && (
-          <div style={{ marginTop: 16 }}>
-            <div style={{ ...S.formRow, marginBottom: 12, flexDirection: isMobile ? 'column' : 'row' }}>
-              <input placeholder="Search events..." value={eventSearch} onChange={e => setEventSearch(e.target.value)} style={S.input} />
-              <div style={{ color: "#64748b", fontFamily: "monospace", fontSize: 12 }}>{eventFiltered.length} events</div>
-            </div>
-            <div style={S.cardTitle}>Available Events</div>
-            <div style={{ maxHeight: 360, overflowY: "auto", paddingRight: 4 }}>
-              {eventFiltered.map(ev => (
-                <div key={ev.key} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0", borderBottom: "1px solid rgba(255,255,255,0.05)", gap: 8 }}>
-                  <div style={{ minWidth: 0 }}>
-                    <div style={{ color: "#f1f5f9", fontSize: 14 }}>{ev.name}</div>
-                    <div style={{ color: "#64748b", fontSize: isMobile ? 11 : 12 }}>{ev.start_date} - {ev.city}, {ev.state_prov}</div>
-                  </div>
-                  <button onClick={() => addCompetition(ev)} disabled={competitions.some(c => c.event_key === ev.key)} style={{ ...S.btnGhost, opacity: competitions.some(c => c.event_key === ev.key) ? 0.45 : 1, flexShrink: 0 }}>
-                    {competitions.some(c => c.event_key === ev.key) ? "Added" : "Add"}
-                  </button>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
-
-      <div style={S.card}>
-        <div style={S.formRow}>
-          <input placeholder="Search competitions..." value={search} onChange={e => setSearch(e.target.value)} style={S.input} />
-        </div>
-        <div style={S.cardTitle}>Our Competitions</div>
-        {filtered.map(c => (
-          <div key={c.id} style={{ marginBottom: 16, padding: isMobile ? 12 : 16, background: "rgba(255,255,255,0.04)", borderRadius: 8 }}>
-            <div style={{ display: "flex", flexDirection: isMobile ? 'column' : 'row', justifyContent: "space-between", alignItems: isMobile ? 'flex-start' : "center", marginBottom: 8, gap: 8 }}>
-              <div>
-                <div style={{ color: "#f1f5f9", fontSize: isMobile ? 14 : 16, fontWeight: 600 }}>{c.name}</div>
-                <div style={{ color: "#64748b", fontSize: isMobile ? 11 : 12 }}>{c.start_date} - {c.location}</div>
-              </div>
-              <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12 }}>
-                <input type="checkbox" checked={c.attending} onChange={e => toggleAttending(c.id, e.target.checked)} />
-                Attending
-              </label>
-            </div>
-            <div style={{ ...S.formRow, flexDirection: isMobile ? 'column' : 'row' }}>
-              <input placeholder="Venue Map URL" defaultValue={c.venue_map_url || ""} onBlur={e => saveCompetitionFields(c.id, { venue_map_url: e.target.value }, "Venue map saved.")} style={S.input} />
-              <input placeholder="Pit Map URL" defaultValue={c.pit_map_url || ""} onBlur={e => saveCompetitionFields(c.id, { pit_map_url: e.target.value }, "Pit map saved.")} style={S.input} />
-              <input placeholder="Stream URL" defaultValue={c.stream_url || ""} onBlur={e => saveCompetitionFields(c.id, { stream_url: e.target.value }, "Stream saved.")} style={S.input} />
-            </div>
-            <div style={{ ...S.formRow, marginTop: 10, flexDirection: isMobile ? 'column' : 'row' }}>
-              <input placeholder="Map check status" defaultValue={c.map_status || ""} onBlur={e => saveCompetitionFields(c.id, { map_status: e.target.value, last_map_check: new Date().toISOString() }, "Map check saved.")} style={S.input} />
-              <button onClick={() => autoFindLinks(c)} disabled={findingId === c.id} style={{ ...S.btnPrimary, width: isMobile ? '100%' : undefined, opacity: findingId === c.id ? 0.65 : 1 }}>{findingId === c.id ? "Finding..." : "AI Find Links"}</button>
-              <button onClick={() => setEditMapId(c.id)} style={{ ...S.btnGhost, width: isMobile ? '100%' : undefined }}>{editMapId === c.id ? "Close Editor" : "Map Editor"}</button>
-              <a href={`https://www.thebluealliance.com/event/${c.event_key}`} target="_blank" rel="noreferrer" style={{ ...S.quickBtn, width: isMobile ? '100%' : undefined, textAlign: 'center' }}>TBA Event</a>
-              <a href="/member-hub/venuemap" target="_blank" rel="noreferrer" style={{ ...S.quickBtn, width: isMobile ? '100%' : undefined, textAlign: 'center' }}>Preview Maps</a>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-// ── STYLES ────────────────────────────────────────────────
 const S = {
   layout: { display: "flex", minHeight: "100vh", background: "#080a0f", color: "#f1f5f9", fontFamily: "'Exo 2', sans-serif" },
   sidebar: { width: 224, background: "#0a0e18", borderRight: "1px solid rgba(255,255,255,0.06)", display: "flex", flexDirection: "column", flexShrink: 0, position: "fixed", top: "env(safe-area-inset-top,0px)", left: 0, height: "100vh", overflowY: "auto", zIndex: 50 },
