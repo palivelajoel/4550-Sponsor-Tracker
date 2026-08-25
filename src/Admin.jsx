@@ -80,6 +80,11 @@ export default function Admin() {
   const [editMapId, setEditMapId] = useState(null);
   const [showMobileNav, setShowMobileNav] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 760);
+  const [forms, setForms] = useState([]);
+  const [formSubmissions, setFormSubmissions] = useState([]);
+  const [announcements, setAnnouncements] = useState([]);
+  const [inventory, setInventory] = useState([]);
+  const [media, setMedia] = useState([]);
 
   useEffect(() => {
     const fn = () => setIsMobile(window.innerWidth < 760);
@@ -107,7 +112,7 @@ export default function Admin() {
   function showToast(msg, color = "#22c55e") { setToast({ msg, color }); setTimeout(() => setToast(""), 3000); }
 
   async function loadAll() {
-    const [m, t, cals, sg, sp, cap, comp, cfg] = await Promise.all([
+    const [m, t, cals, sg, sp, cap, comp, cfg, fm, fs, an, inv, md] = await Promise.all([
       sbFetch("members?select=*&order=created_at.asc"),
       sbFetch("hub_tasks?select=*&order=created_at.desc"),
       sbFetch("hub_calendar?select=*&order=date.asc"),
@@ -116,6 +121,11 @@ export default function Admin() {
       sbFetch("captains?select=*&order=sort_order.asc"),
       sbFetch("competitions?select=*&order=start_date.asc"),
       sbFetch("site_config?select=key,value"),
+      sbFetch("hub_forms?select=*&order=created_at.desc"),
+      sbFetch("hub_form_submissions?select=*&order=created_at.desc"),
+      sbFetch("hub_announcements?select=*&order=created_at.desc"),
+      sbFetch("inventory_items?select=*&order=created_at.desc"),
+      sbFetch("hub_media?select=*&order=created_at.desc"),
     ]);
     if (m) setMembers(m);
     if (t) setTaskList(t);
@@ -124,6 +134,11 @@ export default function Admin() {
     if (sp) setSponsors(sp);
     if (cap) setCaptains(cap);
     if (comp) setCompetitions(comp);
+    if (fm) setForms(fm);
+    if (fs) setFormSubmissions(fs);
+    if (an) setAnnouncements(an);
+    if (inv) setInventory(inv);
+    if (md) setMedia(md);
     if (cfg) {
       const obj = {};
       cfg.forEach(r => { obj[r.key] = r.value; });
@@ -266,7 +281,7 @@ export default function Admin() {
       </aside>
 
       <main className="admin-main" style={{ ...S.main, ...(isMobile ? { marginLeft: 0, padding: "calc(60px + env(safe-area-inset-top, 0px)) 10px 18px" } : {}) }}>
-        {page === "overview" && <Overview members={members} tasks={tasks} suggestions={suggestions} sponsors={sponsors} events={hubCalendar} overdue={overdue} competitions={competitions} isMobile={isMobile} />}
+        {page === "overview" && <Overview members={members} tasks={tasks} suggestions={suggestions} sponsors={sponsors} events={hubCalendar} overdue={overdue} competitions={competitions} captains={captains} forms={forms} formSubmissions={formSubmissions} announcements={announcements} inventory={inventory} media={media} isMobile={isMobile} />}
         {page === "accounts" && <Accounts members={members} reload={loadAll} showToast={showToast} adminProxy={adminProxy} isMobile={isMobile} />}
         {page === "competitions" && <CompetitionsAdmin competitions={competitions} config={config} reload={loadAll} showToast={showToast} isMobile={isMobile} />}
         {page === "hub-tasks" && <Tasks tasks={tasks} members={members} reload={loadAll} showToast={showToast} isMobile={isMobile} />}
@@ -281,10 +296,12 @@ export default function Admin() {
 }
 
 // ── OVERVIEW ──────────────────────────────────────────────
-function Overview({ members, tasks, suggestions, sponsors, events, overdue, competitions, isMobile }) {
+function Overview({ members, tasks, suggestions, sponsors, events, overdue, competitions, captains, forms, formSubmissions, announcements, inventory, media, isMobile }) {
   const today = new Date();
   const todayStr = today.toISOString().slice(0, 10);
   const openTasks = tasks.filter(t => t.status !== "Done");
+  const doneTasks = tasks.filter(t => t.status === "Done");
+  const taskCompletion = tasks.length > 0 ? Math.round((doneTasks.length / tasks.length) * 100) : 0;
   const weekAhead = new Date(today); weekAhead.setDate(weekAhead.getDate() + 7);
   const upcomingEvents = events.filter(e => e?.date && new Date(e.date) >= today && new Date(e.date) <= weekAhead).length;
   const nextEvents = events.filter(e => e?.date && e.date >= todayStr).slice(0, 5);
@@ -292,6 +309,13 @@ function Overview({ members, tasks, suggestions, sponsors, events, overdue, comp
   const mapNeeds = competitions.filter(c => c.attending && (!c.pit_map_url || !c.venue_map_url)).slice(0, 5);
   const nextComp = competitions.filter(c => c.attending && c.start_date >= todayStr).sort((a, b) => String(a.start_date).localeCompare(String(b.start_date)))[0];
   const attendingComps = competitions.filter(c => c.attending).length;
+  const lowStock = inventory.filter(i => i.low_stock).length;
+  const totalSubmissions = formSubmissions.length;
+  const pendingAnnouncements = announcements.filter(a => !a.pinned).length;
+  const membersBySubteam = {};
+  members.forEach(m => { const st = m.subteam || "General"; membersBySubteam[st] = (membersBySubteam[st] || 0) + 1; });
+  const taskPriority = { high: openTasks.filter(t => t.priority === "High").length, medium: openTasks.filter(t => t.priority === "Medium").length, low: openTasks.filter(t => t.priority === "Low").length };
+
   const stats = [
     { label: "Members", val: members.length, color: "#3b82f6" },
     { label: "Open Tasks", val: openTasks.length, color: "#f59e0b" },
@@ -300,22 +324,137 @@ function Overview({ members, tasks, suggestions, sponsors, events, overdue, comp
     { label: "Suggestions", val: suggestions.length, color: "#a855f7" },
     { label: "Sponsors", val: sponsors.length, color: "#64748b" },
     { label: "Attending Comps", val: attendingComps, color: "#eab308" },
+    { label: "Captains", val: captains.length, color: "#06b6d4" },
+    { label: "Forms", val: forms.length, color: "#22d3ee" },
+    { label: "Form Responses", val: totalSubmissions, color: "#14b8a6" },
+    { label: "Announcements", val: announcements.length, color: "#f97316" },
+    { label: "Media Items", val: media.length, color: "#ec4899" },
+    { label: "Low Stock", val: lowStock, color: lowStock > 0 ? "#ef4444" : "#22c55e" },
+    { label: "Completion", val: `${taskCompletion}%`, color: taskCompletion >= 70 ? "#22c55e" : taskCompletion >= 40 ? "#f59e0b" : "#ef4444" },
   ];
+
+  const cardStyle = { background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 10, padding: isMobile ? "14px 12px" : "18px 20px" };
+  const cardTitle = { fontFamily: "'Orbitron',sans-serif", fontSize: 11, fontWeight: 700, color: "#94a3b8", letterSpacing: 1.5, marginBottom: 12 };
+
   return (
     <div>
       <h1 style={{ ...S.pageTitle, fontSize: isMobile ? 16 : 20 }}>Overview</h1>
-      <div style={{ ...S.statRow, gap: isMobile ? 8 : 14 }}>
+
+      {/* Stat cards */}
+      <div style={{ display: "flex", flexWrap: "wrap", gap: isMobile ? 8 : 12 }}>
         {stats.map(s => (
-          <div key={s.label} style={{ ...S.statCard, borderColor: s.color, minWidth: isMobile ? 90 : 140, padding: isMobile ? "12px 8px" : "20px", flex: isMobile ? "0 1 calc(33.33% - 8px)" : undefined }}>
-            <div style={{ ...S.statNum, color: s.color, fontSize: isMobile ? 18 : 24 }}>{s.val}</div>
+          <div key={s.label} style={{ ...S.statCard, borderColor: s.color, minWidth: isMobile ? 80 : 120, padding: isMobile ? "10px 8px" : "16px", flex: isMobile ? "0 1 calc(33.33% - 8px)" : "0 1 auto" }}>
+            <div style={{ ...S.statNum, color: s.color, fontSize: isMobile ? 16 : 22 }}>{s.val}</div>
             <div style={S.statLabel}>{s.label}</div>
           </div>
         ))}
       </div>
-      {overdue > 0 && <div style={S.alertBanner}>⚠️ {overdue} overdue task{overdue !== 1 ? "s" : ""}</div>}
-      <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: 12, marginTop: 24 }}>
-        <a href="/" target="_blank" style={{ flex: 1, padding: '16px 24px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, color: '#94a3b8', textDecoration: 'none', fontSize: 14, fontFamily: "'Exo 2', sans-serif", textAlign: 'center' }}>Public Site ↗</a>
-        <a href="/member-hub" target="_blank" style={{ flex: 1, padding: '16px 24px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, color: '#94a3b8', textDecoration: 'none', fontSize: 14, fontFamily: "'Exo 2', sans-serif", textAlign: 'center' }}>Member Hub ↗</a>
+
+      {overdue > 0 && <div style={{ ...S.alertBanner, marginTop: 14 }}>⚠️ {overdue} overdue task{overdue !== 1 ? "s" : ""}</div>}
+      {lowStock > 0 && <div style={{ ...S.alertBanner, marginTop: 8, borderColor: "#f97316", background: "rgba(249,115,22,0.08)", color: "#fb923c" }}>📦 {lowStock} low-stock item{lowStock !== 1 ? "s" : ""} in inventory</div>}
+
+      {/* Detail cards grid */}
+      <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 14, marginTop: 20 }}>
+
+        {/* Next Competition */}
+        <div style={cardStyle}>
+          <div style={cardTitle}>🏆 NEXT COMPETITION</div>
+          {nextComp ? (
+            <div>
+              <div style={{ fontSize: 15, fontWeight: 700, color: "#f1f5f9", marginBottom: 4 }}>{nextComp.name || nextComp.event_code || "TBD"}</div>
+              <div style={{ fontSize: 12, color: "#94a3b8", fontFamily: "monospace" }}>{nextComp.start_date} — {nextComp.location || "TBD"}</div>
+              {mapNeeds.length > 0 && <div style={{ fontSize: 11, color: "#f87171", marginTop: 6 }}>⚠ {mapNeeds.length} comp{mapNeeds.length !== 1 ? "s" : ""} missing maps</div>}
+            </div>
+          ) : (
+            <div style={{ fontSize: 12, color: "#64748b", fontFamily: "monospace" }}>No upcoming competitions</div>
+          )}
+        </div>
+
+        {/* Task Breakdown */}
+        <div style={cardStyle}>
+          <div style={cardTitle}>✅ TASK BREAKDOWN</div>
+          <div style={{ display: "flex", gap: 16, marginBottom: 10 }}>
+            <div><span style={{ fontSize: 20, fontWeight: 700, color: "#f59e0b" }}>{openTasks.length}</span> <span style={{ fontSize: 11, color: "#94a3b8" }}>open</span></div>
+            <div><span style={{ fontSize: 20, fontWeight: 700, color: "#22c55e" }}>{doneTasks.length}</span> <span style={{ fontSize: 11, color: "#94a3b8" }}>done</span></div>
+          </div>
+          <div style={{ display: "flex", gap: 12, fontSize: 12, fontFamily: "monospace" }}>
+            <span style={{ color: "#ef4444" }}>🔴 High: {taskPriority.high}</span>
+            <span style={{ color: "#f59e0b" }}>🟡 Med: {taskPriority.medium}</span>
+            <span style={{ color: "#22c55e" }}>🟢 Low: {taskPriority.low}</span>
+          </div>
+        </div>
+
+        {/* Upcoming Events */}
+        <div style={cardStyle}>
+          <div style={cardTitle}>📅 UPCOMING EVENTS</div>
+          {nextEvents.length > 0 ? (
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              {nextEvents.map(e => (
+                <div key={e.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 12 }}>
+                  <span style={{ color: "#e2e8f0", fontWeight: 600 }}>{e.title || e.name || "Event"}</span>
+                  <span style={{ color: "#64748b", fontFamily: "monospace", fontSize: 11 }}>{e.date}</span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div style={{ fontSize: 12, color: "#64748b", fontFamily: "monospace" }}>No upcoming events</div>
+          )}
+        </div>
+
+        {/* Tasks Due Soon */}
+        <div style={cardStyle}>
+          <div style={cardTitle}>⏰ DUE SOON</div>
+          {dueTasks.length > 0 ? (
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              {dueTasks.map(t => (
+                <div key={t.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 12 }}>
+                  <span style={{ color: "#e2e8f0", fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1, marginRight: 8 }}>{t.title}</span>
+                  <span style={{ color: t.due_date < todayStr ? "#ef4444" : "#64748b", fontFamily: "monospace", fontSize: 11, flexShrink: 0 }}>{t.due_date}</span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div style={{ fontSize: 12, color: "#64748b", fontFamily: "monospace" }}>No due dates set</div>
+          )}
+        </div>
+
+        {/* Members by Subteam */}
+        <div style={cardStyle}>
+          <div style={cardTitle}>👥 MEMBERS BY SUBTEAM</div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+            {Object.entries(membersBySubteam).sort((a, b) => b[1] - a[1]).map(([team, count]) => (
+              <div key={team} style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 6, padding: "6px 10px", fontSize: 12 }}>
+                <span style={{ color: "#e2e8f0", fontWeight: 600 }}>{count}</span> <span style={{ color: "#64748b", fontFamily: "monospace", fontSize: 11 }}>{team}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Map Needs */}
+        <div style={cardStyle}>
+          <div style={cardTitle}>🗺️ MAP NEEDS</div>
+          {mapNeeds.length > 0 ? (
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              {mapNeeds.map(c => (
+                <div key={c.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 12 }}>
+                  <span style={{ color: "#e2e8f0", fontWeight: 600 }}>{c.name || c.event_code}</span>
+                  <span style={{ color: "#f87171", fontFamily: "monospace", fontSize: 10 }}>
+                    {!c.pit_map_url ? "no pit" : ""} {!c.pit_map_url && !c.venue_map_url ? "&" : ""} {!c.venue_map_url ? "no venue" : ""}
+                  </span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div style={{ fontSize: 12, color: "#22c55e", fontFamily: "monospace" }}>✓ All maps uploaded</div>
+          )}
+        </div>
+
+      </div>
+
+      {/* Quick links */}
+      <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: 12, marginTop: 20 }}>
+        <a href="/" target="_blank" style={{ flex: 1, padding: '14px 20px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, color: '#94a3b8', textDecoration: 'none', fontSize: 13, fontFamily: "'Exo 2', sans-serif", textAlign: 'center' }}>Public Site ↗</a>
+        <a href="/member-hub" target="_blank" style={{ flex: 1, padding: '14px 20px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, color: '#94a3b8', textDecoration: 'none', fontSize: 13, fontFamily: "'Exo 2', sans-serif", textAlign: 'center' }}>Member Hub ↗</a>
       </div>
     </div>
   );
