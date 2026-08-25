@@ -27,9 +27,10 @@ export default function HubForms() {
 
   async function loadData() {
     const f = await sbFetch("hub_forms?select=*&order=created_at.desc");
-    if (f) setForms(f);
     const s = await sbFetch("hub_form_submissions?select=*&order=created_at.desc");
-    if (s) setSubmissions(s);
+    if (f === null || s === null) { showToast("Failed to load forms — check RLS policies on hub_forms."); return; }
+    setForms(f);
+    setSubmissions(s);
   }
 
   const username = getUsername();

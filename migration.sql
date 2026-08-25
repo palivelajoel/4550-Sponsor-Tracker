@@ -351,6 +351,37 @@ DROP POLICY IF EXISTS "Public select articles" ON public.articles;
 CREATE POLICY "Public select articles" ON public.articles FOR SELECT USING (true);
 
 -- ============================================================
+-- FORMS: hub_forms + hub_form_submissions (run if missing)
+-- ============================================================
+CREATE TABLE IF NOT EXISTS public.hub_forms (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    title TEXT NOT NULL,
+    description TEXT DEFAULT '',
+    questions JSONB DEFAULT '[]'::jsonb,
+    visibility TEXT DEFAULT 'team',
+    created_by TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE public.hub_forms ADD COLUMN IF NOT EXISTS visibility TEXT DEFAULT 'team';
+
+ALTER TABLE public.hub_forms ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Public select hub_forms" ON public.hub_forms;
+CREATE POLICY "Public select hub_forms" ON public.hub_forms FOR SELECT USING (true);
+
+CREATE TABLE IF NOT EXISTS public.hub_form_submissions (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    form_id UUID REFERENCES public.hub_forms(id) ON DELETE CASCADE,
+    submitted_by TEXT,
+    answers JSONB DEFAULT '{}'::jsonb,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE public.hub_form_submissions ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Public select hub_form_submissions" ON public.hub_form_submissions;
+CREATE POLICY "Public select hub_form_submissions" ON public.hub_form_submissions FOR SELECT USING (true);
+
+-- ============================================================
 -- SEED DATA: Default site_config entries
 -- ============================================================
 INSERT INTO public.site_config (key, value) VALUES
