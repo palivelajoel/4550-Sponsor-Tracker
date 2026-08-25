@@ -3,9 +3,6 @@ import { motion } from 'framer-motion'
 import { FONTS, C, sbFetch, isAuthed, canEditHub, getUsername, HubHeader, toastStyle, inputStyle, selectStyle, addBtnStyle, ghostBtn, hubProxy } from "./hubUtils.jsx";
 import HubBackground from "./HubBackground.jsx";
 
-let qid = 1;
-function nextQid() { return "q_" + (qid++); }
-
 export default function HubForms() {
   const [authed] = useState(isAuthed());
   const [canEdit] = useState(canEditHub());
@@ -47,7 +44,16 @@ export default function HubForms() {
         <ListForms
           forms={forms} submissions={submissions} canEdit={canEdit} username={username}
           onFill={f => { setFillForm(f); setView("fill"); }}
-          onEdit={f => { setEditForm({ ...f, questions: f.questions || [] }); setView("edit"); }}
+          onEdit={f => {
+            const seen = {};
+            const qs = (f.questions || []).map(q => {
+              let id = q.id;
+              if (!id || seen[id]) { do { id = nextQid(); } while (seen[id]); }
+              seen[id] = true;
+              return { ...q, id };
+            });
+            setEditForm({ ...f, questions: qs }); setView("edit");
+          }}
           onDelete={async id => {
             if (!confirm("Delete this form and all its responses?")) return;
             try { await hubProxy("hub_forms", "delete", { id }); showToast("Form deleted."); loadData(); } catch (e) { showToast("Delete failed: " + (e.message || e)); }
@@ -127,6 +133,8 @@ export default function HubForms() {
     </div>
   );
 }
+
+function nextQid() { return "q_" + Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
 
 function qTypes() { return ["text", "textarea", "select", "radio", "checkbox"]; }
 function qTypeLabel(t) {
@@ -436,7 +444,7 @@ function FormFill({ form, username, onSubmit, onCancel }) {
               <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                 {(q.options || []).filter(o => o.trim()).map((o, oi) => (
                   <label key={oi} style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: 13, color: C.text }}>
-                    <input type="radio" name={q.id} value={o} checked={answers[q.id] === o}
+                    <input type="radio" name={`${form.id}_${qi}`} value={o} checked={answers[q.id] === o}
                       onChange={e => setAnswer(q.id, e.target.value)} style={{ accentColor: C.red }} />
                     {o}
                   </label>

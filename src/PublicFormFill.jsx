@@ -154,7 +154,7 @@ export default function PublicFormFill() {
                   <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                     {(q.options || []).filter(o => o.trim()).map((o, oi) => (
                       <label key={oi} style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: 13, color: "#e2e8f0" }}>
-                        <input type="radio" name={q.id} value={o} checked={answers[q.id] === o}
+                        <input type="radio" name={`${form.id}_${qi}`} value={o} checked={answers[q.id] === o}
                           onChange={e => setAnswer(q.id, e.target.value)} style={{ accentColor: "#22d3ee" }} />
                         {o}
                       </label>
