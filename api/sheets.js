@@ -38,6 +38,7 @@ export default async function handler(req, res) {
 
     // Try to read first row to check if header exists
     let needsHeader = false;
+    let tabExists = true;
     try {
       const existing = await sheets.spreadsheets.values.get({
         spreadsheetId: sheetId,
@@ -47,8 +48,18 @@ export default async function handler(req, res) {
         needsHeader = true;
       }
     } catch {
-      // Sheet or tab doesn't exist yet — we'll create it with the header
+      // Sheet or tab doesn't exist yet — create the tab below
       needsHeader = true;
+      tabExists = false;
+    }
+
+    if (!tabExists) {
+      await sheets.spreadsheets.batchUpdate({
+        spreadsheetId: sheetId,
+        requestBody: {
+          requests: [{ addSheet: { properties: { title: 'Form Submissions' } } }],
+        },
+      });
     }
 
     const values = needsHeader ? [header, row] : [row];

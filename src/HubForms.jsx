@@ -103,7 +103,9 @@ export default function HubForms() {
                   submittedBy: username,
                   timestamp: new Date().toISOString(),
                 }),
-              }).catch(() => {});
+              }).then(async r => {
+                if (!r.ok) { const j = await r.json().catch(() => null); showToast("Sheet sync failed: " + (j?.error || r.status)); }
+              }).catch(e => showToast("Sheet sync failed: " + (e.message || e)));
               loadData();
               setView("list");
             } catch (e) { showToast("Submit failed: " + (e.message || e)); }

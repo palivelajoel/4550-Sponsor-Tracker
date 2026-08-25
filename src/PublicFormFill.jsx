@@ -65,7 +65,9 @@ export default function PublicFormFill() {
           submittedBy: "public",
           timestamp: new Date().toISOString(),
         }),
-      }).catch(() => {});
+      }).then(async r => {
+        if (!r.ok) { const j = await r.json().catch(() => null); showToast("Sheet sync failed: " + (j?.error || r.status)); }
+      }).catch(e => showToast("Sheet sync failed: " + (e.message || e)));
     } catch (err) {
       showToast("Submit failed: " + (err.message || err));
     } finally {
