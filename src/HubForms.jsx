@@ -62,10 +62,10 @@ export default function HubForms() {
           onSave={async f => {
             try {
               if (f.id) {
-                await hubProxy("hub_forms", "update", { id: f.id, updates: { title: f.title, description: f.description, questions: f.questions } });
+                await hubProxy("hub_forms", "update", { id: f.id, updates: { title: f.title, description: f.description, questions: f.questions, visibility: f.visibility || "team" } });
                 showToast("Form updated.");
               } else {
-                await hubProxy("hub_forms", "insert", { title: f.title, description: f.description, questions: f.questions, created_by: username });
+                await hubProxy("hub_forms", "insert", { title: f.title, description: f.description, questions: f.questions, created_by: username, visibility: f.visibility || "team" });
                 showToast("Form created.");
               }
               loadData();
@@ -159,9 +159,17 @@ function ListForms({ forms, submissions, canEdit, username, onFill, onEdit, onDe
                     )}
                   </div>
                 </div>
-                <div style={{ fontSize: 11, color: C.dim, fontFamily: "monospace" }}>
-                  {(f.questions || []).length} question{(f.questions || []).length !== 1 ? "s" : ""}
-                  {f.created_by && ` · by ${f.created_by}`}
+                <div style={{ fontSize: 11, color: C.dim, fontFamily: "monospace", display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                  <span>{(f.questions || []).length} question{(f.questions || []).length !== 1 ? "s" : ""}</span>
+                  {f.created_by && <span>· by {f.created_by}</span>}
+                  {f.visibility === "public" && (
+                    <span style={{ fontSize: 10, color: "#22c55e", background: "rgba(34,197,94,0.12)", padding: "2px 8px", borderRadius: 6 }}>
+                      🌐 Public — <a href={`/forms/${f.id}`} target="_blank" rel="noopener noreferrer" style={{ color: "#22c55e", textDecoration: "underline" }}>/forms/{f.id.slice(0, 8)}</a>
+                    </span>
+                  )}
+                  {f.visibility !== "public" && (
+                    <span style={{ fontSize: 10, color: C.muted, background: `${C.surface}`, padding: "2px 8px", borderRadius: 6 }}>🔒 Team</span>
+                  )}
                 </div>
               </div>
             );
@@ -176,6 +184,7 @@ function FormBuilder({ form: initial, onSave, onCancel }) {
   const [title, setTitle] = useState(initial.title || "");
   const [desc, setDesc] = useState(initial.description || "");
   const [questions, setQuestions] = useState(initial.questions || []);
+  const [visibility, setVisibility] = useState(initial.visibility || "team");
   const [errors, setErrors] = useState("");
 
   function addQuestion() {
@@ -212,7 +221,7 @@ function FormBuilder({ form: initial, onSave, onCancel }) {
       placeholder: q.placeholder || "",
       options: ["select", "radio", "checkbox"].includes(q.type) ? (q.options || []).filter(o => o.trim()) : undefined,
     }));
-    onSave({ ...initial, title: title.trim(), description: desc.trim(), questions: cleaned });
+    onSave({ ...initial, title: title.trim(), description: desc.trim(), questions: cleaned, visibility });
   }
 
   return (
@@ -228,7 +237,22 @@ function FormBuilder({ form: initial, onSave, onCancel }) {
       <input placeholder="Form Title *" value={title} onChange={e => setTitle(e.target.value)}
         style={{ ...inputStyle, fontSize: 16, marginBottom: 12, fontFamily: "'Orbitron',sans-serif" }} />
       <textarea placeholder="Description (optional)" value={desc} onChange={e => setDesc(e.target.value)}
-        style={{ ...inputStyle, minHeight: 50, resize: "vertical", marginBottom: 20 }} />
+        style={{ ...inputStyle, minHeight: 50, resize: "vertical", marginBottom: 16 }} />
+
+      <div style={{ marginBottom: 20 }}>
+        <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 11, fontWeight: 700, color: C.muted, letterSpacing: 1, marginBottom: 8 }}>VISIBILITY</div>
+        <div style={{ display: "flex", gap: 8 }}>
+          <button onClick={() => setVisibility("team")} style={{ ...ghostBtn, flex: 1, padding: "10px 14px", fontSize: 12, borderColor: visibility === "team" ? C.accent : C.border, color: visibility === "team" ? C.accent : C.muted, background: visibility === "team" ? `${C.accent}11` : "transparent" }}>
+            🔒 Team Only
+          </button>
+          <button onClick={() => setVisibility("public")} style={{ ...ghostBtn, flex: 1, padding: "10px 14px", fontSize: 12, borderColor: visibility === "public" ? "#22c55e" : C.border, color: visibility === "public" ? "#22c55e" : C.muted, background: visibility === "public" ? "rgba(34,197,94,0.07)" : "transparent" }}>
+            🌐 Public (QR Code)
+          </button>
+        </div>
+        <div style={{ fontSize: 10, color: C.dim, fontFamily: "monospace", marginTop: 6 }}>
+          {visibility === "public" ? "Anyone with the link can submit — share via QR code." : "Only logged-in hub members can access this form."}
+        </div>
+      </div>
 
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
         <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 13, fontWeight: 700, color: C.muted, letterSpacing: 1 }}>Questions</div>

@@ -13,6 +13,7 @@ import HubProjector from './HubProjector.jsx'
 import HubScouting from './HubScouting.jsx'
 import HubInventory from './HubInventory.jsx'
 import HubForms from './HubForms.jsx'
+import PublicFormFill from './PublicFormFill.jsx'
 import ScoutMapTab from './ScoutMapTab.jsx'
 import PublicMedia from './PublicMedia.jsx'
 import Privacy from './Privacy.jsx'
@@ -24,6 +25,7 @@ const path = window.location.pathname
 
 const Page =
   path === '/admin'                            ? Admin
+  : path.startsWith('/forms/')                  ? PublicFormFill
   : path === '/member-hub/sponsors'              ? App
   : path === '/member-hub'                     ? Hub
   : path === '/member-hub/calendar'            ? HubCalendar
