@@ -15,6 +15,7 @@ export default function HubForms() {
   const [editForm, setEditForm] = useState(null);
   const [fillForm, setFillForm] = useState(null);
   const [responsesForm, setResponsesForm] = useState(null);
+  const [shareId, setShareId] = useState(null);
   const [toast, setToast] = useState("");
 
   function showToast(msg) { setToast(msg); setTimeout(() => setToast(""), 3000); }
@@ -65,12 +66,20 @@ export default function HubForms() {
               if (f.id) {
                 await hubProxy("hub_forms", "update", { id: f.id, updates: { title: f.title, description: f.description, questions: f.questions, visibility: f.visibility || "team" } });
                 showToast("Form updated.");
+                loadData();
+                setView("list");
               } else {
-                await hubProxy("hub_forms", "insert", { title: f.title, description: f.description, questions: f.questions, created_by: username, visibility: f.visibility || "team" });
+                const res = await hubProxy("hub_forms", "insert", { title: f.title, description: f.description, questions: f.questions, created_by: username, visibility: f.visibility || "team" });
                 showToast("Form created.");
+                loadData();
+                const newId = res?.data?.[0]?.id;
+                if ((f.visibility || "team") === "public" && newId) {
+                  setShareId(newId);
+                  setView("share");
+                } else {
+                  setView("list");
+                }
               }
-              loadData();
-              setView("list");
             } catch (e) { showToast("Save failed: " + (e.message || e)); }
           }}
           onCancel={() => setView("list")}
@@ -101,6 +110,10 @@ export default function HubForms() {
           }}
           onCancel={() => setView("list")}
         />
+      )}
+
+      {view === "share" && shareId && (
+        <ShareLink id={shareId} onDone={() => setView("list")} />
       )}
 
       {view === "responses" && responsesForm && (
@@ -181,6 +194,34 @@ function ListForms({ forms, submissions, canEdit, username, onFill, onEdit, onDe
   );
 }
 
+function ShareLink({ id, onDone }) {
+  const [copied, setCopied] = useState(false);
+  const url = `${window.location.origin}/forms/${id}`;
+
+  function copy() {
+    navigator.clipboard.writeText(url).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }).catch(() => {});
+  }
+
+  return (
+    <div style={{ maxWidth: 650, margin: "0 auto", padding: "24px 20px", textAlign: "center" }}>
+      <div style={{ fontSize: 40, marginBottom: 8 }}>✓</div>
+      <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 18, fontWeight: 700, color: C.text, marginBottom: 6 }}>Form Created!</div>
+      <div style={{ fontSize: 12, color: C.dim, fontFamily: "monospace", marginBottom: 22 }}>Anyone with this link can submit responses:</div>
+      <div style={{ display: "flex", gap: 8 }}>
+        <input readOnly value={url} onFocus={e => e.target.select()} style={{ ...inputStyle, flex: 1 }} />
+        <button onClick={copy} style={{ ...addBtnStyle, whiteSpace: "nowrap" }}>{copied ? "✓ Copied!" : "Copy Link"}</button>
+      </div>
+      <a href={url} target="_blank" rel="noopener noreferrer" style={{ display: "inline-block", marginTop: 16, color: C.muted, fontSize: 12, fontFamily: "monospace" }}>Open form ↗</a>
+      <div>
+        <button onClick={onDone} style={{ ...ghostBtn, marginTop: 24 }}>← Back to Forms</button>
+      </div>
+    </div>
+  );
+}
+
 function FormBuilder({ form: initial, onSave, onCancel }) {
   const [title, setTitle] = useState(initial.title || "");
   const [desc, setDesc] = useState(initial.description || "");
@@ -247,11 +288,11 @@ function FormBuilder({ form: initial, onSave, onCancel }) {
             🔒 Team Only
           </button>
           <button onClick={() => setVisibility("public")} style={{ ...ghostBtn, flex: 1, padding: "10px 14px", fontSize: 12, borderColor: visibility === "public" ? "#22c55e" : C.border, color: visibility === "public" ? "#22c55e" : C.muted, background: visibility === "public" ? "rgba(34,197,94,0.07)" : "transparent" }}>
-            🌐 Public (QR Code)
+            🌐 Public Link
           </button>
         </div>
         <div style={{ fontSize: 10, color: C.dim, fontFamily: "monospace", marginTop: 6 }}>
-          {visibility === "public" ? "Anyone with the link can submit — share via QR code." : "Only logged-in hub members can access this form."}
+          {visibility === "public" ? "Anyone with the link can submit — you'll get a share link after saving." : "Only logged-in hub members can access this form."}
         </div>
       </div>
 
