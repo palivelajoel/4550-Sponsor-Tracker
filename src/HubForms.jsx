@@ -539,6 +539,7 @@ function FormFill({ form, username, onSubmit, onCancel }) {
 function FormResponses({ form, submissions }) {
   const questions = form.questions || [];
   const hasSubmissions = submissions.length > 0;
+  const [viewType, setViewType] = useState("table");
 
   function downloadCSV() {
     if (!hasSubmissions) return;
@@ -601,11 +602,20 @@ function FormResponses({ form, submissions }) {
         </div>
       )}
 
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
+        <span style={{ fontSize: 11, color: C.dim, fontFamily: "monospace", letterSpacing: 1 }}>VIEW AS</span>
+        <select value={viewType} onChange={e => setViewType(e.target.value)} style={{ ...selectStyle, width: "auto", fontSize: 12, padding: "6px 10px" }}>
+          <option value="table">Table</option>
+          <option value="pie">Pie Charts</option>
+          <option value="column">Column Charts</option>
+        </select>
+      </div>
+
       {!hasSubmissions ? (
         <div style={{ textAlign: "center", padding: "60px 0", color: C.dim, fontFamily: "monospace", fontSize: 14 }}>
           No responses yet.
         </div>
-      ) : (
+      ) : viewType === "table" ? (
         <div style={{ overflowX: "auto" }}>
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12, fontFamily: "monospace" }}>
             <thead>
@@ -636,7 +646,107 @@ function FormResponses({ form, submissions }) {
             </tbody>
           </table>
         </div>
+      ) : (
+        questions.map((q, qi) => {
+          const data = tallyQuestion(q, submissions);
+          const qlabel = `Q${qi + 1} · ${q.label}`;
+          if (["select", "radio", "checkbox"].includes(q.type)) {
+            const entries = Object.entries(data.tally).filter(([, c]) => c > 0);
+            return viewType === "pie"
+              ? <PieCard key={q.id} label={qlabel} entries={entries} total={submissions.length} />
+              : <ColumnCard key={q.id} label={qlabel} entries={entries} />;
+          }
+          return <TextCard key={q.id} label={qlabel} responses={data.responses} />;
+        })
       )}
     </div>
+  );
+}
+
+const CHART_PALETTE = ["#ef4444", "#22d3ee", "#22c55e", "#f59e0b", "#a855f7", "#3b82f6", "#ec4899", "#14b8a6"];
+
+function tallyQuestion(q, submissions) {
+  if (["select", "radio", "checkbox"].includes(q.type)) {
+    const tally = {};
+    (q.options || []).forEach(o => { if (o.trim()) tally[o] = 0; });
+    submissions.forEach(s => {
+      const a = s.answers?.[q.id];
+      if (Array.isArray(a)) a.forEach(v => { tally[v] = (tally[v] || 0) + 1; });
+      else if (a) tally[a] = (tally[a] || 0) + 1;
+    });
+    return { tally };
+  }
+  const responses = [];
+  submissions.forEach(s => {
+    const a = s.answers?.[q.id];
+    if (a && String(a).trim()) responses.push(String(a));
+  });
+  return { responses };
+}
+
+function ChartCard({ label, children }) {
+  return (
+    <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 12, padding: "18px 20px", marginBottom: 14 }}>
+      <div style={{ fontSize: 13, fontWeight: 600, color: C.text, marginBottom: 14 }}>{label}</div>
+      {children}
+    </div>
+  );
+}
+
+function PieCard({ label, entries, total }) {
+  let acc = 0;
+  const stops = entries.map(([_, count], i) => {
+    const start = total ? (acc / total) * 360 : 0;
+    acc += count;
+    const end = total ? (acc / total) * 360 : 360;
+    return `${CHART_PALETTE[i % CHART_PALETTE.length]} ${start.toFixed(1)}deg ${end.toFixed(1)}deg`;
+  });
+  return (
+    <ChartCard label={label}>
+      <div style={{ display: "flex", gap: 28, alignItems: "center", flexWrap: "wrap" }}>
+        <div style={{ width: 140, height: 140, borderRadius: "50%", flexShrink: 0, background: stops.length ? `conic-gradient(${stops.join(", ")})` : C.border }} />
+        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          {entries.map(([opt, count], i) => (
+            <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: C.text }}>
+              <span style={{ width: 10, height: 10, borderRadius: 3, background: CHART_PALETTE[i % CHART_PALETTE.length], flexShrink: 0 }} />
+              {opt} — {count}{total > 0 ? ` (${Math.round((count / total) * 100)}%)` : ""}
+            </div>
+          ))}
+          {entries.length === 0 && <span style={{ fontSize: 11, color: C.dim }}>No responses</span>}
+        </div>
+      </div>
+    </ChartCard>
+  );
+}
+
+function ColumnCard({ label, entries }) {
+  const max = Math.max(...entries.map(([, c]) => c), 1);
+  return (
+    <ChartCard label={label}>
+      <div style={{ display: "flex", alignItems: "flex-end", gap: 20, minHeight: 170, overflowX: "auto" }}>
+        {entries.map(([opt, count], i) => (
+          <div key={i} style={{ display: "flex", flexDirection: "column", alignItems: "center", minWidth: 60, flex: 1 }}>
+            <div style={{ fontSize: 12, color: C.text, fontFamily: "monospace", marginBottom: 4 }}>{count}</div>
+            <div style={{ width: 48, height: `${(count / max) * 130}px`, minHeight: count > 0 ? 4 : 0, background: CHART_PALETTE[i % CHART_PALETTE.length], borderRadius: "6px 6px 0 0", opacity: 0.85 }} />
+            <div style={{ fontSize: 10, color: C.muted, marginTop: 6, textAlign: "center", wordBreak: "break-word", maxWidth: 90 }}>{opt}</div>
+          </div>
+        ))}
+        {entries.length === 0 && <span style={{ fontSize: 11, color: C.dim }}>No responses</span>}
+      </div>
+    </ChartCard>
+  );
+}
+
+function TextCard({ label, responses }) {
+  return (
+    <ChartCard label={`${label} (${responses.length} response${responses.length !== 1 ? "s" : ""})`}>
+      {responses.length === 0 ? <span style={{ fontSize: 11, color: C.dim }}>No responses</span> : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {responses.map((r, i) => (
+            <div key={i} style={{ fontSize: 12, color: C.text, borderBottom: `1px solid ${C.border}`, paddingBottom: 7 }}>{r}</div>
+          ))}
+        </div>
+      )}
+    </ChartCard>
   );
 }
