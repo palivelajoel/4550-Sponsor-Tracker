@@ -121,11 +121,11 @@ export default function Hub() {
     const t = await sbFetch("hub_tasks?status=neq.Done&select=id");
     if (t) setTaskCount(t.length);
     if (u && !isCaptainOrAbove()) {
-      const allF = await sbFetch("hub_forms?select=id");
+      const allF = await sbFetch("hub_forms?select=id,visibility");
       const myS = await sbFetch(`hub_form_submissions?submitted_by=eq.${encodeURIComponent(u)}&select=form_id`);
       if (allF && myS) {
         const submittedIds = new Set(myS.map(s => s.form_id));
-        setPendingForms(allF.filter(f => !submittedIds.has(f.id)).length);
+        setPendingForms(allF.filter(f => f.visibility !== "draft" && !submittedIds.has(f.id)).length);
       }
     }
   }

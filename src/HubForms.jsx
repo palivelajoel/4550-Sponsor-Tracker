@@ -85,16 +85,16 @@ export default function HubForms() {
           onSave={async f => {
             try {
               if (f.id) {
-                await hubProxy("hub_forms", "update", { id: f.id, updates: { title: f.title, description: f.description, questions: f.questions, visibility: f.visibility || "team" } });
+                await hubProxy("hub_forms", "update", { id: f.id, updates: { title: f.title, description: f.description, questions: f.questions, visibility: f.visibility || "draft" } });
                 showToast("Form updated.");
                 loadData();
                 setView("list");
               } else {
-                const res = await hubProxy("hub_forms", "insert", { title: f.title, description: f.description, questions: f.questions, created_by: username, visibility: f.visibility || "team" });
+                const res = await hubProxy("hub_forms", "insert", { title: f.title, description: f.description, questions: f.questions, created_by: username, visibility: f.visibility || "draft" });
                 showToast("Form created.");
                 loadData();
                 const newId = res?.data?.[0]?.id;
-                if ((f.visibility || "team") === "public" && newId) {
+                if ((f.visibility || "draft") === "public" && newId) {
                   setShareId(newId);
                   setView("share");
                 } else {
@@ -174,6 +174,7 @@ function ListForms({ forms, submissions, canEdit, username, onFill, onEdit, onDe
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
           {forms.map(f => {
+            if (f.visibility === "draft" && !canEdit) return null;
             const didSubmit = userSubmitted(f.id);
             return (
               <div key={f.id} style={{ background: C.surface, border: `1px solid ${didSubmit ? "rgba(34,197,94,0.3)" : C.border}`, borderRadius: 12, padding: "20px 22px" }}>
@@ -207,7 +208,10 @@ function ListForms({ forms, submissions, canEdit, username, onFill, onEdit, onDe
                       🌐 Public — <a href={`/forms/${f.id}`} target="_blank" rel="noopener noreferrer" style={{ color: "#22c55e", textDecoration: "underline" }}>/forms/{f.id.slice(0, 8)}</a>
                     </span>
                   )}
-                  {f.visibility !== "public" && (
+                  {f.visibility === "draft" && (
+                    <span style={{ fontSize: 10, color: "#f59e0b", background: "rgba(245,158,11,0.12)", padding: "2px 8px", borderRadius: 6 }}>📝 Draft</span>
+                  )}
+                  {f.visibility === "team" && (
                     <span style={{ fontSize: 10, color: C.muted, background: `${C.surface}`, padding: "2px 8px", borderRadius: 6 }}>🔒 Team</span>
                   )}
                 </div>
@@ -252,7 +256,7 @@ function FormBuilder({ form: initial, onSave, onCancel }) {
   const [title, setTitle] = useState(initial.title || "");
   const [desc, setDesc] = useState(initial.description || "");
   const [questions, setQuestions] = useState(initial.questions || []);
-  const [visibility, setVisibility] = useState(initial.visibility || "team");
+  const [visibility, setVisibility] = useState(initial.visibility || "draft");
   const [errors, setErrors] = useState("");
 
   function addQuestion() {
@@ -325,6 +329,9 @@ function FormBuilder({ form: initial, onSave, onCancel }) {
       <div style={{ marginBottom: 20 }}>
         <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 11, fontWeight: 700, color: C.muted, letterSpacing: 1, marginBottom: 8 }}>VISIBILITY</div>
         <div style={{ display: "flex", gap: 8 }}>
+          <button onClick={() => setVisibility("draft")} style={{ ...ghostBtn, flex: 1, padding: "10px 14px", fontSize: 12, borderColor: visibility === "draft" ? "#f59e0b" : C.border, color: visibility === "draft" ? "#f59e0b" : C.muted, background: visibility === "draft" ? "rgba(245,158,11,0.07)" : "transparent" }}>
+            📝 Draft
+          </button>
           <button onClick={() => setVisibility("team")} style={{ ...ghostBtn, flex: 1, padding: "10px 14px", fontSize: 12, borderColor: visibility === "team" ? C.accent : C.border, color: visibility === "team" ? C.accent : C.muted, background: visibility === "team" ? `${C.accent}11` : "transparent" }}>
             🔒 Team Only
           </button>
@@ -333,7 +340,9 @@ function FormBuilder({ form: initial, onSave, onCancel }) {
           </button>
         </div>
         <div style={{ fontSize: 10, color: C.dim, fontFamily: "monospace", marginTop: 6 }}>
-          {visibility === "public" ? "Anyone with the link can submit — you'll get a share link after saving." : "Only logged-in hub members can access this form."}
+          {visibility === "draft" && "Only you and captains/admins can see this form."}
+          {visibility === "team" && "All logged-in hub members can access this form."}
+          {visibility === "public" && "Anyone with the link can submit — you'll get a share link after saving."}
         </div>
       </div>
 
