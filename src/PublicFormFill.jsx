@@ -164,28 +164,56 @@ export default function PublicFormFill() {
                 )}
 
                 {q.type === "radio" && (
-                  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                    {(q.options || []).map((o, oi) => ({ o, oi })).filter(x => x.o.trim()).map(({ o, oi }) => (
-                      <label key={oi} style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: 13, color: "#e2e8f0" }}>
-                        <input type="radio" name={`${form.id}_${qi}`} value={String(oi)} checked={answers[q.id] === String(oi)}
-                          onChange={e => setAnswer(q.id, e.target.value)} style={{ accentColor: "#22d3ee" }} />
-                        {o}
-                      </label>
-                    ))}
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                    {(q.options || []).map((o, oi) => ({ o, oi })).filter(x => x.o.trim()).map(({ o, oi }) => {
+                      const checked = answers[q.id] === String(oi);
+                      return (
+                        <label key={oi} style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer", fontSize: 13, color: "#e2e8f0", userSelect: "none" }}>
+                          <span style={{ position: "relative", width: 18, height: 18, flexShrink: 0 }}>
+                            <input type="radio" name={`${form.id}_${qi}`} value={String(oi)} checked={checked}
+                              onChange={e => setAnswer(q.id, e.target.value)}
+                              style={{ position: "absolute", opacity: 0, width: "100%", height: "100%", cursor: "pointer", margin: 0 }} />
+                            <span style={{
+                              position: "absolute", inset: 0, borderRadius: "50%",
+                              border: `2px solid ${checked ? "#22d3ee" : "rgba(255,255,255,0.2)"}`,
+                              background: checked ? "rgba(34,211,238,0.1)" : "transparent",
+                              transition: "all 0.2s",
+                              boxShadow: checked ? "0 0 10px rgba(34,211,238,0.35)" : "none",
+                            }}>
+                              {checked && <span style={{ position: "absolute", top: 3, left: 3, width: 8, height: 8, borderRadius: "50%", background: "#22d3ee" }} />}
+                            </span>
+                          </span>
+                          {o}
+                        </label>
+                      );
+                    })}
                   </div>
                 )}
 
                 {q.type === "checkbox" && (
-                  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                     {(q.options || []).map((o, oi) => ({ o, oi })).filter(x => x.o.trim()).map(({ o, oi }) => {
                       const checked = (answers[q.id] || []).includes(String(oi));
                       return (
-                        <label key={oi} style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: 13, color: "#e2e8f0" }}>
-                          <input type="checkbox" value={String(oi)} checked={checked}
-                            onChange={e => {
-                              const arr = (answers[q.id] || []).map(String);
-                              setAnswer(q.id, e.target.checked ? [...arr, String(oi)] : arr.filter(x => x !== String(oi)));
-                            }} style={{ accentColor: "#22d3ee" }} />
+                        <label key={oi} style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer", fontSize: 13, color: "#e2e8f0", userSelect: "none" }}>
+                          <span style={{ position: "relative", width: 18, height: 18, flexShrink: 0 }}>
+                            <input type="checkbox" value={String(oi)} checked={checked}
+                              onChange={e => {
+                                const arr = (answers[q.id] || []).map(String);
+                                setAnswer(q.id, e.target.checked ? [...arr, String(oi)] : arr.filter(x => x !== String(oi)));
+                              }}
+                              style={{ position: "absolute", opacity: 0, width: "100%", height: "100%", cursor: "pointer", margin: 0 }} />
+                            <span style={{
+                              position: "absolute", inset: 0, borderRadius: 4,
+                              border: `2px solid ${checked ? "#22d3ee" : "rgba(255,255,255,0.2)"}`,
+                              background: checked ? "rgba(34,211,238,0.15)" : "transparent",
+                              transition: "all 0.2s",
+                              display: "flex", alignItems: "center", justifyContent: "center",
+                              boxShadow: checked ? "0 0 10px rgba(34,211,238,0.35)" : "none",
+                            }}>
+                              {checked && <span style={{ color: "#22d3ee", fontSize: 11, fontWeight: 700, lineHeight: 1 }}>✓</span>}
+                            </span>
+                          </span>
                           {o}
                         </label>
                       );

@@ -298,7 +298,7 @@ function FormBuilder({ form: initial, onSave, onCancel }) {
     }));
   }
 
-  function handleSave() {
+  function saveWithVisibility(vis) {
     if (!title.trim()) { setErrors("Title required."); return; }
     const valid = questions.filter(q => q.label.trim());
     if (valid.length === 0) { setErrors("Add at least one question."); return; }
@@ -308,8 +308,11 @@ function FormBuilder({ form: initial, onSave, onCancel }) {
       placeholder: q.placeholder || "",
       options: ["select", "radio", "checkbox"].includes(q.type) ? (q.options || []).filter(o => o.trim()) : undefined,
     }));
-    onSave({ ...initial, title: title.trim(), description: desc.trim(), questions: cleaned, visibility });
+    onSave({ ...initial, title: title.trim(), description: desc.trim(), questions: cleaned, visibility: vis });
   }
+
+  function handleSave() { saveWithVisibility(visibility); }
+  function handlePublish() { saveWithVisibility("team"); }
 
   return (
     <div style={{ maxWidth: 700, margin: "0 auto", padding: "24px 20px" }}>
@@ -405,8 +408,19 @@ function FormBuilder({ form: initial, onSave, onCancel }) {
 
             <div style={{ display: "flex", gap: 8, marginTop: 8, alignItems: "center" }}>
               <label style={{ display: "flex", alignItems: "center", gap: 5, cursor: "pointer", fontSize: 11, color: C.muted, fontFamily: "monospace" }}>
-                <input type="checkbox" checked={q.required} onChange={e => updateQuestion(q.id, { required: e.target.checked })}
-                  style={{ accentColor: C.red }} />
+                <span style={{ position: "relative", width: 16, height: 16, flexShrink: 0 }}>
+                  <input type="checkbox" checked={q.required} onChange={e => updateQuestion(q.id, { required: e.target.checked })}
+                    style={{ position: "absolute", opacity: 0, width: "100%", height: "100%", cursor: "pointer", margin: 0 }} />
+                  <span style={{
+                    position: "absolute", inset: 0, borderRadius: 3,
+                    border: `2px solid ${q.required ? "#ef4444" : "rgba(255,255,255,0.2)"}`,
+                    background: q.required ? "rgba(239,68,68,0.15)" : "transparent",
+                    transition: "all 0.2s",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                  }}>
+                    {q.required && <span style={{ color: "#ef4444", fontSize: 10, fontWeight: 700, lineHeight: 1 }}>✓</span>}
+                  </span>
+                </span>
                 Required
               </label>
             </div>
@@ -420,9 +434,12 @@ function FormBuilder({ form: initial, onSave, onCancel }) {
         </div>
       )}
 
-      <div style={{ display: "flex", gap: 10, marginTop: 24 }}>
-        <button onClick={handleSave} style={addBtnStyle}>Save Form</button>
+      <div style={{ display: "flex", gap: 10, marginTop: 24, flexWrap: "wrap" }}>
         <button onClick={onCancel} style={ghostBtn}>Cancel</button>
+        <button onClick={handleSave} style={addBtnStyle}>Save</button>
+        {visibility === "draft" && (
+          <button onClick={handlePublish} style={{ ...addBtnStyle, background: "#22c55e" }}>Save & Publish</button>
+        )}
       </div>
     </div>
   );
@@ -501,28 +518,56 @@ function FormFill({ form, username, onSubmit, onCancel }) {
             )}
 
             {q.type === "radio" && (
-              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                {(q.options || []).map((o, oi) => ({ o, oi })).filter(x => x.o.trim()).map(({ o, oi }) => (
-                  <label key={oi} style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: 13, color: C.text }}>
-                    <input type="radio" name={`${form.id}_${qi}`} value={String(oi)} checked={answers[q.id] === String(oi)}
-                      onChange={e => setAnswer(q.id, e.target.value)} style={{ accentColor: C.red }} />
-                    {o}
-                  </label>
-                ))}
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                {(q.options || []).map((o, oi) => ({ o, oi })).filter(x => x.o.trim()).map(({ o, oi }) => {
+                  const checked = answers[q.id] === String(oi);
+                  return (
+                    <label key={oi} style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer", fontSize: 13, color: C.text, userSelect: "none" }}>
+                      <span style={{ position: "relative", width: 18, height: 18, flexShrink: 0 }}>
+                        <input type="radio" name={`${form.id}_${qi}`} value={String(oi)} checked={checked}
+                          onChange={e => setAnswer(q.id, e.target.value)}
+                          style={{ position: "absolute", opacity: 0, width: "100%", height: "100%", cursor: "pointer", margin: 0 }} />
+                        <span style={{
+                          position: "absolute", inset: 0, borderRadius: "50%",
+                          border: `2px solid ${checked ? "#ef4444" : "rgba(255,255,255,0.2)"}`,
+                          background: checked ? "rgba(239,68,68,0.1)" : "transparent",
+                          transition: "all 0.2s",
+                          boxShadow: checked ? "0 0 10px rgba(239,68,68,0.35)" : "none",
+                        }}>
+                          {checked && <span style={{ position: "absolute", top: 3, left: 3, width: 8, height: 8, borderRadius: "50%", background: "#ef4444" }} />}
+                        </span>
+                      </span>
+                      {o}
+                    </label>
+                  );
+                })}
               </div>
             )}
 
             {q.type === "checkbox" && (
-              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                 {(q.options || []).map((o, oi) => ({ o, oi })).filter(x => x.o.trim()).map(({ o, oi }) => {
                   const checked = (answers[q.id] || []).includes(String(oi));
                   return (
-                    <label key={oi} style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: 13, color: C.text }}>
-                      <input type="checkbox" value={String(oi)} checked={checked}
-                        onChange={e => {
-                          const arr = (answers[q.id] || []).map(String);
-                          setAnswer(q.id, e.target.checked ? [...arr, String(oi)] : arr.filter(x => x !== String(oi)));
-                        }} style={{ accentColor: C.red }} />
+                    <label key={oi} style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer", fontSize: 13, color: C.text, userSelect: "none" }}>
+                      <span style={{ position: "relative", width: 18, height: 18, flexShrink: 0 }}>
+                        <input type="checkbox" value={String(oi)} checked={checked}
+                          onChange={e => {
+                            const arr = (answers[q.id] || []).map(String);
+                            setAnswer(q.id, e.target.checked ? [...arr, String(oi)] : arr.filter(x => x !== String(oi)));
+                          }}
+                          style={{ position: "absolute", opacity: 0, width: "100%", height: "100%", cursor: "pointer", margin: 0 }} />
+                        <span style={{
+                          position: "absolute", inset: 0, borderRadius: 4,
+                          border: `2px solid ${checked ? "#ef4444" : "rgba(255,255,255,0.2)"}`,
+                          background: checked ? "rgba(239,68,68,0.15)" : "transparent",
+                          transition: "all 0.2s",
+                          display: "flex", alignItems: "center", justifyContent: "center",
+                          boxShadow: checked ? "0 0 10px rgba(239,68,68,0.35)" : "none",
+                        }}>
+                          {checked && <span style={{ color: "#ef4444", fontSize: 11, fontWeight: 700, lineHeight: 1 }}>✓</span>}
+                        </span>
+                      </span>
                       {o}
                     </label>
                   );
