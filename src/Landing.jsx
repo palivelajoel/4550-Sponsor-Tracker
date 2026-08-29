@@ -325,32 +325,42 @@ function ParticleCanvas({ isMobile }) {
 function SponsorBar({ sponsors = [], isMobile }) {
   const shown = sponsors.filter(s => s.company);
   if (shown.length === 0) return null;
-  const items = shown.map(s => ({ company: s.company, logo_url: s.logo_url }));
+  const items = shown.map(s => ({ company: s.company, logo_url: s.logo_url, website: s.website }));
   const duped = [...items, ...items, ...items];
   const speed = Math.max(20, items.length * 3);
+  const siteURL = u => { if (!u) return null; const t = String(u).trim(); return /^https?:\/\//i.test(t) ? t : `https://${t}`; };
   return (
     <div style={{ width: "100%", background: "rgba(8,10,15,0.85)", backdropFilter: "blur(10px)", WebkitBackdropFilter: "blur(10px)", borderTop: "1px solid rgba(255,255,255,0.05)", borderBottom: "1px solid rgba(255,255,255,0.05)", padding: "80px 0", position: "relative" }}>
-      <style>{`@keyframes sponsorCardMarquee{0%{transform:translate3d(0,0,0)}100%{transform:translate3d(-33.333%,0,0)}}`}</style>
+      <style>{`@keyframes sponsorCardMarquee{0%{transform:translate3d(0,0,0)}100%{transform:translate3d(-33.333%,0,0)}}.sponsor-card{transition:transform .25s ease,box-shadow .25s ease,border-color .25s ease}.sponsor-card:hover{transform:translateY(-4px);box-shadow:0 14px 34px rgba(239,68,68,0.22);border-color:rgba(239,68,68,0.5)}`}</style>
       <div style={{ maxWidth: 1100, margin: "0 auto 40px", padding: "0 24px", textAlign: "left" }}>
         <Eyebrow>// OUR PARTNERS</Eyebrow>
         <SectionTitle>Our Sponsors</SectionTitle>
       </div>
       <div style={{ overflow: "hidden" }}>
-      <div style={{ display: "flex", gap: 24, willChange: "transform", animation: `sponsorCardMarquee ${speed}s linear infinite`, width: "max-content" }}
-        onMouseEnter={e => { e.currentTarget.style.transition = "opacity 0.3s ease"; e.currentTarget.style.opacity = "0.5"; }}
-        onMouseLeave={e => { e.currentTarget.style.opacity = "1"; }}>
-        {duped.map((s, i) => (
-          <div key={i} style={{ flexShrink: 0, maxWidth: isMobile ? 260 : 360, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 10, padding: isMobile ? "24px 16px" : "32px 24px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 10, minHeight: isMobile ? 180 : 220 }}>
-            {s.logo_url ? (
-              <img src={s.logo_url} alt="" style={{ height: isMobile ? 120 : 160, width: "auto", maxWidth: "100%", objectFit: "contain", borderRadius: 12, background: "rgba(255,255,255,0.05)" }}
-                onError={e => { e.target.style.display = "none"; }} />
+        <div style={{ display: "flex", gap: 24, willChange: "transform", animation: `sponsorCardMarquee ${speed}s linear infinite`, width: "max-content" }}
+          onMouseEnter={e => { e.currentTarget.style.transition = "opacity 0.3s ease"; e.currentTarget.style.opacity = "0.5"; }}
+          onMouseLeave={e => { e.currentTarget.style.opacity = "1"; }}>
+          {duped.map((s, i) => {
+            const href = siteURL(s.website);
+            const card = (
+              <div className="sponsor-card" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 10, padding: isMobile ? "24px 16px" : "32px 24px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 10, minHeight: isMobile ? 180 : 220 }}>
+                {s.logo_url ? (
+                  <img src={s.logo_url} alt={s.company} title={href ? "Visit website" : undefined} style={{ height: isMobile ? 120 : 160, width: "auto", maxWidth: "100%", objectFit: "contain", borderRadius: 12, background: "rgba(255,255,255,0.05)" }}
+                    onError={e => { e.target.style.display = "none"; }} />
+                ) : (
+                  <div style={{ width: isMobile ? 120 : 160, height: isMobile ? 120 : 160, borderRadius: 12, background: "rgba(255,255,255,0.05)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, color: "#475569" }}>🏢</div>
+                )}
+                {href && <span style={{ fontSize: 10, color: "rgba(255,255,255,0.45)", fontFamily: "monospace", letterSpacing: 1 }}>↗ VISIT</span>}
+              </div>
+            );
+            return href ? (
+              <a key={i} href={href} target="_blank" rel="noopener noreferrer" aria-label={`${s.company} website`} style={{ flexShrink: 0, maxWidth: isMobile ? 260 : 360, textDecoration: "none" }}>{card}</a>
             ) : (
-              <div style={{ width: isMobile ? 120 : 160, height: isMobile ? 120 : 160, borderRadius: 12, background: "rgba(255,255,255,0.05)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, color: "#475569" }}>🏢</div>
-            )}
-          </div>
-        ))}
+              <div key={i} style={{ flexShrink: 0, maxWidth: isMobile ? 260 : 360 }}>{card}</div>
+            );
+          })}
+        </div>
       </div>
-    </div>
     </div>
   );
 }

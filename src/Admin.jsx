@@ -1609,7 +1609,15 @@ function SiteConfig({ config, logoUrl, setLogoUrl, reload, showToast, isMobile }
         {pending && (
           <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", background: "rgba(34,197,94,0.1)", border: "1px solid rgba(34,197,94,0.3)", borderRadius: 8, marginBottom: 12, flexWrap: "wrap" }}>
             <img src={pending.logo_url} alt="" style={{ width: 32, height: 32, borderRadius: 4, objectFit: "contain", background: "rgba(255,255,255,0.05)" }} />
-            <span style={{ flex: 1, fontSize: 13, color: "#e2e8f0" }}>Detected: <strong>{pending.company}</strong></span>
+            <div style={{ flex: 1, minWidth: 200, fontSize: 13, color: "#e2e8f0" }}>
+              Detected: <strong>{pending.company}</strong>
+              <input
+                value={pending.website || ""}
+                onChange={e => setPending({ ...pending, website: e.target.value })}
+                placeholder="Website URL (e.g. https://company.com)"
+                style={{ ...S.input, marginTop: 6, width: "100%" }}
+              />
+            </div>
             <button onClick={confirmAdd} style={S.btnPrimary}>Add to Ribbon</button>
             <button onClick={() => setPending(null)} style={S.btnGhost}>Cancel</button>
           </div>
@@ -1619,10 +1627,22 @@ function SiteConfig({ config, logoUrl, setLogoUrl, reload, showToast, isMobile }
         {ribbonItems.length > 0 && (
           <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 12 }}>
             {ribbonItems.map((item, i) => (
-              <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 10px", background: "rgba(255,255,255,0.03)", borderRadius: 8, border: "1px solid rgba(255,255,255,0.06)" }}>
-                {item.logo_url ? <img src={item.logo_url} alt="" style={{ width: 28, height: 28, borderRadius: 4, objectFit: "contain", background: "rgba(255,255,255,0.05)" }} /> : <span style={{ fontSize: 18 }}>🏢</span>}
-                <span style={{ flex: 1, fontSize: 13, color: "#e2e8f0" }}>{item.company}</span>
-                <button onClick={() => removeItem(i)} style={{ background: "transparent", border: "none", color: "#ef4444", cursor: "pointer", fontSize: 16 }}>&times;</button>
+              <div key={i} style={{ display: "flex", flexDirection: "column", gap: 6, padding: "10px 12px", background: "rgba(255,255,255,0.03)", borderRadius: 8, border: "1px solid rgba(255,255,255,0.06)" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  {item.logo_url ? <img src={item.logo_url} alt="" style={{ width: 28, height: 28, borderRadius: 4, objectFit: "contain", background: "rgba(255,255,255,0.05)" }} /> : <span style={{ fontSize: 18 }}>🏢</span>}
+                  <span style={{ flex: 1, fontSize: 13, color: "#e2e8f0" }}>{item.company}</span>
+                  <button onClick={() => removeItem(i)} style={{ background: "transparent", border: "none", color: "#ef4444", cursor: "pointer", fontSize: 16 }} title="Remove">&times;</button>
+                </div>
+                <input
+                  value={item.website || ""}
+                  onChange={e => {
+                    const updated = ribbonItems.map((r, ri) => ri === i ? { ...r, website: e.target.value } : r);
+                    setRibbonItems(updated);
+                    setVals(v => ({ ...v, sponsor_ribbon_items: JSON.stringify(updated) }));
+                  }}
+                  placeholder="Website URL (e.g. https://company.com)"
+                  style={{ ...S.input, width: "100%", marginBottom: 0, minWidth: 0 }}
+                />
               </div>
             ))}
             <button onClick={async () => { try { await saveKey("sponsor_ribbon_items", JSON.stringify(ribbonItems)); } catch (e) { showToast("Save failed: " + (e.message || e), "#ef4444"); } }} style={{ ...S.btnGhost, alignSelf: 'flex-start' }}>Save Ribbon</button>
