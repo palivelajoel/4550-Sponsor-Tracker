@@ -49,6 +49,7 @@ export default async function handler(req, res) {
         try { await supabase.storage.createBucket(bucket, { public: true }); } catch {}
         ({ data, error } = await supabase.storage.from(bucket).upload(fileName, buf, opts));
       }
+      try { await supabase.storage.updateBucket(bucket, { public: true }); } catch {}
       if (error) return res.status(500).json({ error: error.message });
       const { data: pub } = supabase.storage.from(bucket).getPublicUrl(data?.path || fileName);
       return res.status(200).json({ data: { url: pub.publicUrl } });
