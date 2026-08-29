@@ -365,8 +365,8 @@ function SponsorBar({ sponsors = [], isMobile }) {
   if (items.length === 0) return null;
   const duped = [...items, ...items, ...items];
 
-  const hold = () => { targetRef.current = 0.08; if (trackRef.current) { trackRef.current.style.transition = "opacity 0.35s ease"; trackRef.current.style.opacity = "0.5"; } };
-  const release = () => { targetRef.current = 1; if (trackRef.current) trackRef.current.style.opacity = "1"; };
+  const hold = () => { targetRef.current = 0.08; };
+  const release = () => { targetRef.current = 1; };
 
   return (
     <div style={{ width: "100%", background: "rgba(8,10,15,0.85)", backdropFilter: "blur(10px)", WebkitBackdropFilter: "blur(10px)", borderTop: "1px solid rgba(255,255,255,0.05)", borderBottom: "1px solid rgba(255,255,255,0.05)", padding: "80px 0", position: "relative" }}>
