@@ -97,34 +97,12 @@ export async function prepareFileForUpload(file) {
 }
 
 /**
- * Upload "main media" (gallery images, resource files) to the GitHub repo
- * via /api/upload, falling back to Supabase storage if that fails.
+ * Generic upload → Supabase storage only (logos, banners, sponsor/captain
+ * photos, landing images, inventory, etc.). Media-gallery & resource files use
+ * uploadMediaFile(), which tries GitHub first.
  */
-export async function uploadMediaFile(file, fallbackBucket) {
-  return uploadFile(file, fallbackBucket || "team-assets");
-}
-
-/** Upload a raw blob (e.g. camera photos) as a named file. */
-export async function uploadBlob(blob, name) {
-  return uploadFile(new File([blob], name || "capture.jpg", { type: blob.type || "application/octet-stream" }), "inventory-images");
-}
-
 export async function uploadFile(file, bucket = "team-assets") {
   const { fileName: safeFileName, bytes, base64, contentType } = await prepareFileForUpload(file);
-  // Preferred: store in the GitHub repo (all site images live in public/uploads/).
-  const token = localStorage.getItem("admin_token") || localStorage.getItem("hub_token");
-  if (token) {
-    try {
-      const res = await fetch("/api/upload", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ action: "upload", files: [{ fileName: safeFileName, base64, contentType }] }),
-      });
-      const j = await res.json().catch(() => ({}));
-      if (res.ok && j?.data?.files?.[0]?.url) return j.data.files[0].url;
-      if (res.status === 409) { /* GITHUB_TOKEN missing — fall back to Supabase */ }
-    } catch {}
-  }
   try {
     const res = await fetch(`${SUPABASE_URL}/storage/v1/object/${bucket}/${safeFileName}`, {
       method: "POST",
@@ -146,6 +124,34 @@ export async function uploadFile(file, bucket = "team-assets") {
     if (!res.ok || !j?.data?.url) return null;
     return j.data.url;
   } catch { return null; }
+}
+
+/**
+ * Upload "main media" (Media Gallery images/videos, Resources docs such as
+ * PDFs/CAD files) to the GitHub repo via /api/upload, falling back to Supabase
+ * storage if GitHub is unavailable.
+ */
+export async function uploadMediaFile(file, fallbackBucket) {
+  const { fileName, bytes, base64, contentType } = await prepareFileForUpload(file);
+  const token = localStorage.getItem("admin_token") || localStorage.getItem("hub_token");
+  if (token) {
+    try {
+      const res = await fetch("/api/upload", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ action: "upload", files: [{ fileName, base64, contentType }] }),
+      });
+      const j = await res.json().catch(() => ({}));
+      if (res.ok && j?.data?.files?.[0]?.url) return j.data.files[0].url;
+    } catch {}
+  }
+  const copy = new File([bytes], file.name || fileName, { type: file.type || "application/octet-stream" });
+  return uploadFile(copy, fallbackBucket || "team-assets");
+}
+
+/** Upload a raw blob (e.g. camera photos) as a named file. */
+export async function uploadBlob(blob, name) {
+  return uploadFile(new File([blob], name || "capture.jpg", { type: blob.type || "application/octet-stream" }), "inventory-images");
 }
 
 /** Public URL helpers for captain headshots (`team-assets` bucket only). */

@@ -19,6 +19,9 @@ const TABLES_SCAN = [
   'hub_calendar', 'hub_forms', 'hub_form_submissions',
 ];
 
+// Only objects referenced by these tables are migrated to GitHub (Media Gallery + Resources docs).
+const MIGRATE_TABLES = ['hub_media', 'hub_resources'];
+
 // Matches any Supabase storage public URL (legacy + current form), with trailing punctuation intact.
 const STORAGE_URL_RE = /(https?:\/\/[^"'\\\s]+?\/(?:storage\/v1\/object\/public|object\/public)\/(?:team-assets|team-media|inventory-images)\/[^"'\\\s]+)/gi;
 
@@ -67,7 +70,7 @@ async function commitFilesToRepo(gitToken, files) {
   const commit = await gh(gitToken, `/repos/${REPO}/git/commits`, {
     method: 'POST',
     body: JSON.stringify({
-      message: `Upload images: ${files.map(f => f.fileName).join(', ')}`,
+      message: `Upload files: ${files.map(f => f.fileName).join(', ')}`,
       tree: tree.sha,
       parents: [headSha],
       author: { name: 'Cherry Creek Robotics', email: '4550@cherrycreekrobotics.org' },
@@ -106,9 +109,9 @@ function fileExt(name) {
 }
 
 // Full-tables scan: every string cell in every row, find all storage URLs.
-async function scanReferencedUrls(supabase) {
+async function scanReferencedUrls(supabase, tables = TABLES_SCAN) {
   const refs = new Map();
-  for (const table of TABLES_SCAN) {
+  for (const table of tables) {
     let rows = null;
     try { ({ data: rows } = await supabase.from(table).select('*')); } catch { continue; }
     for (const row of rows || []) {
@@ -165,20 +168,30 @@ async function updateReferences(supabase, urlMap) {
 async function cleanupUploads(res) {
   const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE);
   const gitToken = process.env.GITHUB_TOKEN;
-  const report = { discovered: 0, migrated: [], failed: [], deleted: [], remaining: 0 };
+  const report = { discovered: 0, kept: 0, migrated: [], failed: [], deleted: [], remaining: 0 };
   const urlMap = new Map();
   const failedKeys = new Set();
 
-  // ── 1) Discover every storage URL still referenced anywhere in the DB ──
-  const refs = await scanReferencedUrls(supabase);
+  // 1) Storage URLs referenced anywhere in the DB (the "never delete" keep-set) …
+  const allRefs = await scanReferencedUrls(supabase);
+  const allSeen = new Set();
+  for (const u of allRefs.keys()) {
+    const info = objectInfoFromUrl(u);
+    allSeen.add(`${info.bucket}|${info.name}`);
+  }
+  // … and only the subset referenced by Media Gallery + Resources, which get migrated to GitHub.
+  const migRefs = await scanReferencedUrls(supabase, MIGRATE_TABLES);
   const jobs = [];
   const seen = new Set();
-  for (const u of refs.keys()) {
+  for (const u of migRefs.keys()) {
     const info = objectInfoFromUrl(u);
     const key = `${info.bucket}|${info.name}`;
     if (!seen.has(key)) { seen.add(key); jobs.push({ bucket: info.bucket, name: info.name }); }
   }
   report.discovered = jobs.length;
+  // Objects referenced only by non-migrate tables (logo, banners, sponsor/captain
+  // photos, landing images, inventory…) intentionally stay in Supabase.
+  report.kept = Math.max(0, allSeen.size - seen.size);
 
   // ── 2) Migrate the referenced objects to GitHub (best effort, in batches) ──
   if (jobs.length === 0) {
@@ -259,6 +272,44 @@ async function cleanupUploads(res) {
   res.status(200).json({ data: report });
 }
 
+// Read-only snapshot: how many media/docs objects remain referenced in Supabase + bucket object counts.
+async function storageStatus(res) {
+  const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE);
+  const migRefs = await scanReferencedUrls(supabase, MIGRATE_TABLES);
+  const seen = new Set();
+  for (const u of migRefs.keys()) {
+    const info = objectInfoFromUrl(u);
+    if (info) seen.add(`${info.bucket}|${info.name}`);
+  }
+  const allRefs = await scanReferencedUrls(supabase);
+  const allSeen = new Set();
+  for (const u of allRefs.keys()) {
+    const info = objectInfoFromUrl(u);
+    if (info) allSeen.add(`${info.bucket}|${info.name}`);
+  }
+  const bucketObjects = {};
+  for (const bucket of BUCKETS) {
+    let count = 0;
+    let page = 0;
+    for (;;) {
+      const { data, error } = await supabase.storage.from(bucket).list('', { limit: 200, offset: page * 200 });
+      if (error || !data || data.length === 0) break;
+      count += data.length;
+      if (data.length < 200) break;
+      page++;
+    }
+    bucketObjects[bucket] = count;
+  }
+  res.status(200).json({
+    data: {
+      discovered: seen.size,
+      remaining: seen.size,
+      kept: Math.max(0, allSeen.size - seen.size),
+      bucketObjects,
+    },
+  });
+}
+
 export default async function handler(req, res) {
   const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE);
   try {
@@ -271,6 +322,11 @@ export default async function handler(req, res) {
     if (action === 'cleanup') {
       if (payload.role !== 'Admin') return res.status(403).json({ error: 'Admin role required for cleanup' });
       return await cleanupUploads(res);
+    }
+
+    if (action === 'status') {
+      if (payload.role !== 'Admin') return res.status(403).json({ error: 'Admin role required' });
+      return await storageStatus(res);
     }
 
     if (action !== 'upload') return res.status(400).json({ error: 'Invalid action' });
@@ -300,7 +356,7 @@ export default async function handler(req, res) {
       const fileName = String(f.fileName || '').replace(/[^a-zA-Z0-9._-]/g, '_');
       let bytes;
       try { bytes = Buffer.from(String(f.base64 || ''), 'base64'); } catch { bytes = Buffer.alloc(0); }
-      if (!fileName || !/^[a-zA-Z0-9][a-zA-Z0-9._-]*\.(png|jpe?g|gif|webp|svg|avif|ico|pdf|zip|txt|csv|mp4|webm|mov)$/i.test(fileName)) {
+      if (!fileName || !/^[a-zA-Z0-9][a-zA-Z0-9._-]*\.(png|jpe?g|gif|webp|svg|avif|ico|pdf|zip|rar|7z|tar|gz|txt|csv|json|md|html|mp4|webm|mov|docx?|xlsx?|pptx?|odt|ods|step|stp|stl|iges|igs|dxf|dwg|f3d|f2d|sldprt|sldasm|ai|psd)$/i.test(fileName)) {
         errors.push({ fileName, error: 'Unsupported file name/type' }); continue;
       }
       if (!bytes.length) { errors.push({ fileName, error: 'Empty file' }); continue; }

@@ -1308,6 +1308,7 @@ function SiteConfig({ config, logoUrl, setLogoUrl, reload, showToast, isMobile }
   const imgFileRefs = useRef({});
   const [storageBusy, setStorageBusy] = useState(false);
   const [storageMsg, setStorageMsg] = useState("");
+  const [storageStatus, setStorageStatus] = useState(null);
   useEffect(() => { setVals({ ...config }); }, [config]);
   useEffect(() => {
     sbFetch("site_config?key=eq.hub_tile_order&select=value").then(r => {
@@ -1317,6 +1318,20 @@ function SiteConfig({ config, logoUrl, setLogoUrl, reload, showToast, isMobile }
       if (r?.[0]?.value) setHiddenTiles(r[0].value.split(",").map(s => s.trim()).filter(Boolean));
     });
   }, []);
+  async function refreshStorageStatus() {
+    const t = localStorage.getItem("admin_token");
+    if (!t) return;
+    try {
+      const res = await fetch("/api/upload", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${t}` },
+        body: JSON.stringify({ action: "status" }),
+      });
+      const j = await res.json().catch(() => ({}));
+      if (res.ok && j.data) setStorageStatus(j.data);
+    } catch {}
+  }
+  useEffect(() => { refreshStorageStatus(); }, []);
 
   async function saveKey(key, overrideVal) {
     const val = overrideVal !== undefined ? overrideVal : vals[key];
@@ -1366,13 +1381,16 @@ function SiteConfig({ config, logoUrl, setLogoUrl, reload, showToast, isMobile }
       const migrated = (d.migrated || []).length;
       const remaining = d.remaining || 0;
       const deleted = (d.deleted || []).length;
+      const kept = d.kept || 0;
       const noToken = (d.failed || []).some(f => /not configured/i.test(f.error || ""));
       const failed = (d.failed || []).filter(f => !/not configured/i.test(f.error || "")).length;
       if (noToken) { showToast("GitHub storage isn't set up yet — add GITHUB_TOKEN in Vercel env first.", "#f59e0b"); return; }
-      if (d.discovered === 0 && migrated === 0 && deleted === 0) { showToast("Everything is already on GitHub — Supabase storage is clear. 🎉", "#22c55e"); return; }
-      let msg = `✅ Migrated ${migrated} image${migrated === 1 ? "" : "s"} to GitHub`;
-      if (deleted) msg += `, deleted ${deleted} from Supabase`;
+      refreshStorageStatus();
+      if (d.discovered === 0 && migrated === 0 && deleted === 0) { showToast("All media & docs are on GitHub. 🎉", "#22c55e"); return; }
+      let msg = `✅ Migrated ${migrated} media/doc${migrated === 1 ? "" : "s"} to GitHub`;
+      if (deleted) msg += `, deleted ${deleted} orphan${deleted === 1 ? "" : "s"} from Supabase`;
       showToast(msg + ".", "#22c55e");
+      if (kept) showToast(`ℹ ${kept} non-media image${kept === 1 ? "" : "s"} stay in Supabase (by design).`, "#94a3b8");
       if (failed) showToast(`⚠ ${failed} file${failed === 1 ? "" : "s"} couldn't migrate — kept in Supabase.`, "#f59e0b");
       if (remaining) showToast(`⏳ ${remaining} left — run again to continue.`, "#f59e0b");
       reload();
@@ -1501,15 +1519,23 @@ function SiteConfig({ config, logoUrl, setLogoUrl, reload, showToast, isMobile }
       <SponsorRibbonManager />
       <div style={S.card}>
         <div style={S.cardTitle}>Media Storage</div>
+        {storageStatus && (
+          <div style={{ fontSize: 12, color: "#94a3b8", fontFamily: "monospace", marginBottom: 10, lineHeight: 1.6 }}>
+            {storageStatus.remaining > 0
+              ? <span style={{ color: "#f59e0b" }}>🗂 {storageStatus.remaining} media/doc{storageStatus.remaining === 1 ? "" : "s"} still in Supabase — run the move to finish.</span>
+              : <span style={{ color: "#22c55e" }}>✓ All media & docs are on GitHub.</span>}
+            {storageStatus.bucketObjects && ` — ${Object.values(storageStatus.bucketObjects).reduce((a, b) => a + b, 0)} objects in Supabase storage buckets.`}
+          </div>
+        )}
         <div style={{ fontSize: 12, color: "#94a3b8", fontFamily: "monospace", marginBottom: 12, lineHeight: 1.6 }}>
-          <span style={{ color: "#22c55e" }}>All new images upload to GitHub</span> — logos, banner images, captain photos, sponsor logos, Media Gallery 🖼️, Resources 📁, and inventory photos — stored in this repo under <span style={{ color: "#a78bfa" }}>public/uploads/</span>.
+          <span style={{ color: "#22c55e" }}>Media Gallery 🖼️ and Resources 📁 (images, PDFs, CAD, videos) upload to GitHub</span> — stored in this repo under <span style={{ color: "#a78bfa" }}>public/uploads/</span>. All other images — logo, banners, sponsor/captain photos, landing, inventory — stay in <span style={{ color: "#a78bfa" }}>Supabase</span> for now.
         </div>
         <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-          <button onClick={runStorageCleanup} disabled={storageBusy} style={{ ...S.btnPrimary, opacity: storageBusy ? 0.6 : 1, background: "#a78bfa" }}>{storageBusy ? "Working..." : "🚀 Move ALL images to GitHub & empty Supabase storage"}</button>
+          <button onClick={runStorageCleanup} disabled={storageBusy} style={{ ...S.btnPrimary, opacity: storageBusy ? 0.6 : 1, background: "#a78bfa" }}>{storageBusy ? "Working..." : "🚀 Move Media & Docs to GitHub"}</button>
           {storageMsg && <span style={{ fontSize: 12, color: "#a78bfa", fontFamily: "monospace" }}>{storageMsg}</span>}
         </div>
         <div style={{ fontSize: 11, color: "#475569", fontFamily: "monospace", marginTop: 10 }}>
-          Moves every remaining Supabase-stored image to GitHub, updates the page references, then deletes what's no longer referenced — freeing your 5GB quota. Runs in batches (⏳ if more remain, just click again). Objects still referenced after a failed move are always kept. Needs <span style={{ color: "#94a3b8" }}>GITHUB_TOKEN</span> in Vercel env and a public repo.
+          Moves every remaining Media Gallery + Resources file from Supabase to GitHub, rewrites the page references, then deletes whatever is no longer referenced (migrated copies, duplicates, orphans) — non-media images are never touched. Runs in batches (⏳ if more remain, just click again). Failed moves are always kept. Needs <span style={{ color: "#94a3b8" }}>GITHUB_TOKEN</span> in Vercel env and a public repo.
         </div>
       </div>
     </div>
