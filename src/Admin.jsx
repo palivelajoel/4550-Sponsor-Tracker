@@ -1262,6 +1262,21 @@ const HUB_TILES = [
   { id:"articles", icon:"📝", label:"Articles" },
 ];
 
+const SITE_SECTIONS = [
+  { id: "banners", icon: "🖼️", label: "Banners & Posters" },
+  { id: "about", icon: "ℹ️", label: "About Section" },
+  { id: "team", icon: "👥", label: "Our Team" },
+  { id: "subteams", icon: "🔧", label: "Sub-Teams" },
+  { id: "flip", icon: "📖", label: "Flipped Story Section" },
+  { id: "outreach", icon: "🌍", label: "Community Outreach" },
+  { id: "media", icon: "🖼️", label: "Media Gallery" },
+  { id: "articles", icon: "📝", label: "Team Articles" },
+  { id: "social", icon: "📸", label: "Social Media" },
+  { id: "sponsors", icon: "🤝", label: "Sponsors + Ribbon" },
+  { id: "donate", icon: "💸", label: "Make a Donation" },
+  { id: "contact", icon: "✉️", label: "Contact" },
+];
+
 // ── BANNER ROW (admin preview with crop-cut tiles) ──────
 function BannerRow({ url, isMobile, onRemove }) {
   const [dims, setDims] = useState(null);
@@ -1584,6 +1599,24 @@ function SiteConfig({ config, logoUrl, setLogoUrl, reload, showToast, isMobile }
   const [pendingImgUploads, setPendingImgUploads] = useState({});
   const [uploadingImg, setUploadingImg] = useState(null);
   const imgFileRefs = useRef({});
+  const [aboutMetrics, setAboutMetrics] = useState(() => {
+    try {
+      const arr = JSON.parse(vals.about_metrics || "[]");
+      return Array.isArray(arr) && arr.length ? arr : [{ num: "12+", label: "Years Competing" }, { num: "40–50", label: "Members" }, { num: "2016", label: "World Championship" }, { num: "3", label: "Sub-Teams" }];
+    } catch {
+      return [{ num: "12+", label: "Years Competing" }, { num: "40–50", label: "Members" }, { num: "2016", label: "World Championship" }, { num: "3", label: "Sub-Teams" }];
+    }
+  });
+  useEffect(() => {
+    try {
+      const arr = JSON.parse(vals.about_metrics || "[]");
+      if (Array.isArray(arr) && arr.length) setAboutMetrics(arr);
+    } catch {}
+  }, [vals.about_metrics]);
+  const [siteOrder, setSiteOrder] = useState([]);
+  const [siteDragId, setSiteDragId] = useState(null);
+  const [siteDragOverId, setSiteDragOverId] = useState(null);
+  const [openLegal, setOpenLegal] = useState({ privacy_policy: false, terms_conditions: false });
   const [storageBusy, setStorageBusy] = useState(false);
   const [storageMsg, setStorageMsg] = useState("");
   const [storageStatus, setStorageStatus] = useState(null);
@@ -1594,6 +1627,9 @@ function SiteConfig({ config, logoUrl, setLogoUrl, reload, showToast, isMobile }
     });
     sbFetch("site_config?key=eq.hub_tiles_hidden&select=value").then(r => {
       if (r?.[0]?.value) setHiddenTiles(r[0].value.split(",").map(s => s.trim()).filter(Boolean));
+    });
+    sbFetch("site_config?key=eq.site_section_order&select=value").then(r => {
+      if (r?.[0]?.value) setSiteOrder(r[0].value.split(",").map(s => s.trim()).filter(Boolean));
     });
   }, []);
   async function refreshStorageStatus() {
@@ -1615,6 +1651,16 @@ function SiteConfig({ config, logoUrl, setLogoUrl, reload, showToast, isMobile }
     const val = overrideVal !== undefined ? overrideVal : vals[key];
     await adminProxy('site_config', 'upsert', { key, value: val });
     reload(); showToast(`✅ Saved: ${key}`);
+  }
+
+  async function saveAbout() {
+    for (const k of ["about_eyebrow", "about_title", "about_text"]) await adminProxy("site_config", "upsert", { key: k, value: vals[k] || "" });
+    reload(); showToast("✅ About section saved.");
+  }
+
+  async function saveFlip() {
+    for (const k of ["flip_eyebrow", "flip_title", "flip_text"]) await adminProxy("site_config", "upsert", { key: k, value: vals[k] || "" });
+    reload(); showToast("✅ Flipped section saved.");
   }
 
   async function uploadLogo() {
@@ -1684,13 +1730,9 @@ function SiteConfig({ config, logoUrl, setLogoUrl, reload, showToast, isMobile }
     { key: "instagram", label: "Instagram URL" }, { key: "youtube", label: "YouTube URL" },
     { key: "tba_api_key", label: "TBA API Key" },
     { key: "donate_url", label: "Donate URL" }, { key: "season_year", label: "Season Year" },
-    { key: "privacy_policy", label: "Privacy Policy (HTML)", long: true },
-    { key: "terms_conditions", label: "Terms & Conditions (HTML)", long: true },
-    { key: "landing_img_1", label: "Landing Image 1", upload: true },
-    { key: "landing_img_2", label: "Landing Image 2 (banner)", upload: true },
-    { key: "landing_img_3", label: "Landing Image 3", upload: true },
-    { key: "landing_img_4", label: "Landing Image 4", upload: true },
   ];
+
+  const effOrder = siteOrder.length ? siteOrder : SITE_SECTIONS.map(s => s.id);
 
   return (
     <div>
@@ -1707,6 +1749,48 @@ function SiteConfig({ config, logoUrl, setLogoUrl, reload, showToast, isMobile }
         </div>
       </div>
       <BannerManager vals={vals} setVals={setVals} saveKey={saveKey} showToast={showToast} isMobile={isMobile} />
+      <div style={S.card}>
+        <div style={S.cardTitle}>Site Section Order</div>
+        <div style={{ display: "flex", flexDirection: isMobile ? 'column' : 'row', gap: 8, marginBottom: 14 }}>
+          <button onClick={async () => {
+            const order = effOrder.join(",");
+            const existing = (await sbFetch("site_config?key=eq.site_section_order&select=key")) || [];
+            if (existing?.length) await adminProxy("site_config", "update", { id: existing[0].id, updates: { value: order } });
+            else await adminProxy("site_config", "insert", { key: "site_section_order", value: order });
+            reload(); showToast("✅ Site order saved.");
+          }} style={S.btnPrimary}>Save Order</button>
+          <button onClick={() => setSiteOrder([])} style={S.btnGhost}>Reset to Default</button>
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          {effOrder.map((id, i) => {
+            const sec = SITE_SECTIONS.find(s => s.id === id);
+            if (!sec) return null;
+            return (
+              <div key={sec.id} draggable
+                onDragStart={() => setSiteDragId(sec.id)}
+                onDragOver={e => { e.preventDefault(); setSiteDragOverId(sec.id); }}
+                onDrop={e => {
+                  e.preventDefault();
+                  if (!siteDragId || siteDragId === sec.id) return;
+                  const list = [...effOrder];
+                  const from = list.indexOf(siteDragId);
+                  const to = list.indexOf(sec.id);
+                  if (from < 0 || to < 0) return;
+                  list.splice(from, 1);
+                  list.splice(to, 0, siteDragId);
+                  setSiteOrder(list); setSiteDragId(null); setSiteDragOverId(null);
+                }}
+                onDragEnd={() => { setSiteDragId(null); setSiteDragOverId(null); }}
+                style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 12px", background: siteDragOverId === sec.id && siteDragId !== sec.id ? "rgba(239,68,68,0.08)" : "rgba(255,255,255,0.03)", border: siteDragOverId === sec.id && siteDragId !== sec.id ? "1px dashed rgba(239,68,68,0.4)" : "1px solid rgba(255,255,255,0.06)", borderRadius: 8, cursor: "grab", opacity: siteDragId === sec.id ? 0.4 : 1 }}>
+                  <span style={{ color: "#475569", fontSize: 16, cursor: "grab" }}>⠿</span>
+                  <span style={{ fontSize: 18 }}>{sec.icon}</span>
+                  <span style={{ fontSize: 13, color: "#f1f5f9", flex: 1 }}>{sec.label}</span>
+                  <span style={{ fontSize: 11, color: "#64748b", fontFamily: "monospace" }}>#{i + 1}</span>
+                </div>
+              );
+          })}
+        </div>
+      </div>
       <div style={S.card}>
         <div style={S.cardTitle}>Hub Tiles — Reorder & Toggle Visibility</div>
         <div style={{ display: "flex", flexDirection: isMobile ? 'column' : 'row', gap: 8, marginBottom: 14 }}>
@@ -1770,6 +1854,76 @@ function SiteConfig({ config, logoUrl, setLogoUrl, reload, showToast, isMobile }
         </div>
       </div>
       <div style={S.card}>
+        <div style={S.cardTitle}>About Section</div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+            <label style={{ color: "#94a3b8", fontSize: 12, fontFamily: "monospace" }}>Eyebrow (// text)</label>
+            <input value={vals.about_eyebrow || ""} onChange={e => setVals({ ...vals, about_eyebrow: e.target.value })} style={{ ...S.input, width: "100%" }} />
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+            <label style={{ color: "#94a3b8", fontSize: 12, fontFamily: "monospace" }}>Title</label>
+            <input value={vals.about_title || ""} onChange={e => setVals({ ...vals, about_title: e.target.value })} style={{ ...S.input, width: "100%" }} />
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+            <label style={{ color: "#94a3b8", fontSize: 12, fontFamily: "monospace" }}>Paragraph (typewriter)</label>
+            <textarea rows={6} value={vals.about_text || ""} onChange={e => setVals({ ...vals, about_text: e.target.value })} style={{ ...S.input, width: "100%", resize: "vertical", fontSize: 12, lineHeight: 1.6 }} />
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            <label style={{ color: "#94a3b8", fontSize: 12, fontFamily: "monospace" }}>About metrics</label>
+            {aboutMetrics.map((m, idx) => (
+              <div key={idx} style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                <span style={{ fontSize: 11, color: "#64748b", fontFamily: "monospace", width: 18, flexShrink: 0 }}>#{idx + 1}</span>
+                <input value={m.num || ""} onChange={e => setAboutMetrics(arr => arr.map((x, i) => i === idx ? { ...x, num: e.target.value } : x))} placeholder="Num" style={{ ...S.input, maxWidth: 90, marginBottom: 0 }} />
+                <input value={m.label || ""} onChange={e => setAboutMetrics(arr => arr.map((x, i) => i === idx ? { ...x, label: e.target.value } : x))} placeholder="Label" style={{ ...S.input, flex: 1, marginBottom: 0, minWidth: 0 }} />
+              </div>
+            ))}
+            <button onClick={async () => { await adminProxy("site_config", "upsert", { key: "about_metrics", value: JSON.stringify(aboutMetrics) }); reload(); showToast("✅ Metrics saved."); }} style={{ ...S.btnGhost, alignSelf: 'flex-start' }}>Save Metrics</button>
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+            <label style={{ color: "#94a3b8", fontSize: 12, fontFamily: "monospace" }}>Landing image</label>
+            <div style={{ flex: 1, display: "flex", flexDirection: isMobile ? 'column' : 'row', gap: 8, alignItems: isMobile ? 'stretch' : 'center', flexWrap: "wrap" }}>
+              {vals["landing_img_1"] && <img src={vals["landing_img_1"]} alt="" style={{ width: 80, height: 48, borderRadius: 6, objectFit: "cover", border: "1px solid rgba(255,255,255,0.1)" }} />}
+              <button onClick={() => imgFileRefs.current["landing_img_1"]?.click()} style={{ ...S.btnGhost, flexShrink: 0 }}>{pendingImgUploads["landing_img_1"] ? pendingImgUploads["landing_img_1"].name : "Choose Image"}</button>
+              {pendingImgUploads["landing_img_1"] && <button onClick={() => uploadImgField("landing_img_1")} disabled={uploadingImg === "landing_img_1"} style={{ ...S.btnPrimary, flexShrink: 0 }}>{uploadingImg === "landing_img_1" ? "Uploading..." : "Upload"}</button>}
+              <input ref={el => imgFileRefs.current["landing_img_1"] = el} type="file" accept="image/*" style={{ display: "none" }} onChange={e => { const file = e.target.files?.[0]; if (file) setPendingImgUploads(p => ({ ...p, "landing_img_1": file })); }} />
+            </div>
+          </div>
+          <div>
+            <button onClick={saveAbout} style={S.btnPrimary}>Save</button>
+          </div>
+        </div>
+      </div>
+      <div style={S.card}>
+        <div style={S.cardTitle}>Flipped Section (Our Story)</div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+            <label style={{ color: "#94a3b8", fontSize: 12, fontFamily: "monospace" }}>Eyebrow (// text)</label>
+            <input value={vals.flip_eyebrow || ""} onChange={e => setVals({ ...vals, flip_eyebrow: e.target.value })} style={{ ...S.input, width: "100%" }} />
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+            <label style={{ color: "#94a3b8", fontSize: 12, fontFamily: "monospace" }}>Title</label>
+            <input value={vals.flip_title || ""} onChange={e => setVals({ ...vals, flip_title: e.target.value })} style={{ ...S.input, width: "100%" }} />
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+            <label style={{ color: "#94a3b8", fontSize: 12, fontFamily: "monospace" }}>Paragraph</label>
+            <textarea rows={6} value={vals.flip_text || ""} onChange={e => setVals({ ...vals, flip_text: e.target.value })} style={{ ...S.input, width: "100%", resize: "vertical", fontSize: 12, lineHeight: 1.6 }} />
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+            <label style={{ color: "#94a3b8", fontSize: 12, fontFamily: "monospace" }}>Landing image</label>
+            <div style={{ flex: 1, display: "flex", flexDirection: isMobile ? 'column' : 'row', gap: 8, alignItems: isMobile ? 'stretch' : 'center', flexWrap: "wrap" }}>
+              {vals["landing_img_2"] && <img src={vals["landing_img_2"]} alt="" style={{ width: 80, height: 48, borderRadius: 6, objectFit: "cover", border: "1px solid rgba(255,255,255,0.1)" }} />}
+              <button onClick={() => imgFileRefs.current["landing_img_2"]?.click()} style={{ ...S.btnGhost, flexShrink: 0 }}>{pendingImgUploads["landing_img_2"] ? pendingImgUploads["landing_img_2"].name : "Choose Image"}</button>
+              {pendingImgUploads["landing_img_2"] && <button onClick={() => uploadImgField("landing_img_2")} disabled={uploadingImg === "landing_img_2"} style={{ ...S.btnPrimary, flexShrink: 0 }}>{uploadingImg === "landing_img_2" ? "Uploading..." : "Upload"}</button>}
+              <input ref={el => imgFileRefs.current["landing_img_2"] = el} type="file" accept="image/*" style={{ display: "none" }} onChange={e => { const file = e.target.files?.[0]; if (file) setPendingImgUploads(p => ({ ...p, "landing_img_2": file })); }} />
+            </div>
+            <div style={{ fontSize: 11, color: "#64748b", fontFamily: "monospace" }}>Image displays with text on the LEFT, text on the RIGHT — reversed vs the About card.</div>
+          </div>
+          <div>
+            <button onClick={saveFlip} style={S.btnPrimary}>Save</button>
+          </div>
+        </div>
+      </div>
+      <div style={S.card}>
         <div style={S.cardTitle}>Site Details</div>
         {fields.map(f => (
           <div key={f.key} style={{ display: "flex", flexDirection: isMobile ? 'column' : 'row', gap: isMobile ? 6 : 10, marginBottom: 12, alignItems: isMobile ? 'stretch' : 'flex-start' }}>
@@ -1789,10 +1943,36 @@ function SiteConfig({ config, logoUrl, setLogoUrl, reload, showToast, isMobile }
               <input value={vals[f.key] || ""} onChange={e => setVals({ ...vals, [f.key]: e.target.value })} style={{ ...S.input, flex: 1, marginBottom: 0 }} />
             )}
             {!f.upload && <button onClick={() => saveKey(f.key)} style={{ ...S.btnGhost, width: isMobile ? '100%' : undefined, flexShrink: 0 }}>Save</button>}
-            {f.key === 'privacy_policy' && <button onClick={() => { setVals(v => ({ ...v, privacy_policy: PRIVACY_FALLBACK })); }} style={{ ...S.btnGhost, flexShrink: 0, fontSize: 11 }}>Load default</button>}
-            {f.key === 'terms_conditions' && <button onClick={() => { setVals(v => ({ ...v, terms_conditions: TERMS_FALLBACK })); }} style={{ ...S.btnGhost, flexShrink: 0, fontSize: 11 }}>Load default</button>}
           </div>
         ))}
+        <div style={{ borderTop: "1px solid rgba(255,255,255,0.08)", paddingTop: 14, marginTop: 4 }}>
+          <div style={{ color: "#94a3b8", fontSize: 12, fontFamily: "monospace", marginBottom: 10 }}>Legal Documents</div>
+          {["privacy_policy", "terms_conditions"].map(k => {
+            const isPriv = k === "privacy_policy";
+            const label = isPriv ? "Privacy Policy" : "Terms & Conditions";
+            const expanded = openLegal[k];
+            const raw = vals[k] || "";
+            const stripped = raw.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+            const preview = stripped.slice(0, 90) + (stripped.length > 90 ? "…" : "");
+            return (
+              <div key={k} style={{ marginBottom: 10 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <button onClick={() => setOpenLegal(o => ({ ...o, [k]: !o[k] }))} style={{ ...S.btnGhost, flexShrink: 0, fontSize: 12, padding: "6px 10px" }}>{expanded ? "▾" : "▸"} {label}</button>
+                  <span style={{ color: "#64748b", fontSize: 11, fontFamily: "monospace", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{stripped ? preview : "(empty — click to edit)"}</span>
+                </div>
+                {expanded && (
+                  <div style={{ marginTop: 8 }}>
+                    <textarea value={raw} onChange={e => setVals({ ...vals, [k]: e.target.value })} rows={12} style={{ ...S.input, width: "100%", resize: "vertical", fontFamily: "monospace", fontSize: 12, lineHeight: 1.6, minHeight: 140 }} />
+                    <div style={{ display: "flex", gap: 8, marginTop: 8, flexWrap: "wrap" }}>
+                      <button onClick={() => saveKey(k)} style={S.btnPrimary}>Save</button>
+                      <button onClick={() => setVals(v => ({ ...v, [k]: isPriv ? PRIVACY_FALLBACK : TERMS_FALLBACK }))} style={S.btnGhost}>Load default</button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
       </div>
       <SponsorRibbonManager vals={vals} setVals={setVals} saveKey={saveKey} showToast={showToast} isMobile={isMobile} />
       <div style={S.card}>

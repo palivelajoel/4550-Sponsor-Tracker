@@ -352,7 +352,7 @@ function SponsorBar({ sponsors = [], isMobile }) {
       multRef.current += (targetRef.current - multRef.current) * ease;
       const sw = setWRef.current;
       if (sw > 0) {
-        xRef.current -= (sw / speed) * multRef.current * dt;
+        xRef.current -= (sw / speed) * multRef.current * dt * 0.85;
         if (xRef.current <= -sw) xRef.current += sw;
         el.style.transform = `translate3d(${xRef.current}px,0,0)`;
       }
@@ -423,6 +423,9 @@ export default function Landing() {
   const [menuOpen, setMenuOpen] = useState(false);
   const heroParallaxRef = useRef(null);
 
+  const SECTION_ORDER = ["banners","about","team","subteams","flip","outreach","media","articles","social","sponsors","donate","contact"];
+  const DEFAULT_ORDER = ["banners","about","team","subteams","flip","outreach","media","articles","social","sponsors","donate","contact"];
+
   useEffect(() => { window.scrollTo(0, 0); }, []);
 
   useEffect(() => {
@@ -466,6 +469,16 @@ export default function Landing() {
   const donate = config.donate_url || "https://www.vancoevents.com/us/events/landing/46671";
 
   const banners = (() => { try { return JSON.parse(config.landing_banners || "[]"); } catch { return []; } })();
+
+  const siteOrder = (() => { try { const raw = (config.site_section_order || "").split(",").map(s => s.trim()).filter(Boolean); return raw.length ? raw : DEFAULT_ORDER; } catch { return DEFAULT_ORDER; } })();
+
+  const aboutMetrics = (() => {
+    try {
+      const parsed = JSON.parse(config.about_metrics || "[]");
+      if (Array.isArray(parsed) && parsed.length) return parsed;
+    } catch {}
+    return [{ num: "12+", label: "Years Competing" }, { num: "40–50", label: "Members" }, { num: "2016", label: "World Championship" }, { num: "3", label: "Sub-Teams" }];
+  })();
 
   const navItems = ["About", "Team", "Sub-Teams", "Outreach", "Media Gallery", "Sponsors", "Contact"];
 
@@ -642,7 +655,8 @@ export default function Landing() {
       </section>
 
       {/* BANNERS / POSTERS */}
-      {config.landing_banners_enabled !== "false" && banners.length > 0 && (
+      {(() => {
+      const bannersSection = config.landing_banners_enabled !== "false" && banners.length > 0 && (
         <section style={{ background: "rgba(255,255,255,0.015)", padding: isMobile ? "48px 18px" : "64px 24px", display: "flex", flexDirection: "column", alignItems: "center" }}>
           <motion.div style={{ maxWidth: 1100, width: "100%" }} {...slideUp}>
             <div style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: isMobile ? 10 : 12, color: "#ef4444", letterSpacing: isMobile ? 2 : 3, marginBottom: isMobile ? 16 : 24 }}>// BANNERS &amp; POSTERS</div>
@@ -655,23 +669,24 @@ export default function Landing() {
             </div>
           </motion.div>
         </section>
-      )}
+      )
 
       {/* ABOUT */}
-      <section id="about"><div className="sec">
+      const aboutSection = (
+        <section id="about"><div className="sec">
         
           <ProgressSection>
-            <Eyebrow>// WHO WE ARE</Eyebrow>
-            <SectionTitle>About the Team</SectionTitle>
+            <Eyebrow>{config.about_eyebrow || "// WHO WE ARE"}</Eyebrow>
+            <SectionTitle>{config.about_title || "About the Team"}</SectionTitle>
             <div className="about-grid">
               <div>
                 <motion.div initial={{ opacity: 0, y: 50 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ type: "spring", stiffness: 100, damping: 18, delay: 0.1 }}>
                   <p style={{ color: "#94a3b8", lineHeight: 1.8, fontSize: 15, minHeight: "5em" }}>
-                    <ScrollTypewriter text={`FRC Team 4550 "Something's Bruin" has been competing since 2012, representing Cherry Creek High School in FIRST Robotics Competition. Our team of 40–50 student engineers, programmers, and designers builds competition-ready robots each season — from scratch, in six weeks. We've competed at the 2016 World Championship and continue to push the boundaries of what student-built robots can achieve. Beyond the robot, we're deeply committed to STEM outreach and community impact across the Denver metro area.`} />
+                    <ScrollTypewriter text={config.about_text || `FRC Team 4550 "Something's Bruin" has been competing since 2012, representing Cherry Creek High School in FIRST Robotics Competition. Our team of 40–50 student engineers, programmers, and designers builds competition-ready robots each season — from scratch, in six weeks. We've competed at the 2016 World Championship and continue to push the boundaries of what student-built robots can achieve. Beyond the robot, we're deeply committed to STEM outreach and community impact across the Denver metro area.`} />
                   </p>
                 </motion.div>
                 <motion.div className="stats-grid" variants={stagger} initial="hidden" whileInView="visible" viewport={{ once: true }}>
-                  {[{ num: "12+", label: "Years Competing" }, { num: "40–50", label: "Members" }, { num: "2016", label: "World Championship" }, { num: "3", label: "Sub-Teams" }].map((s, i) => (
+                  {aboutMetrics.map((s, i) => (
                     <Card3D key={s.label}>
                       <motion.div variants={cardItem} whileHover={{ borderColor: "rgba(239,68,68,0.4)" }} style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 10, padding: isMobile ? "18px 14px" : "24px 20px", textAlign: "center" }}>
                         <div style={{ fontFamily: "'Orbitron', sans-serif", fontSize: isMobile ? 22 : 28, fontWeight: 700, color: "#ef4444" }}>{s.num}</div>
@@ -691,9 +706,10 @@ export default function Landing() {
           </ProgressSection>
         
       </div></section>
+      )
 
       {/* OUR TEAM */}
-      {captains.length > 0 && (
+      const teamSection = captains.length > 0 && (
         <section id="team" style={{ background: "rgba(255,255,255,0.015)" }}><div className="sec">
           
             <ProgressSection>
@@ -714,10 +730,11 @@ export default function Landing() {
             </ProgressSection>
           
         </div></section>
-      )}
+      )
 
       {/* SUB-TEAMS */}
-      <section id="sub-teams"><div className="sec">
+      const subteamsSection = (
+        <section id="sub-teams"><div className="sec">
         
           <ProgressSection>
             <Eyebrow>// HOW WE BUILD</Eyebrow>
@@ -737,17 +754,35 @@ export default function Landing() {
           </ProgressSection>
         
       </div></section>
+      )
 
-      {config.landing_img_2 && (
-        <section style={{ padding: isMobile ? "0 0 40px" : "0 0 60px" }}>
-          <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 24px" }}>
-            <BlurredImage src={config.landing_img_2} style={{ width: "100%", aspectRatio: isMobile ? "16/9" : "21/9", borderRadius: 20 }} />
-          </div>
-        </section>
-      )}
+      {/* FLIPPED / REVERSED STORY SECTION */}
+      const flipSection = config.landing_img_2 && (
+        <section id="flip" style={{ background: "rgba(255,255,255,0.015)" }}><div className="sec">
+        
+          <ProgressSection>
+            <Eyebrow>{config.flip_eyebrow || "// OUR STORY"}</Eyebrow>
+            <SectionTitle>{config.flip_title || "Our Story"}</SectionTitle>
+            <div className="about-grid">
+              <motion.div initial={{ opacity: 0, x: -40 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ type: "spring", stiffness: 100, damping: 18, delay: 0.2 }}>
+                <BlurredImage src={config.landing_img_2} style={{ width: "100%", aspectRatio: "4/3" }} />
+              </motion.div>
+              <div>
+                <motion.div initial={{ opacity: 0, y: 50 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ type: "spring", stiffness: 100, damping: 18, delay: 0.1 }}>
+                  <p style={{ color: "#94a3b8", lineHeight: 1.8, fontSize: 15, minHeight: "5em" }}>
+                    <ScrollTypewriter text={config.flip_text || `Since our first build season in 2012, FRC Team 4550 has grown from a small group of curious high schoolers into a tight-knit family of 40-50 engineers, programmers, and mentors. Through every prototype, competition, and late-night build session, we've stayed true to our name — channeling grit, creativity, and a healthy dose of school pride into robots that can go toe-to-toe with the best in the world. Our journey is far from over.`} />
+                  </p>
+                </motion.div>
+              </div>
+            </div>
+          </ProgressSection>
+        
+      </div></section>
+      )
 
       {/* OUTREACH */}
-      <section id="outreach" style={{ background: "rgba(255,255,255,0.015)" }}><div className="sec">
+      const outreachSection = (
+        <section id="outreach" style={{ background: "rgba(255,255,255,0.015)" }}><div className="sec">
         
           <ProgressSection>
             <Eyebrow>// COMMUNITY</Eyebrow>
@@ -771,9 +806,11 @@ export default function Landing() {
           </ProgressSection>
         
       </div></section>
+      )
 
       {/* MEDIA */}
-      <section id="media-gallery"><div className="sec">
+      const mediaSection = (
+        <section id="media-gallery"><div className="sec">
         
           <ProgressSection>
             <Eyebrow>// GALLERY</Eyebrow>
@@ -785,9 +822,11 @@ export default function Landing() {
           </ProgressSection>
         
       </div></section>
+      )
 
       {/* ARTICLES */}
-      <section id="articles" style={{ background: "rgba(255,255,255,0.015)" }}><div className="sec">
+      const articlesSection = (
+        <section id="articles" style={{ background: "rgba(255,255,255,0.015)" }}><div className="sec">
         
           <ProgressSection>
             <Eyebrow>// LATEST</Eyebrow>
@@ -812,9 +851,11 @@ export default function Landing() {
           </ProgressSection>
         
       </div></section>
+      )
 
       {/* SOCIAL MEDIA */}
-      <section id="media" style={{ background: "rgba(255,255,255,0.015)" }}><div className="sec">
+      const socialSection = (
+        <section id="media" style={{ background: "rgba(255,255,255,0.015)" }}><div className="sec">
         
           <ProgressSection>
             <Eyebrow>// FOLLOW ALONG</Eyebrow>
@@ -834,11 +875,13 @@ export default function Landing() {
           </ProgressSection>
         
       </div></section>
-
-      {config.sponsor_bar_enabled !== "false" && (() => { try { const items = JSON.parse(config.sponsor_ribbon_items || "[]"); return <SponsorBar sponsors={items} isMobile={isMobile} />; } catch { return null; } })()}
+      )
 
       {/* SPONSORS */}
-      <section id="sponsors" style={{ background: "rgba(255,255,255,0.015)" }}><div className="sec">
+      const sponsorsSection = (
+        <div>
+          {config.sponsor_bar_enabled !== "false" && (() => { try { const items = JSON.parse(config.sponsor_ribbon_items || "[]"); return <SponsorBar sponsors={items} isMobile={isMobile} />; } catch { return null; } })()}
+          <section id="sponsors" style={{ background: "rgba(255,255,255,0.015)" }}><div className="sec">
         
           <ProgressSection>
             <div style={{ textAlign: "center" }}>
@@ -860,9 +903,12 @@ export default function Landing() {
           </ProgressSection>
         
       </div></section>
+        </div>
+      )
 
       {/* DONATE */}
-      <section style={{ background: "rgba(239,68,68,0.05)", borderTop: "1px solid rgba(239,68,68,0.2)" }}><div className="sec">
+      const donateSection = (
+        <section style={{ background: "rgba(239,68,68,0.05)", borderTop: "1px solid rgba(239,68,68,0.2)" }}><div className="sec">
         
           <ProgressSection>
             <div style={{ textAlign: "center" }}>
@@ -877,9 +923,11 @@ export default function Landing() {
           </ProgressSection>
         
       </div></section>
+      )
 
       {/* CONTACT */}
-      <section id="contact"><div className="sec">
+      const contactSection = (
+        <section id="contact"><div className="sec">
         
           <ProgressSection>
             <div style={{ textAlign: "center" }}>
@@ -897,6 +945,25 @@ export default function Landing() {
           </ProgressSection>
         
       </div></section>
+      )
+
+        {/* SITE SECTION ORDER */}
+        const sectionMap = {
+          banners: bannersSection,
+          about: aboutSection,
+          team: teamSection,
+          subteams: subteamsSection,
+          flip: flipSection,
+          outreach: outreachSection,
+          media: mediaSection,
+          articles: articlesSection,
+          social: socialSection,
+          sponsors: sponsorsSection,
+          donate: donateSection,
+          contact: contactSection,
+        };
+        return siteOrder.map(id => sectionMap[id]);
+      })()}
 
       {/* FOOTER */}
       <footer style={{ borderTop: "1px solid rgba(255,255,255,0.06)", padding: isMobile ? "32px 18px 20px" : "40px 32px 24px" }}>
