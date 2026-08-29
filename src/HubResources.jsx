@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { motion } from 'framer-motion'
-import { FONTS, C, sbFetch, isAuthed, canEditHub, getRole, getSubteam, getUsername, uploadFile, HubHeader, toastStyle, inputStyle, selectStyle, overlayStyle, addBtnStyle, ghostBtn, dangerBtn, hubProxy } from "./hubUtils.jsx";
+import { FONTS, C, sbFetch, isAuthed, canEditHub, getRole, getSubteam, getUsername, uploadMediaFile, HubHeader, toastStyle, inputStyle, selectStyle, overlayStyle, addBtnStyle, ghostBtn, dangerBtn, hubProxy } from "./hubUtils.jsx";
 import HubBackground from "./HubBackground.jsx";
 
 const CATEGORIES = ["All", "CAD & Design", "Programming", "Documentation", "Marketing", "Finance", "Competition", "Other"];
@@ -54,7 +54,7 @@ export default function HubResources() {
     let url = form.url;
     let file_name = form.file_name;
     if (uploadMode === "file" && file) {
-      url = await uploadFile(file, "team-assets");
+      url = await uploadMediaFile(file, "team-assets");
       if (!url) { showToast("Upload failed."); setUploading(false); return; }
       file_name = file.name;
     }

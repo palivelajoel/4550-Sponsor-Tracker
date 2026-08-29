@@ -83,10 +83,42 @@ async function hashHex(bytes) {
   return h.toString(16);
 }
 
-export async function uploadFile(file, bucket = "team-assets") {
+export async function prepareFileForUpload(file) {
   const bytes = await fileBytes(file);
   const hash = await hashHex(bytes);
-  const safeFileName = `${hash}.${fileExtension(file.name)}`;
+  return {
+    fileName: `${hash}.${fileExtension(file.name)}`,
+    base64: toBase64(bytes),
+    contentType: file.type || "application/octet-stream",
+    mimeType: file.type || "application/octet-stream",
+    origName: file.name,
+    bytes,
+  };
+}
+
+/**
+ * Upload "main media" (gallery images, resource files) to the GitHub repo
+ * via /api/upload, falling back to Supabase storage if that fails.
+ */
+export async function uploadMediaFile(file, fallbackBucket) {
+  const token = localStorage.getItem("admin_token") || localStorage.getItem("hub_token");
+  if (token) {
+    try {
+      const { fileName, base64, contentType } = await prepareFileForUpload(file);
+      const res = await fetch("/api/upload", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ action: "upload", files: [{ fileName, base64, contentType }] }),
+      });
+      const j = await res.json().catch(() => ({}));
+      if (res.ok && j?.data?.files?.[0]?.url) return j.data.files[0].url;
+    } catch {}
+  }
+  return uploadFile(file, fallbackBucket);
+}
+
+export async function uploadFile(file, bucket = "team-assets") {
+  const { fileName: safeFileName, bytes, base64, contentType } = await prepareFileForUpload(file);
   try {
     const res = await fetch(`${SUPABASE_URL}/storage/v1/object/${bucket}/${safeFileName}`, {
       method: "POST",
@@ -102,7 +134,7 @@ export async function uploadFile(file, bucket = "team-assets") {
     const res = await fetch(endpoint, {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ action: "upload", payload: { bucket, fileName: safeFileName, base64: toBase64(bytes), contentType: file.type } }),
+      body: JSON.stringify({ action: "upload", payload: { bucket, fileName: safeFileName, base64, contentType } }),
     });
     const j = await res.json().catch(() => ({}));
     if (!res.ok || !j?.data?.url) return null;

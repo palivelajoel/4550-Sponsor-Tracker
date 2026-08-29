@@ -29,6 +29,7 @@
     { "source": "/api/sheets-sync", "destination": "/api/sheets" },
     { "source": "/api/identify-item", "destination": "/api/ai" },
     { "source": "/api/extract-brands", "destination": "/api/ai" },
+    { "source": "/api/upload", "destination": "/api/upload" },
     { "source": "/api/lookup", "destination": "/api/ai" },
     { "source": "/api/trace-pit-map", "destination": "/api/ai" },
     { "source": "/api/parse-csv", "destination": "/api/ai" },

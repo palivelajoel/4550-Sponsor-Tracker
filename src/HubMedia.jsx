@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { motion } from 'framer-motion'
-import { FONTS, C, sbFetch, isAuthed, canEditHub, uploadFile, HubHeader, toastStyle, inputStyle, selectStyle, overlayStyle, addBtnStyle, ghostBtn, dangerBtn, hubProxy } from "./hubUtils.jsx";
+import { FONTS, C, sbFetch, isAuthed, canEditHub, uploadMediaFile, HubHeader, toastStyle, inputStyle, selectStyle, overlayStyle, addBtnStyle, ghostBtn, dangerBtn, hubProxy } from "./hubUtils.jsx";
 import HubBackground from "./HubBackground.jsx";
 
 const CATEGORIES = ["All", "Competition", "Build Season", "Outreach", "Team", "Other"];
@@ -144,7 +144,7 @@ export default function HubMedia() {
     setUploading(true);
     let url = form.url;
     if (uploadMode === "file" && file) {
-      url = await uploadFile(file, "team-media");
+      url = await uploadMediaFile(file, "team-media");
       if (!url) { showToast("Upload failed."); setUploading(false); return; }
     }
     if (!url) { showToast("Provide a file or URL."); setUploading(false); return; }

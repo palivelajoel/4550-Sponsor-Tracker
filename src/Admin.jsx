@@ -1306,6 +1306,8 @@ function SiteConfig({ config, logoUrl, setLogoUrl, reload, showToast, isMobile }
   const [pendingImgUploads, setPendingImgUploads] = useState({});
   const [uploadingImg, setUploadingImg] = useState(null);
   const imgFileRefs = useRef({});
+  const [storageBusy, setStorageBusy] = useState(false);
+  const [storageMsg, setStorageMsg] = useState("");
   useEffect(() => { setVals({ ...config }); }, [config]);
   useEffect(() => {
     sbFetch("site_config?key=eq.hub_tile_order&select=value").then(r => {
@@ -1344,6 +1346,37 @@ function SiteConfig({ config, logoUrl, setLogoUrl, reload, showToast, isMobile }
     setPendingImgUploads(p => { const n = { ...p }; delete n[key]; return n; });
     setUploadingImg(null);
     showToast(`✅ ${key} updated.`);
+  }
+
+  async function runStorageCleanup() {
+    const adminToken = localStorage.getItem("admin_token");
+    if (!adminToken) { showToast("Admin login required.", "#ef4444"); return; }
+    setStorageBusy(true);
+    setStorageMsg("Working — downloads media, commits to GitHub, then cleans Supabase...");
+    try {
+      const res = await fetch("/api/upload", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${adminToken}` },
+        body: JSON.stringify({ action: "cleanup" }),
+      });
+      const j = await res.json().catch(() => ({}));
+      setStorageMsg("");
+      if (!res.ok) { showToast(j.error || "Cleanup failed.", "#ef4444"); return; }
+      const d = j.data || {};
+      if (d.notice) { showToast(d.notice, "#f59e0b"); return; }
+      const migrated = (d.migrated || []).filter(m => !m.error).length;
+      const failed = (d.migrated || []).filter(m => m.error && m.error !== 'GitHub storage not configured').length;
+      const deleted = (d.deleted || []).length;
+      let msg = `✅ Migrated ${migrated} media file${migrated === 1 ? "" : "s"} to GitHub`;
+      if (deleted) msg += `, deleted ${deleted} duplicate${deleted === 1 ? "" : "s"} from Supabase`;
+      showToast(msg + ".", "#22c55e");
+      if (failed) showToast(`⚠ ${failed} file${failed === 1 ? "" : "s"} couldn't migrate — kept in Supabase.`, "#f59e0b");
+      reload();
+    } catch (e) {
+      setStorageMsg("");
+      showToast("Cleanup failed: " + (e.message || e), "#ef4444");
+    }
+    setStorageBusy(false);
   }
 
   const fields = [
@@ -1462,6 +1495,20 @@ function SiteConfig({ config, logoUrl, setLogoUrl, reload, showToast, isMobile }
         ))}
       </div>
       <SponsorRibbonManager />
+      <div style={S.card}>
+        <div style={S.cardTitle}>Media Storage</div>
+        <div style={{ fontSize: 12, color: "#94a3b8", fontFamily: "monospace", marginBottom: 12, lineHeight: 1.6 }}>
+          Media Gallery 🖼️ and Resource 📁 uploads are stored in this repo under <span style={{ color: "#a78bfa" }}>public/uploads/</span> (GitHub).
+          Logos, icons, and landing-page images stay in Supabase.
+        </div>
+        <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+          <button onClick={runStorageCleanup} disabled={storageBusy} style={{ ...S.btnPrimary, opacity: storageBusy ? 0.6 : 1, background: "#a855f7" }}>{storageBusy ? "Working..." : "🧹 Migrate media & clean Supabase storage"}</button>
+          {storageMsg && <span style={{ fontSize: 12, color: "#a78bfa", fontFamily: "monospace" }}>{storageMsg}</span>}
+        </div>
+        <div style={{ fontSize: 11, color: "#475569", fontFamily: "monospace", marginTop: 10 }}>
+          Moves current gallery/resource files to GitHub, then removes duplicate content and migrated originals from Supabase. Only unreferenced files are ever deleted. Needs <span style={{ color: "#94a3b8" }}>GITHUB_TOKEN</span> in Vercel env and a public repo.
+        </div>
+      </div>
     </div>
   );
 
