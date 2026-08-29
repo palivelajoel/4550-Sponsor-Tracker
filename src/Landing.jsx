@@ -757,16 +757,21 @@ export default function Landing() {
       )
 
       {/* FLIPPED / REVERSED STORY SECTION */}
-      const flipSection = config.landing_img_2 && (
+      const flipSection = config.flip_enabled !== "false" && (
         <section id="flip" style={{ background: "rgba(255,255,255,0.015)" }}><div className="sec">
         
           <ProgressSection>
             <Eyebrow>{config.flip_eyebrow || "// OUR STORY"}</Eyebrow>
             <SectionTitle>{config.flip_title || "Our Story"}</SectionTitle>
             <div className="about-grid">
+              {config.landing_img_2 && (
               <motion.div initial={{ opacity: 0, x: -40 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ type: "spring", stiffness: 100, damping: 18, delay: 0.2 }}>
                 <BlurredImage src={config.landing_img_2} style={{ width: "100%", aspectRatio: "4/3" }} />
-              </motion.div>
+              </motion.div>)}
+              {!config.landing_img_2 && (
+              <motion.div initial={{ opacity: 0, x: -40 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ type: "spring", stiffness: 100, damping: 18, delay: 0.2 }}>
+                <div style={{ width: "100%", aspectRatio: "4/3", borderRadius: 16, background: "rgba(255,255,255,0.02)", border: "1px dashed rgba(255,255,255,0.12)", display: "flex", alignItems: "center", justifyContent: "center", color: "#475569", fontFamily: "'Share Tech Mono', monospace", fontSize: 12 }}>no image — add one in Settings</div>
+              </motion.div>)}
               <div>
                 <motion.div initial={{ opacity: 0, y: 50 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ type: "spring", stiffness: 100, damping: 18, delay: 0.1 }}>
                   <p style={{ color: "#94a3b8", lineHeight: 1.8, fontSize: 15, minHeight: "5em" }}>

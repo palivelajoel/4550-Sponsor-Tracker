@@ -1659,7 +1659,7 @@ function SiteConfig({ config, logoUrl, setLogoUrl, reload, showToast, isMobile }
   }
 
   async function saveFlip() {
-    for (const k of ["flip_eyebrow", "flip_title", "flip_text"]) await adminProxy("site_config", "upsert", { key: k, value: vals[k] || "" });
+    for (const k of ["flip_enabled", "flip_eyebrow", "flip_title", "flip_text"]) await adminProxy("site_config", "upsert", { key: k, value: vals[k] || "" });
     reload(); showToast("✅ Flipped section saved.");
   }
 
@@ -1896,6 +1896,10 @@ function SiteConfig({ config, logoUrl, setLogoUrl, reload, showToast, isMobile }
       <div style={S.card}>
         <div style={S.cardTitle}>Flipped Section (Our Story)</div>
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: 13, color: "#e2e8f0" }}>
+            <input type="checkbox" checked={vals.flip_enabled !== "false"} onChange={e => setVals({ ...vals, flip_enabled: e.target.checked ? "true" : "false" })} style={{ width: 16, height: 16, cursor: "pointer" }} />
+            Show on homepage
+          </label>
           <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
             <label style={{ color: "#94a3b8", fontSize: 12, fontFamily: "monospace" }}>Eyebrow (// text)</label>
             <input value={vals.flip_eyebrow || ""} onChange={e => setVals({ ...vals, flip_eyebrow: e.target.value })} style={{ ...S.input, width: "100%" }} />
