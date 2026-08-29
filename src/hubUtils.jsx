@@ -49,30 +49,60 @@ export async function sbFetch(path, opts = {}) {
   try { return await res.json(); } catch { return null; }
 }
 
+function fileExtension(name) {
+  const m = /\.([a-zA-Z0-9]+)$/.exec(name || "");
+  return m ? m[1].toLowerCase() : "bin";
+}
+
+async function fileBytes(file) {
+  if (typeof file.arrayBuffer === "function") return new Uint8Array(await file.arrayBuffer());
+  return new Uint8Array(await new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => resolve(r.result);
+    r.onerror = reject;
+    r.readAsArrayBuffer(file);
+  }));
+}
+
+function toBase64(bytes) {
+  let bin = "";
+  const CHUNK = 0x8000;
+  for (let i = 0; i < bytes.length; i += CHUNK) bin += String.fromCharCode.apply(null, bytes.subarray(i, i + CHUNK));
+  return btoa(bin);
+}
+
+async function hashHex(bytes) {
+  try {
+    if (globalThis.crypto?.subtle) {
+      const digest = await crypto.subtle.digest("SHA-256", bytes);
+      return Array.from(new Uint8Array(digest)).slice(0, 16).map(b => b.toString(16).padStart(2, "0")).join("");
+    }
+  } catch {}
+  let h = 0x811c9dc5;
+  for (let i = 0; i < bytes.length; i++) { h ^= bytes[i]; h = Math.imul(h, 0x01000193) >>> 0; }
+  return h.toString(16);
+}
+
 export async function uploadFile(file, bucket = "team-assets") {
-  const safeFileName = `${Date.now()}-${file.name}`.replace(/\s+/g,"_").replace(/[^a-zA-Z0-9._-]/g,"_");
+  const bytes = await fileBytes(file);
+  const hash = await hashHex(bytes);
+  const safeFileName = `${hash}.${fileExtension(file.name)}`;
   try {
     const res = await fetch(`${SUPABASE_URL}/storage/v1/object/${bucket}/${safeFileName}`, {
       method: "POST",
       headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, "Content-Type": file.type, "x-upsert": "true" },
-      body: file,
+      body: new Blob([bytes], { type: file.type }),
     });
     if (res.ok) return `${SUPABASE_URL}/storage/v1/object/public/${bucket}/${safeFileName}`;
   } catch {}
   try {
     const token = localStorage.getItem("admin_token") || localStorage.getItem("hub_token");
     if (!token) return null;
-    const base64 = await new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = ev => resolve(String(ev.target.result).split(",")[1]);
-      reader.onerror = reject;
-      reader.readAsDataURL(file);
-    });
     const endpoint = localStorage.getItem("admin_token") ? "/api/admin-proxy" : "/api/hub-proxy";
     const res = await fetch(endpoint, {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ action: "upload", payload: { bucket, fileName: safeFileName, base64, contentType: file.type } }),
+      body: JSON.stringify({ action: "upload", payload: { bucket, fileName: safeFileName, base64: toBase64(bytes), contentType: file.type } }),
     });
     const j = await res.json().catch(() => ({}));
     if (!res.ok || !j?.data?.url) return null;

@@ -1602,12 +1602,21 @@ function SiteConfig({ config, logoUrl, setLogoUrl, reload, showToast, isMobile }
 
     function confirmAdd() {
       if (pendingItems.length === 0) return;
-      const count = pendingItems.length;
-      const updated = [...ribbonItems, ...pendingItems];
+      const existing = new Set((ribbonItems || []).map(r => r.logo_url).filter(Boolean));
+      const fresh = [];
+      const seen = new Set();
+      let skipped = 0;
+      pendingItems.forEach(p => {
+        if (existing.has(p.logo_url) || seen.has(p.logo_url)) { skipped++; return; }
+        seen.add(p.logo_url);
+        fresh.push(p);
+      });
+      setPendingItems([]);
+      if (fresh.length === 0) { showToast(`No new sponsors — all ${skipped} are duplicates already in the ribbon.`, "#f59e0b"); return; }
+      const updated = [...(ribbonItems || []), ...fresh];
       setRibbonItems(updated);
       setVals(v => ({ ...v, sponsor_ribbon_items: JSON.stringify(updated) }));
-      setPendingItems([]);
-      showToast(`Added ${count} to ribbon — don't forget Save Ribbon.`);
+      showToast(skipped > 0 ? `Added ${fresh.length}, skipped ${skipped} duplicate${skipped !== 1 ? "s" : ""} — don't forget Save Ribbon.` : `Added ${fresh.length} — don't forget Save Ribbon.`);
     }
 
     function removeItem(idx) {
