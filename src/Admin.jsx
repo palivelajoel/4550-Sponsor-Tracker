@@ -1725,7 +1725,7 @@ function SiteConfig({ config, logoUrl, setLogoUrl, reload, showToast, isMobile }
             if (existing?.length) await adminProxy("site_config", "update", { id: existing[0].id, updates: { value: val } });
             else await adminProxy("site_config", "insert", { key: "hub_tiles_hidden", value: val });
             setHiddenSaving(false); reload(); showToast("✅ Tile visibility saved.");
-          }} disabled={hiddenSaving} style={{ ...S.btnPrimary, opacity: hiddenSaving ? 0.6 : 1, background: "#a855f7" }}>{hiddenSaving ? "Saving..." : "Save Visibility"}</button>
+          }} disabled={hiddenSaving} style={{ ...S.btnPrimary, opacity: hiddenSaving ? 0.6 : 1 }}>{hiddenSaving ? "Saving..." : "Save Visibility"}</button>
           <button onClick={() => {
             setTileOrder(HUB_TILES.map(t => t.id));
             setHiddenTiles([]);
@@ -1806,10 +1806,10 @@ function SiteConfig({ config, logoUrl, setLogoUrl, reload, showToast, isMobile }
           </div>
         )}
         <div style={{ fontSize: 12, color: "#94a3b8", fontFamily: "monospace", marginBottom: 12, lineHeight: 1.6 }}>
-          <span style={{ color: "#22c55e" }}>Media Gallery 🖼️ and Resources 📁 (images, PDFs, CAD, videos) upload to GitHub</span> — stored in this repo under <span style={{ color: "#a78bfa" }}>public/uploads/</span>. All other images — logo, banners, sponsor/captain photos, landing, inventory — stay in <span style={{ color: "#a78bfa" }}>Supabase</span> for now.
+          <span>Media Gallery 🖼️ and Resources 📁 (images, PDFs, CAD, videos) upload to GitHub</span> — stored in this repo under <span style={{ color: "#a78bfa" }}>public/uploads/</span>. All other images — logo, banners, sponsor/captain photos, landing, inventory — stay in <span style={{ color: "#a78bfa" }}>Supabase</span> for now.
         </div>
         <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-          <button onClick={runStorageCleanup} disabled={storageBusy} style={{ ...S.btnPrimary, opacity: storageBusy ? 0.6 : 1, background: "#a78bfa" }}>{storageBusy ? "Working..." : "🚀 Move Media & Docs to GitHub"}</button>
+          <button onClick={runStorageCleanup} disabled={storageBusy} style={{ ...S.btnPrimary, opacity: storageBusy ? 0.6 : 1 }}>{storageBusy ? "Working..." : "🚀 Move Media & Docs to GitHub"}</button>
           {storageMsg && <span style={{ fontSize: 12, color: "#a78bfa", fontFamily: "monospace" }}>{storageMsg}</span>}
         </div>
         <div style={{ fontSize: 11, color: "#475569", fontFamily: "monospace", marginTop: 10 }}>
@@ -1847,7 +1847,7 @@ const S = {
   formCol: { display: "flex", flexDirection: "column", gap: 10 },
   input: { background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 10, padding: "9px 12px", color: "#fff", fontSize: 13, fontFamily: "monospace", outline: "none", flex: 1, minWidth: 120 },
   select: { background: "#0a0e18", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 10, padding: "9px 12px", color: "#fff", fontSize: 13, fontFamily: "monospace", cursor: "pointer", flex: 1, minWidth: 120 },
-  btnPrimary: { background: "#ef4444", border: "none", borderRadius: 10, padding: "9px 18px", color: "#fff", cursor: "pointer", fontSize: 13, fontWeight: 600, fontFamily: "monospace", whiteSpace: "nowrap" },
+  btnPrimary: { background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.3)", borderRadius: 10, padding: "9px 14px", color: "#ef4444", cursor: "pointer", fontSize: 13, fontFamily: "monospace", whiteSpace: "nowrap" },
   btnGhost: { background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.3)", borderRadius: 10, padding: "9px 14px", color: "#ef4444", cursor: "pointer", fontSize: 13, fontFamily: "monospace", whiteSpace: "nowrap" },
   btnDanger: { background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.3)", borderRadius: 10, padding: "9px 14px", color: "#ef4444", cursor: "pointer", fontSize: 13, fontFamily: "monospace", whiteSpace: "nowrap" },
   memberRow: { display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 0", borderBottom: "1px solid rgba(255,255,255,0.05)", minHeight: 64, gap: 10 },
