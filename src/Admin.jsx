@@ -1542,7 +1542,8 @@ function SiteConfig({ config, logoUrl, setLogoUrl, reload, showToast, isMobile }
       try { return JSON.parse(vals.sponsor_ribbon_items || "[]"); } catch { return []; }
     });
     const [uploading, setUploading] = useState(false);
-    const [pending, setPending] = useState(null);
+    const [progress, setProgress] = useState(null);
+    const [pendingItems, setPendingItems] = useState([]);
     const fileRef = useRef(null);
 
     useEffect(() => {
@@ -1550,38 +1551,63 @@ function SiteConfig({ config, logoUrl, setLogoUrl, reload, showToast, isMobile }
     }, [vals.sponsor_ribbon_items]);
 
     async function handleFile(e) {
-      const file = e.target.files?.[0];
-      if (!file) return;
+      const files = Array.from(e.target.files || []);
+      if (files.length === 0) return;
       setUploading(true);
-      setPending(null);
-      try {
-        const url = await uploadFile(file, 'team-assets');
-        if (!url) { showToast("Upload failed.", "#ef4444"); setUploading(false); return; }
-        const reader = new FileReader();
-        reader.onload = async (ev) => {
-          const base64 = ev.target.result.split(',')[1];
-          const r = await fetch("/api/extract-brands", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ imageBase64: base64, mimeType: file.type }),
+      setProgress({ done: 0, total: files.length });
+      const added = [];
+      for (let idx = 0; idx < files.length; idx++) {
+        const file = files[idx];
+        try {
+          const url = await uploadFile(file, 'team-assets');
+          if (!url) { showToast(`"${file.name}" upload failed.`, "#ef4444"); continue; }
+          const base64 = await new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = ev => resolve(ev.target.result.split(',')[1]);
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
           });
-          if (!r.ok) { showToast("AI extraction failed.", "#ef4444"); setUploading(false); return; }
-          const data = await r.json();
-          const name = data.brands?.[0] || file.name.replace(/\.[^.]+$/, '').replace(/[-_]/g, ' ');
-          setPending({ company: name, logo_url: url });
-          setUploading(false);
-        };
-        reader.readAsDataURL(file);
-      } catch { showToast("Error processing image.", "#ef4444"); setUploading(false); }
+          let name = file.name.replace(/\.[^.]+$/, '').replace(/[-_]/g, ' ').trim();
+          try {
+            const r = await fetch("/api/extract-brands", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ imageBase64: base64, mimeType: file.type }),
+            });
+            if (r.ok) {
+              const data = await r.json();
+              if (data.brands?.[0]) name = data.brands[0];
+            }
+          } catch {}
+          added.push({ company: name, logo_url: url });
+          setProgress({ done: idx + 1, total: files.length });
+        } catch { showToast(`"${file.name}" failed to process.`, "#ef4444"); }
+      }
+      setUploading(false);
+      setProgress(null);
+      if (added.length > 0) {
+        setPendingItems(p => [...p, ...added]);
+        showToast(`Added ${added.length} logo${added.length !== 1 ? "s" : ""} — review below.`);
+      }
+      e.target.value = "";
+    }
+
+    function updatePending(idx, patch) {
+      setPendingItems(items => items.map((it, i) => i === idx ? { ...it, ...patch } : it));
+    }
+
+    function removePending(idx) {
+      setPendingItems(items => items.filter((_, i) => i !== idx));
     }
 
     function confirmAdd() {
-      if (!pending) return;
-      const updated = [...ribbonItems, pending];
+      if (pendingItems.length === 0) return;
+      const count = pendingItems.length;
+      const updated = [...ribbonItems, ...pendingItems];
       setRibbonItems(updated);
       setVals(v => ({ ...v, sponsor_ribbon_items: JSON.stringify(updated) }));
-      setPending(null);
-      showToast("Added to ribbon.");
+      setPendingItems([]);
+      showToast(`Added ${count} to ribbon — don't forget Save Ribbon.`);
     }
 
     function removeItem(idx) {
@@ -1600,26 +1626,39 @@ function SiteConfig({ config, logoUrl, setLogoUrl, reload, showToast, isMobile }
           </label>
           <button onClick={() => saveKey("sponsor_bar_enabled")} style={{ ...S.btnGhost, width: isMobile ? '100%' : undefined }}>Save Toggle</button>
         </div>
-        <div style={{ fontSize: 12, color: "#94a3b8", fontFamily: "monospace", marginBottom: 10 }}>Upload a sponsor logo image — AI will detect the company name automatically:</div>
+        <div style={{ fontSize: 12, color: "#94a3b8", fontFamily: "monospace", marginBottom: 10 }}>Upload one or more sponsor logo images — AI will detect the company names automatically:</div>
         <div style={{ display: "flex", gap: 8, marginBottom: 12, alignItems: "center", flexWrap: "wrap" }}>
-          <button onClick={() => fileRef.current?.click()} style={{ ...S.btnPrimary, width: isMobile ? '100%' : undefined }}>{uploading ? "Uploading..." : "Upload Logo Image"}</button>
-          <input ref={fileRef} type="file" accept="image/*" style={{ display: "none" }} onChange={handleFile} />
-          {uploading && <span style={{ fontSize: 12, color: "#a78bfa", fontFamily: "monospace" }}>Uploading & identifying...</span>}
+          <button onClick={() => fileRef.current?.click()} style={{ ...S.btnPrimary, width: isMobile ? '100%' : undefined }}>{uploading ? "Uploading..." : "Upload Logo Images"}</button>
+          <input ref={fileRef} type="file" accept="image/*" multiple style={{ display: "none" }} onChange={handleFile} />
+          {uploading && progress && <span style={{ fontSize: 12, color: "#a78bfa", fontFamily: "monospace" }}>Processing {progress.done} of {progress.total}...</span>}
         </div>
-        {pending && (
-          <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", background: "rgba(34,197,94,0.1)", border: "1px solid rgba(34,197,94,0.3)", borderRadius: 8, marginBottom: 12, flexWrap: "wrap" }}>
-            <img src={pending.logo_url} alt="" style={{ width: 32, height: 32, borderRadius: 4, objectFit: "contain", background: "rgba(255,255,255,0.05)" }} />
-            <div style={{ flex: 1, minWidth: 200, fontSize: 13, color: "#e2e8f0" }}>
-              Detected: <strong>{pending.company}</strong>
-              <input
-                value={pending.website || ""}
-                onChange={e => setPending({ ...pending, website: e.target.value })}
-                placeholder="Website URL (e.g. https://company.com)"
-                style={{ ...S.input, marginTop: 6, width: "100%" }}
-              />
+        {pendingItems.length > 0 && (
+          <div style={{ padding: "12px 14px", background: "rgba(34,197,94,0.08)", border: "1px solid rgba(34,197,94,0.3)", borderRadius: 8, marginBottom: 12 }}>
+            <div style={{ fontSize: 12, color: "#22c55e", fontFamily: "monospace", marginBottom: 8 }}>✓ {pendingItems.length} detected — review before adding:</div>
+            {pendingItems.map((p, pi) => (
+              <div key={pi} style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "8px 0", borderBottom: pi < pendingItems.length - 1 ? "1px solid rgba(255,255,255,0.06)" : "none" }}>
+                <img src={p.logo_url} alt="" style={{ width: 32, height: 32, borderRadius: 4, objectFit: "contain", background: "rgba(255,255,255,0.05)", flexShrink: 0 }} />
+                <div style={{ flex: 1, minWidth: 180 }}>
+                  <input
+                    value={p.company}
+                    onChange={e => updatePending(pi, { company: e.target.value })}
+                    placeholder="Company name"
+                    style={{ ...S.input, width: "100%", marginBottom: 6 }}
+                  />
+                  <input
+                    value={p.website || ""}
+                    onChange={e => updatePending(pi, { website: e.target.value })}
+                    placeholder="Website URL (e.g. https://company.com)"
+                    style={{ ...S.input, width: "100%", marginBottom: 6, minWidth: 0 }}
+                  />
+                </div>
+                <button onClick={() => removePending(pi)} style={{ background: "transparent", border: "none", color: "#ef4444", cursor: "pointer", fontSize: 16, padding: 2 }} title="Remove">&times;</button>
+              </div>
+            ))}
+            <div style={{ display: "flex", gap: 8, marginTop: 12, flexWrap: "wrap" }}>
+              <button onClick={confirmAdd} style={S.btnPrimary}>Add {pendingItems.length} to Ribbon</button>
+              <button onClick={() => setPendingItems([])} style={S.btnGhost}>Clear</button>
             </div>
-            <button onClick={confirmAdd} style={S.btnPrimary}>Add to Ribbon</button>
-            <button onClick={() => setPending(null)} style={S.btnGhost}>Cancel</button>
           </div>
         )}
         <div style={{ fontSize: 12, color: "#94a3b8", fontFamily: "monospace", marginBottom: 10 }}>Current ribbon sponsors:</div>
