@@ -1300,6 +1300,25 @@ function BannerRow({ url, isMobile, onRemove }) {
   );
 }
 
+function LogoThumb({ url, alt, size = 44 }) {
+  const [err, setErr] = useState(false);
+  if (!url || err) {
+    return (
+      <div style={{ width: size, height: size, borderRadius: 6, background: "rgba(255,255,255,0.08)", color: "#cbd5e1", display: "flex", alignItems: "center", justifyContent: "center", fontSize: Math.max(14, size * 0.45), flexShrink: 0, fontWeight: "bold" }}>
+        {(alt || "?").charAt(0).toUpperCase()}
+      </div>
+    );
+  }
+  return (
+    <img
+      src={url}
+      alt=""
+      onError={() => setErr(true)}
+      style={{ width: size, height: size, borderRadius: 6, objectFit: "contain", background: "rgba(255,255,255,0.05)", flexShrink: 0 }}
+    />
+  );
+}
+
 // ── SITE CONFIG ───────────────────────────────────────────
 function SiteConfig({ config, logoUrl, setLogoUrl, reload, showToast, isMobile }) {
   const [vals, setVals] = useState({});
@@ -1628,12 +1647,27 @@ function SiteConfig({ config, logoUrl, setLogoUrl, reload, showToast, isMobile }
     });
     const [uploading, setUploading] = useState(false);
     const [progress, setProgress] = useState(null);
-    const [pendingItems, setPendingItems] = useState([]);
+    const [pendingItems, setPendingItems] = useState(() => {
+      try { const raw = JSON.parse(sessionStorage.getItem("ribbon_pending") || "[]"); return Array.isArray(raw) ? raw : []; } catch { return []; }
+    });
     const fileRef = useRef(null);
+    const reviewRef = useRef(null);
+    const reviewWasEmpty = useRef(true);
 
     useEffect(() => {
       try { setRibbonItems(JSON.parse(vals.sponsor_ribbon_items || "[]")); } catch { setRibbonItems([]); }
     }, [vals.sponsor_ribbon_items]);
+
+    useEffect(() => {
+      try { sessionStorage.setItem("ribbon_pending", JSON.stringify(pendingItems)); } catch {}
+    }, [pendingItems]);
+
+    useEffect(() => {
+      if (pendingItems.length > 0 && reviewWasEmpty.current) {
+        reviewRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+      reviewWasEmpty.current = pendingItems.length === 0;
+    }, [pendingItems]);
 
     async function handleFile(e) {
       const files = Array.from(e.target.files || []);
@@ -1727,11 +1761,11 @@ function SiteConfig({ config, logoUrl, setLogoUrl, reload, showToast, isMobile }
           {uploading && progress && <span style={{ fontSize: 12, color: "#a78bfa", fontFamily: "monospace" }}>Processing {progress.done} of {progress.total}...</span>}
         </div>
         {pendingItems.length > 0 && (
-          <div style={{ padding: "12px 14px", background: "rgba(34,197,94,0.08)", border: "1px solid rgba(34,197,94,0.3)", borderRadius: 8, marginBottom: 12 }}>
-            <div style={{ fontSize: 12, color: "#22c55e", fontFamily: "monospace", marginBottom: 8 }}>✓ {pendingItems.length} detected — review before adding:</div>
+          <div ref={reviewRef} style={{ padding: "12px 14px", background: "rgba(34,197,94,0.08)", border: "1px solid rgba(34,197,94,0.3)", borderRadius: 8, marginBottom: 12 }}>
+            <div style={{ fontSize: 12, color: "#22c55e", fontFamily: "monospace", marginBottom: 8 }}>✓ {pendingItems.length} logo{pendingItems.length !== 1 ? "s" : ""} pending — review each below, then click "Add to Ribbon":</div>
             {pendingItems.map((p, pi) => (
               <div key={pi} style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "8px 0", borderBottom: pi < pendingItems.length - 1 ? "1px solid rgba(255,255,255,0.06)" : "none" }}>
-                <img src={p.logo_url} alt="" style={{ width: 32, height: 32, borderRadius: 4, objectFit: "contain", background: "rgba(255,255,255,0.05)", flexShrink: 0 }} />
+                <LogoThumb url={p.logo_url} alt={p.company} size={48} />
                 <div style={{ flex: 1, minWidth: 180 }}>
                   <input
                     value={p.company}
@@ -1762,7 +1796,7 @@ function SiteConfig({ config, logoUrl, setLogoUrl, reload, showToast, isMobile }
             {ribbonItems.map((item, i) => (
               <div key={i} style={{ display: "flex", flexDirection: "column", gap: 6, padding: "10px 12px", background: "rgba(255,255,255,0.03)", borderRadius: 8, border: "1px solid rgba(255,255,255,0.06)" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  {item.logo_url ? <img src={item.logo_url} alt="" style={{ width: 28, height: 28, borderRadius: 4, objectFit: "contain", background: "rgba(255,255,255,0.05)" }} /> : <span style={{ fontSize: 18 }}>🏢</span>}
+                  {item.logo_url ? <LogoThumb url={item.logo_url} alt={item.company} size={36} /> : <span style={{ fontSize: 18 }}>🏢</span>}
                   <span style={{ flex: 1, fontSize: 13, color: "#e2e8f0" }}>{item.company}</span>
                   <button onClick={() => removeItem(i)} style={{ background: "transparent", border: "none", color: "#ef4444", cursor: "pointer", fontSize: 16 }} title="Remove">&times;</button>
                 </div>
