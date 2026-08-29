@@ -375,7 +375,7 @@ function SponsorBar({ sponsors = [], isMobile }) {
         <Eyebrow>// OUR PARTNERS</Eyebrow>
         <SectionTitle>Our Sponsors</SectionTitle>
       </div>
-      <div style={{ overflow: "hidden" }} onMouseEnter={hold} onMouseLeave={release}>
+      <div style={{ overflow: "hidden", padding: "10px 0" }} onMouseEnter={hold} onMouseLeave={release}>
         <div ref={trackRef} style={{ display: "flex", gap: 24, willChange: "transform", width: "max-content" }}>
           {duped.map((s, i) => {
             const href = siteURL(s.website);
