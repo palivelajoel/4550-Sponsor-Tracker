@@ -789,21 +789,30 @@ function SponsorAssign({ sponsors, members, reload, showToast, isMobile }) {
   async function uploadSponsorLogo(sponsorId, file) {
     if (!file) return;
     setLogoUploading(u => ({ ...u, [sponsorId]: true }));
-    const url = await uploadFile(file, 'team-assets');
-    if (url) {
-      await adminProxy('sponsors', 'update', { id: sponsorId, updates: { logo_url: url } });
-      showToast("✅ Logo uploaded.");
-      reload();
-    } else {
-      showToast("Upload failed.", "#ef4444");
+    try {
+      const url = await uploadFile(file, 'team-assets');
+      if (url) {
+        await adminProxy('sponsors', 'update', { id: sponsorId, updates: { logo_url: url } });
+        showToast("✅ Logo uploaded.");
+        reload();
+      } else {
+        showToast("Upload failed.", "#ef4444");
+      }
+    } catch (e) {
+      showToast("Logo upload failed: " + (e.message || e), "#ef4444");
+    } finally {
+      setLogoUploading(u => ({ ...u, [sponsorId]: false }));
     }
-    setLogoUploading(u => ({ ...u, [sponsorId]: false }));
   }
 
   async function saveLogoUrl(sponsorId, url) {
-    await adminProxy('sponsors', 'update', { id: sponsorId, updates: { logo_url: url } });
-    showToast("✅ Logo saved.");
-    reload();
+    try {
+      await adminProxy('sponsors', 'update', { id: sponsorId, updates: { logo_url: url } });
+      showToast("✅ Logo saved.");
+      reload();
+    } catch (e) {
+      showToast("Logo save failed: " + (e.message || e), "#ef4444");
+    }
   }
 
   async function autoAssign() {
