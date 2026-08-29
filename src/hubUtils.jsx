@@ -103,6 +103,21 @@ export async function prepareFileForUpload(file) {
  */
 export async function uploadFile(file, bucket = "team-assets") {
   const { fileName: safeFileName, bytes, base64, contentType } = await prepareFileForUpload(file);
+  // Prefer the server proxy (service role): works for first uploads AND re-uploads,
+  // avoids anon-key storage RLS overwrite failures and CORS preflight noise.
+  const token = localStorage.getItem("admin_token") || localStorage.getItem("hub_token");
+  if (token) {
+    try {
+      const endpoint = localStorage.getItem("admin_token") ? "/api/admin-proxy" : "/api/hub-proxy";
+      const res = await fetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ action: "upload", payload: { bucket, fileName: safeFileName, base64, contentType } }),
+      });
+      const j = await res.json().catch(() => ({}));
+      if (res.ok && j?.data?.url) return j.data.url;
+    } catch {}
+  }
   try {
     const res = await fetch(`${SUPABASE_URL}/storage/v1/object/${bucket}/${safeFileName}`, {
       method: "POST",
@@ -111,19 +126,7 @@ export async function uploadFile(file, bucket = "team-assets") {
     });
     if (res.ok) return `${SUPABASE_URL}/storage/v1/object/public/${bucket}/${safeFileName}`;
   } catch {}
-  try {
-    const token = localStorage.getItem("admin_token") || localStorage.getItem("hub_token");
-    if (!token) return null;
-    const endpoint = localStorage.getItem("admin_token") ? "/api/admin-proxy" : "/api/hub-proxy";
-    const res = await fetch(endpoint, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ action: "upload", payload: { bucket, fileName: safeFileName, base64, contentType } }),
-    });
-    const j = await res.json().catch(() => ({}));
-    if (!res.ok || !j?.data?.url) return null;
-    return j.data.url;
-  } catch { return null; }
+  return null;
 }
 
 /**
