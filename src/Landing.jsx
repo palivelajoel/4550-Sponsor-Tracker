@@ -323,23 +323,60 @@ function ParticleCanvas({ isMobile }) {
 }
 
 function SponsorBar({ sponsors = [], isMobile }) {
-  const shown = sponsors.filter(s => s.company);
-  if (shown.length === 0) return null;
-  const items = shown.map(s => ({ company: s.company, logo_url: s.logo_url, website: s.website }));
-  const duped = [...items, ...items, ...items];
-  const speed = Math.max(20, items.length * 3);
+  const trackRef = useRef(null);
+  const xRef = useRef(0);
+  const multRef = useRef(1);
+  const targetRef = useRef(1);
+  const setWRef = useRef(0);
+  const items = (sponsors || []).filter(s => s.company).map(s => ({ company: s.company, logo_url: s.logo_url, website: s.website }));
   const siteURL = u => { if (!u) return null; const t = String(u).trim(); return /^https?:\/\//i.test(t) ? t : `https://${t}`; };
+
+  useEffect(() => {
+    const el = trackRef.current;
+    if (!el || items.length === 0) return;
+    let raf;
+    let last = performance.now();
+    const speed = Math.max(20, items.length * 3);
+    const GAP = 24;
+
+    const measure = () => { if (el.scrollWidth) setWRef.current = el.scrollWidth / 3 + GAP / 3; };
+    measure();
+
+    let ro;
+    if (typeof ResizeObserver !== "undefined") { ro = new ResizeObserver(measure); ro.observe(el); }
+
+    function frame(now) {
+      const dt = Math.min((now - last) / 1000, 0.05);
+      last = now;
+      const ease = 1 - Math.exp(-dt * 4.5);
+      multRef.current += (targetRef.current - multRef.current) * ease;
+      const sw = setWRef.current;
+      if (sw > 0) {
+        xRef.current -= (sw / speed) * multRef.current * dt;
+        if (xRef.current <= -sw) xRef.current += sw;
+        el.style.transform = `translate3d(${xRef.current}px,0,0)`;
+      }
+      raf = requestAnimationFrame(frame);
+    }
+    raf = requestAnimationFrame(frame);
+    return () => { cancelAnimationFrame(raf); ro?.disconnect(); };
+  }, [items.length]);
+
+  if (items.length === 0) return null;
+  const duped = [...items, ...items, ...items];
+
+  const hold = () => { targetRef.current = 0.08; if (trackRef.current) { trackRef.current.style.transition = "opacity 0.35s ease"; trackRef.current.style.opacity = "0.5"; } };
+  const release = () => { targetRef.current = 1; if (trackRef.current) trackRef.current.style.opacity = "1"; };
+
   return (
     <div style={{ width: "100%", background: "rgba(8,10,15,0.85)", backdropFilter: "blur(10px)", WebkitBackdropFilter: "blur(10px)", borderTop: "1px solid rgba(255,255,255,0.05)", borderBottom: "1px solid rgba(255,255,255,0.05)", padding: "80px 0", position: "relative" }}>
-      <style>{`@keyframes sponsorCardMarquee{0%{transform:translate3d(0,0,0)}100%{transform:translate3d(-33.333%,0,0)}}.sponsor-card{transition:transform .25s ease,box-shadow .25s ease,border-color .25s ease}.sponsor-card:hover{transform:translateY(-4px);box-shadow:0 14px 34px rgba(239,68,68,0.22);border-color:rgba(239,68,68,0.5)}`}</style>
+      <style>{`.sponsor-card{transition:transform .25s ease,box-shadow .25s ease,border-color .25s ease}.sponsor-card:hover{transform:translateY(-4px);box-shadow:0 14px 34px rgba(239,68,68,0.22);border-color:rgba(239,68,68,0.5)}`}</style>
       <div style={{ maxWidth: 1100, margin: "0 auto 40px", padding: "0 24px", textAlign: "left" }}>
         <Eyebrow>// OUR PARTNERS</Eyebrow>
         <SectionTitle>Our Sponsors</SectionTitle>
       </div>
-      <div style={{ overflow: "hidden" }}>
-        <div style={{ display: "flex", gap: 24, willChange: "transform", animation: `sponsorCardMarquee ${speed}s linear infinite`, width: "max-content" }}
-          onMouseEnter={e => { e.currentTarget.style.transition = "opacity 0.3s ease"; e.currentTarget.style.opacity = "0.5"; }}
-          onMouseLeave={e => { e.currentTarget.style.opacity = "1"; }}>
+      <div style={{ overflow: "hidden" }} onMouseEnter={hold} onMouseLeave={release}>
+        <div ref={trackRef} style={{ display: "flex", gap: 24, willChange: "transform", width: "max-content" }}>
           {duped.map((s, i) => {
             const href = siteURL(s.website);
             const card = (
