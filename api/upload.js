@@ -6,11 +6,25 @@ export const config = { maxDuration: 60 };
 
 const REPO = 'palivelajoel/4550-Website';
 const ASSET_DIR = 'public/uploads';
-const MEDIA_BUCKETS = ['team-assets', 'team-media'];
+const BUCKETS = ['team-assets', 'team-media', 'inventory-images'];
 const MAX_FILE = 3 * 1024 * 1024;    // per file, binary (keeps base64 under Vercel body limit)
 const MAX_TOTAL = 3 * 1024 * 1024;   // per batch, binary
-const MAX_CLEANUP_OBJECTS = 300;
+const MAX_MIGRATE = 150;             // storage objects migrated per cleanup run
+const CHUNK = 25;                    // files per GitHub commit
 const GH = 'https://api.github.com';
+
+const TABLES_SCAN = [
+  'site_config', 'sponsors', 'captains', 'hub_media', 'hub_resources', 'articles',
+  'hub_announcements', 'members', 'hub_tasks', 'inventory_items', 'suggestions',
+  'hub_calendar', 'hub_forms', 'hub_form_submissions',
+];
+
+// Matches any Supabase storage public URL (legacy + current form), with trailing punctuation intact.
+const STORAGE_URL_RE = /(https?:\/\/[^"'\\\s]+?\/(?:storage\/v1\/object\/public|object\/public)\/(?:team-assets|team-media|inventory-images)\/[^"'\\\s]+)/gi;
+
+function normalizeUrl(u) {
+  return u.replace(/[)\]'";,]+$/g, '');
+}
 
 async function gh(token, path, opts = {}) {
   const res = await fetch(`${GH}${path}`, {
@@ -53,7 +67,7 @@ async function commitFilesToRepo(gitToken, files) {
   const commit = await gh(gitToken, `/repos/${REPO}/git/commits`, {
     method: 'POST',
     body: JSON.stringify({
-      message: `Upload media: ${files.map(f => f.fileName).join(', ')}`,
+      message: `Upload images: ${files.map(f => f.fileName).join(', ')}`,
       tree: tree.sha,
       parents: [headSha],
       author: { name: 'Cherry Creek Robotics', email: '4550@cherrycreekrobotics.org' },
@@ -72,7 +86,7 @@ function objectInfoFromUrl(url) {
   if (!/^https?:\/\//i.test(url)) return null;
   let path;
   try { path = new URL(url).pathname; } catch { return null; }
-  for (const bucket of MEDIA_BUCKETS) {
+  for (const bucket of BUCKETS) {
     for (const needle of [`/storage/v1/object/public/${bucket}/`, `/object/public/${bucket}/`]) {
       const i = path.indexOf(needle);
       if (i !== -1) {
@@ -86,167 +100,159 @@ function objectInfoFromUrl(url) {
   return null;
 }
 
-const hashFileName = name => {
+function fileExt(name) {
   const m = /\.([a-zA-Z0-9]+)$/.exec(name || '');
-  const ext = m ? m[1].toLowerCase() : 'bin';
-  return ext;
-};
+  return m ? m[1].toLowerCase() : 'bin';
+}
+
+// Full-tables scan: every string cell in every row, find all storage URLs.
+async function scanReferencedUrls(supabase) {
+  const refs = new Map();
+  for (const table of TABLES_SCAN) {
+    let rows = null;
+    try { ({ data: rows } = await supabase.from(table).select('*')); } catch { continue; }
+    for (const row of rows || []) {
+      for (const val of Object.values(row)) {
+        if (typeof val !== 'string') continue;
+        STORAGE_URL_RE.lastIndex = 0;
+        let m;
+        while ((m = STORAGE_URL_RE.exec(val))) {
+          const u = normalizeUrl(m[1]);
+          if (objectInfoFromUrl(u)) refs.set(u, true);
+        }
+      }
+    }
+  }
+  return refs;
+}
+
+// Rewrite every cell that references a migrated object's old storage URL.
+async function updateReferences(supabase, urlMap) {
+  let updated = 0;
+  for (const table of TABLES_SCAN) {
+    let rows = null;
+    try { ({ data: rows } = await supabase.from(table).select('*')); } catch { continue; }
+    for (const row of rows || []) {
+      if (!row.id) continue;
+      const updates = {};
+      for (const [col, val] of Object.entries(row)) {
+        if (typeof val !== 'string' || col === 'id') continue;
+        STORAGE_URL_RE.lastIndex = 0;
+        let m;
+        let out = '';
+        let last = 0;
+        let hit = false;
+        while ((m = STORAGE_URL_RE.exec(val))) {
+          const u = normalizeUrl(m[1]);
+          const info = objectInfoFromUrl(u);
+          if (!info) continue;
+          const newUrl = urlMap.get(`${info.bucket}|${info.name}`);
+          if (!newUrl) continue;
+          hit = true;
+          out += val.slice(last, m.index) + newUrl + m[1].slice(u.length);
+          last = m.index + m[1].length;
+        }
+        if (hit) { out += val.slice(last); updates[col] = out; }
+      }
+      if (Object.keys(updates).length) {
+        try { await supabase.from(table).update(updates).eq('id', row.id); updated++; } catch {}
+      }
+    }
+  }
+  return updated;
+}
 
 async function cleanupUploads(res) {
   const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE);
   const gitToken = process.env.GITHUB_TOKEN;
-  const report = { mediaRows: 0, migrated: [], deleted: [], duplicateGroups: 0 };
+  const report = { discovered: 0, migrated: [], failed: [], deleted: [], remaining: 0 };
+  const urlMap = new Map();
+  const failedKeys = new Set();
 
-  // ── A) Migrate existing media (hub_media + hub_resources) to GitHub ──
-  const targets = [];
-  const grab = async table => {
-    try {
-      const { data } = await supabase.from(table).select('id,url');
-      for (const row of data || []) {
-        const info = objectInfoFromUrl(row.url);
-        if (info) targets.push({ table, id: row.id, ...info });
-      }
-    } catch {}
-  };
-  await grab('hub_media');
-  await grab('hub_resources');
-  report.mediaRows = targets.length;
+  // ── 1) Discover every storage URL still referenced anywhere in the DB ──
+  const refs = await scanReferencedUrls(supabase);
+  const jobs = [];
+  const seen = new Set();
+  for (const u of refs.keys()) {
+    const info = objectInfoFromUrl(u);
+    const key = `${info.bucket}|${info.name}`;
+    if (!seen.has(key)) { seen.add(key); jobs.push({ bucket: info.bucket, name: info.name }); }
+  }
+  report.discovered = jobs.length;
 
-  const migratedKeys = new Set();
-  if (gitToken) {
-    const gitFiles = [];
-    const pending = [];
-    for (const t of targets) {
-      try {
-        const { data: blob, error } = await supabase.storage.from(t.bucket).download(t.name);
-        if (error || !blob) throw new Error('download failed');
-        const buf = Buffer.from(await blob.arrayBuffer());
-        const hash = crypto.createHash('sha256').update(buf).digest('hex').slice(0, 16);
-        const ext = hashFileName(t.name);
-        const fileName = `${hash}.${ext}`;
-        gitFiles.push({ fileName, base64: buf.toString('base64') });
-        pending.push({ ...t, fileName });
-      } catch (e) {
-        report.migrated.push({ table: t.table, id: t.id, name: t.name, error: String((e && e.message) || e) });
-      }
-    }
-    if (pending.length) {
-      await commitFilesToRepo(gitToken, gitFiles);
-      for (const p of pending) {
-        const newUrl = `https://raw.githubusercontent.com/${REPO}/${ASSET_DIR}/${p.fileName}`;
-        const { error: upErr } = await supabase.from(p.table).update({ url: newUrl }).eq('id', p.id);
-        if (upErr) { report.migrated.push({ table: p.table, id: p.id, name: p.name, error: 'db update failed' }); continue; }
-        migratedKeys.add(`${p.bucket}|${p.name}`);
-        report.migrated.push({ table: p.table, id: p.id, fileName: p.fileName });
-      }
-    }
+  // ── 2) Migrate the referenced objects to GitHub (best effort, in batches) ──
+  if (jobs.length === 0) {
+    // nothing referenced — fall through to sweeping orphaned/duplicate objects
+  } else if (!gitToken) {
+    report.failed.push({ error: 'GitHub storage not configured — set GITHUB_TOKEN in Vercel env' });
   } else {
-    report.migrated.push({ error: 'GitHub storage not configured — set GITHUB_TOKEN in Vercel env' });
-  }
-
-  // ── B) Collect URLs still pointing at Supabase storage ──
-  const refs = new Set();
-  const addRef = v => { if (v && typeof v === 'string' && /^https?:\/\//i.test(v.trim())) refs.add(v.trim()); };
-  const walk = v => {
-    if (v == null) return;
-    if (typeof v === 'string') {
-      const t = v.trim();
-      if (/^https?:\/\//i.test(t)) refs.add(t);
-      if (t.startsWith('[') || t.startsWith('{')) { try { walk(JSON.parse(t)); } catch {} }
-      return;
+    const limit = Math.min(jobs.length, MAX_MIGRATE);
+    for (let i = 0; i < limit; i += CHUNK) {
+      const chunk = jobs.slice(i, i + CHUNK);
+      const gitFiles = [];
+      const pending = [];
+      for (const job of chunk) {
+        try {
+          const { data: blob, error } = await supabase.storage.from(job.bucket).download(job.name);
+          if (error || !blob) throw new Error((error && error.message) || 'download failed');
+          const buf = Buffer.from(await blob.arrayBuffer());
+          const hash = crypto.createHash('sha256').update(buf).digest('hex').slice(0, 16);
+          const fileName = `${hash}.${fileExt(job.name)}`;
+          gitFiles.push({ fileName, base64: buf.toString('base64') });
+          pending.push({ ...job, fileName });
+        } catch (e) {
+          failedKeys.add(`${job.bucket}|${job.name}`);
+          report.failed.push({ bucket: job.bucket, name: job.name, error: String((e && e.message) || e) });
+        }
+      }
+      if (pending.length) {
+        await commitFilesToRepo(gitToken, gitFiles);
+        for (const p of pending) {
+          const newUrl = `https://raw.githubusercontent.com/${REPO}/${ASSET_DIR}/${p.fileName}`;
+          urlMap.set(`${p.bucket}|${p.name}`, newUrl);
+          report.migrated.push({ bucket: p.bucket, name: p.name, fileName: p.fileName });
+        }
+      }
     }
-    if (Array.isArray(v)) { v.forEach(walk); return; }
-    if (typeof v === 'object') {
-      for (const k of ['logo_url', 'url', 'image_url', 'photo_url', 'icon', 'src']) if (v[k]) addRef(v[k]);
-      Object.values(v).forEach(walk);
-    }
-  };
-  try {
-    const { data: cfg } = await supabase.from('site_config').select('value');
-    (cfg || []).forEach(r => walk(r.value));
-  } catch {}
-  for (const [tbl, cols] of [
-    ['sponsors', ['logo_url']],
-    ['captains', ['photo_url']],
-    ['hub_media', ['url']],
-    ['hub_resources', ['url']],
-    ['articles', ['image_url']],
-  ]) {
-    try {
-      const { data } = await supabase.from(tbl).select(cols.join(','));
-      (data || []).forEach(r => cols.forEach(c => addRef(r[c])));
-    } catch {}
+    // Rewrite every DB reference to point at the new GitHub URLs (single pass).
+    await updateReferences(supabase, urlMap);
   }
+  report.remaining = report.migrated.length > 0 ? jobs.length - report.migrated.length : jobs.length;
 
-  // ── C) List objects, hash them, group duplicates ──
-  const listed = [];
-  for (const bucket of MEDIA_BUCKETS) {
+  // ── 3) Re-scan to see what is genuinely still referenced (failures/kept) ──
+  const afterRefs = await scanReferencedUrls(supabase);
+  const keepKeys = new Set();
+  for (const u of afterRefs.keys()) {
+    const info = objectInfoFromUrl(u);
+    if (info) keepKeys.add(`${info.bucket}|${info.name}`);
+  }
+  for (const k of failedKeys) keepKeys.add(k);
+
+  // ── 4) Delete everything no longer referenced (migrated, duplicates, orphans) ──
+  const deletePlan = [];
+  for (const bucket of BUCKETS) {
     let page = 0;
     for (;;) {
       const { data, error } = await supabase.storage.from(bucket).list('', { limit: 200, offset: page * 200 });
-      if (error) return res.status(500).json({ error: error.message });
-      if (!data || data.length === 0) break;
-      listed.push(...data.map(o => ({ bucket, name: o.name })));
+      if (error || !data || data.length === 0) break;
+      for (const o of data) {
+        const key = `${bucket}|${o.name}`;
+        if (!keepKeys.has(key)) deletePlan.push({ bucket, name: o.name });
+      }
       if (data.length < 200) break;
       page++;
     }
   }
-  if (listed.length > MAX_CLEANUP_OBJECTS) {
-    return res.status(200).json({ data: { notice: `Storage has ${listed.length} objects (cap ${MAX_CLEANUP_OBJECTS}) — run again to continue.`, ...report, deleted: [] } });
-  }
-
-  const groups = new Map();
-  for (const o of listed) {
-    try {
-      const { data: blob, error } = await supabase.storage.from(o.bucket).download(o.name);
-      if (error || !blob) continue;
-      const hash = crypto.createHash('sha256').update(Buffer.from(await blob.arrayBuffer())).digest('hex').slice(0, 16);
-      if (!groups.has(hash)) groups.set(hash, []);
-      groups.get(hash).push(`${o.bucket}|${o.name}`);
-    } catch {}
-  }
-
-  const expand = k => { const i = k.indexOf('|'); return { bucket: k.slice(0, i), name: k.slice(i + 1) }; };
-  const inRefs = (bucket, name) => {
-    const encoded = encodeURIComponent(name);
-    for (const r of refs) if (r.includes(`/public/${bucket}/`) && (r.endsWith(encoded) || r.endsWith(name))) return true;
-    return false;
-  };
-
-  const toDelete = [];
-  for (const [, keys] of groups) {
-    if (keys.length === 1) {
-      const k = keys[0];
-      if (migratedKeys.has(k)) toDelete.push(expand(k));
-      continue;
-    }
-    report.duplicateGroups++;
-    const referenced = keys.filter(k => { const o = expand(k); return inRefs(o.bucket, o.name); });
-    const migrated = keys.filter(k => migratedKeys.has(k));
-    const rest = keys.filter(k => !referenced.includes(k) && !migrated.includes(k));
-    migrated.forEach(k => toDelete.push(expand(k)));
-    if (referenced.length) {
-      rest.forEach(k => toDelete.push(expand(k)));
-    } else {
-      rest.sort((a, b) => {
-        const aHash = /^[0-9a-f]{16}/.test(expand(a).name), bHash = /^[0-9a-f]{16}/.test(expand(b).name);
-        if (aHash !== bHash) return aHash ? -1 : 1;
-        return a.localeCompare(b);
-      });
-      rest.slice(1).forEach(k => toDelete.push(expand(k)));
-    }
-  }
-
   const deleted = [];
-  for (let i = 0; i < toDelete.length; i += 100) {
-    const chunk = toDelete.slice(i, i + 100);
+  for (let i = 0; i < deletePlan.length; i += 100) {
+    const chunk = deletePlan.slice(i, i + 100);
     const byBucket = {};
     for (const o of chunk) (byBucket[o.bucket] = byBucket[o.bucket] || []).push(o.name);
     for (const b of Object.keys(byBucket)) {
       const { error } = await supabase.storage.from(b).remove(byBucket[b]);
       if (error) return res.status(500).json({ error: error.message });
     }
-    deleted.push(...chunk.map(o => `${o.bucket} / ${o.name}`));
+    deleted.push(...chunk.map(o => `${o.bucket}/${o.name}`));
   }
   report.deleted = deleted;
 
@@ -254,10 +260,11 @@ async function cleanupUploads(res) {
 }
 
 export default async function handler(req, res) {
+  const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE);
   try {
     const token = getTokenFromRequest(req) || req.body?.token;
     const payload = token ? verifyToken(token) : null;
-    if (!payload) return res.status(401).json({ error: 'Admin/Captain authorization required' });
+    if (!payload) return res.status(401).json({ error: 'Login required' });
 
     const { action } = req.body || {};
 
@@ -267,7 +274,18 @@ export default async function handler(req, res) {
     }
 
     if (action !== 'upload') return res.status(400).json({ error: 'Invalid action' });
-    if (!['Captain', 'Admin'].includes(payload.role)) return res.status(403).json({ error: 'Captain or Admin role required' });
+
+    if (!['Captain', 'Admin'].includes(payload.role)) {
+      if (payload.role === 'Member') {
+        const { data: mem } = await supabase.from('members').select('subteam').eq('id', payload.userId).maybeSingle();
+        if (!mem || mem.subteam !== 'Build') return res.status(403).json({ error: 'Build team members only may upload images' });
+        const onlyImages = /\.(png|jpe?g|gif|webp|avif)$/i;
+        const anyNonImage = (req.body?.files || []).some(f => !onlyImages.test(String(f.fileName || '')));
+        if (anyNonImage) return res.status(403).json({ error: 'Members may only upload images' });
+      } else {
+        return res.status(403).json({ error: 'Not authorized to upload' });
+      }
+    }
 
     const gitToken = process.env.GITHUB_TOKEN;
     if (!gitToken) return res.status(409).json({ error: 'GitHub storage not configured — set GITHUB_TOKEN in Vercel env' });

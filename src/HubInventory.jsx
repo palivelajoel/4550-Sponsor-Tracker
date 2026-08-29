@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { motion } from 'framer-motion'
-import { FONTS, C, sbFetch, isAuthed, canEditInventory, HubHeader, toastStyle, inputStyle, selectStyle, overlayStyle, modalStyle, addBtnStyle, ghostBtn, dangerBtn, hubProxy, getTokenUserId } from "./hubUtils.jsx";
+import { FONTS, C, sbFetch, isAuthed, canEditInventory, uploadBlob, uploadFile, HubHeader, toastStyle, inputStyle, selectStyle, overlayStyle, modalStyle, addBtnStyle, ghostBtn, dangerBtn, hubProxy, getTokenUserId } from "./hubUtils.jsx";
 import HubBackground from "./HubBackground.jsx";
 
 const CATEGORIES = [
@@ -91,14 +91,8 @@ export default function HubInventory() {
     const file = fileRef.current?.files?.[0];
     if (!file) return showToast("Select an image first.", "#ef4444");
     setUploading(true);
-    const safeName = `${Date.now()}-${file.name}`.replace(/\s+/g, "_").replace(/[^a-zA-Z0-9._-]/g, "_");
-    const uploadRes = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/inventory-images/${safeName}`, {
-      method: "POST",
-      headers: { apikey: import.meta.env.VITE_SUPABASE_ANON_KEY, Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`, "Content-Type": file.type, "x-upsert": "true" },
-      body: file,
-    });
-    if (!uploadRes.ok) { setUploading(false); showToast("Upload failed.", "#ef4444"); return; }
-    const imageUrl = `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/inventory-images/${safeName}`;
+    const imageUrl = await uploadFile(file, "inventory-images");
+    if (!imageUrl) { setUploading(false); showToast("Upload failed.", "#ef4444"); return; }
     setForm({ ...form, image_url: imageUrl });
     try {
       const res = await fetch("/api/identify-item", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ imageUrl }) });
@@ -265,14 +259,8 @@ export default function HubInventory() {
     setUploading(true);
     canvas.toBlob(async (blob) => {
       if (!blob) { setUploading(false); return showToast("Failed to capture.", "#ef4444"); }
-      const safeName = `${Date.now()}-camera-capture.jpg`;
-      const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/inventory-images/${safeName}`, {
-        method: "POST",
-        headers: { apikey: import.meta.env.VITE_SUPABASE_ANON_KEY, Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`, "Content-Type": "image/jpeg", "x-upsert": "true" },
-        body: blob,
-      });
-      if (res.ok) {
-        const url = `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/inventory-images/${safeName}`;
+      const url = await uploadBlob(blob, `camera-capture-${Date.now()}.jpg`);
+      if (url) {
         setForm(prev => ({ ...prev, image_url: url }));
         showToast("Camera image captured.");
       } else {

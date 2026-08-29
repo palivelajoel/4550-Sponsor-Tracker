@@ -101,24 +101,30 @@ export async function prepareFileForUpload(file) {
  * via /api/upload, falling back to Supabase storage if that fails.
  */
 export async function uploadMediaFile(file, fallbackBucket) {
-  const token = localStorage.getItem("admin_token") || localStorage.getItem("hub_token");
-  if (token) {
-    try {
-      const { fileName, base64, contentType } = await prepareFileForUpload(file);
-      const res = await fetch("/api/upload", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ action: "upload", files: [{ fileName, base64, contentType }] }),
-      });
-      const j = await res.json().catch(() => ({}));
-      if (res.ok && j?.data?.files?.[0]?.url) return j.data.files[0].url;
-    } catch {}
-  }
-  return uploadFile(file, fallbackBucket);
+  return uploadFile(file, fallbackBucket || "team-assets");
+}
+
+/** Upload a raw blob (e.g. camera photos) as a named file. */
+export async function uploadBlob(blob, name) {
+  return uploadFile(new File([blob], name || "capture.jpg", { type: blob.type || "application/octet-stream" }), "inventory-images");
 }
 
 export async function uploadFile(file, bucket = "team-assets") {
   const { fileName: safeFileName, bytes, base64, contentType } = await prepareFileForUpload(file);
+  // Preferred: store in the GitHub repo (all site images live in public/uploads/).
+  const token = localStorage.getItem("admin_token") || localStorage.getItem("hub_token");
+  if (token) {
+    try {
+      const res = await fetch("/api/upload", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ action: "upload", files: [{ fileName: safeFileName, base64, contentType }] }),
+      });
+      const j = await res.json().catch(() => ({}));
+      if (res.ok && j?.data?.files?.[0]?.url) return j.data.files[0].url;
+      if (res.status === 409) { /* GITHUB_TOKEN missing — fall back to Supabase */ }
+    } catch {}
+  }
   try {
     const res = await fetch(`${SUPABASE_URL}/storage/v1/object/${bucket}/${safeFileName}`, {
       method: "POST",
