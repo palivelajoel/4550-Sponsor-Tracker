@@ -1319,6 +1319,256 @@ function LogoThumb({ url, alt, size = 44 }) {
   );
 }
 
+// ── LANDING BANNERS / POSTERS MANAGER (module scope: state survives re-renders) ──
+function BannerManager({ vals, setVals, saveKey, showToast, isMobile }) {
+  const [banners, setBanners] = useState(() => {
+    try { return JSON.parse(vals.landing_banners || "[]"); } catch { return []; }
+  });
+  const [uploading, setUploading] = useState(false);
+  const fileRef = useRef(null);
+
+  useEffect(() => {
+    try { setBanners(JSON.parse(vals.landing_banners || "[]")); } catch { setBanners([]); }
+  }, [vals.landing_banners]);
+
+  async function handleFiles(e) {
+    const files = e.target.files;
+    if (!files || !files.length) return;
+    setUploading(true);
+    const uploaded = [];
+    for (const file of files) {
+      try {
+        const url = await uploadFile(file, 'team-assets');
+        if (url) uploaded.push(url);
+      } catch {}
+    }
+    if (uploaded.length) {
+      const updated = [...banners, ...uploaded];
+      setBanners(updated);
+      setVals(v => ({ ...v, landing_banners: JSON.stringify(updated) }));
+      showToast(`✅ Uploaded ${uploaded.length} banner${uploaded.length > 1 ? "s" : ""}.`);
+    } else {
+      showToast("Upload failed.", "#ef4444");
+    }
+    setUploading(false);
+    e.target.value = "";
+  }
+
+  function removeBanner(idx) {
+    const updated = banners.filter((_, i) => i !== idx);
+    setBanners(updated);
+    setVals(v => ({ ...v, landing_banners: JSON.stringify(updated) }));
+  }
+
+  return (
+    <div style={{ ...S.card, marginTop: 16 }}>
+      <div style={S.cardTitle}>Landing Banners / Posters</div>
+      <div style={{ display: "flex", flexDirection: isMobile ? 'column' : 'row', gap: isMobile ? 6 : 10, marginBottom: 12, alignItems: isMobile ? 'stretch' : 'center' }}>
+        <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: 13, color: "#e2e8f0", flexShrink: 0 }}>
+          <input type="checkbox" checked={vals.landing_banners_enabled !== "false"} onChange={e => setVals({ ...vals, landing_banners_enabled: e.target.checked ? "true" : "false" })} style={{ width: 16, height: 16, cursor: "pointer" }} />
+          Show on homepage
+        </label>
+        <button onClick={() => saveKey("landing_banners_enabled")} style={{ ...S.btnGhost, width: isMobile ? '100%' : undefined }}>Save Toggle</button>
+      </div>
+      <div style={{ fontSize: 12, color: "#94a3b8", fontFamily: "monospace", marginBottom: 10 }}>Upload one or more banner/poster images (optimal size: 1200px × 400px):</div>
+      <div style={{ display: "flex", gap: 8, marginBottom: 12, alignItems: "center", flexWrap: "wrap" }}>
+        <button onClick={() => fileRef.current?.click()} style={{ ...S.btnPrimary, width: isMobile ? '100%' : undefined }}>{uploading ? "Uploading..." : "Upload Banner Images"}</button>
+        <input ref={fileRef} type="file" accept="image/*" multiple style={{ display: "none" }} onChange={handleFiles} />
+        {uploading && <span style={{ fontSize: 12, color: "#a78bfa", fontFamily: "monospace" }}>Uploading...</span>}
+      </div>
+      <div style={{ fontSize: 12, color: "#94a3b8", fontFamily: "monospace", marginBottom: 10 }}>Current banners:</div>
+      {banners.length === 0 && <div style={{ fontSize: 12, color: "#475569", fontFamily: "monospace", marginBottom: 10 }}>No banners yet.</div>}
+      {banners.length > 0 && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 12 }}>
+          {banners.map((url, i) => (
+            <BannerRow key={i} url={url} isMobile={isMobile} onRemove={() => removeBanner(i)} />
+          ))}
+          <button onClick={async () => { try { await saveKey("landing_banners", JSON.stringify(banners)); } catch (e) { showToast("Save failed: " + (e.message || e), "#ef4444"); } }} style={{ ...S.btnGhost, alignSelf: 'flex-start' }}>Save Banners</button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── SPONSOR RIBBON MANAGER (module scope: state survives re-renders) ──────────
+function SponsorRibbonManager({ vals, setVals, saveKey, showToast, isMobile }) {
+  const [ribbonItems, setRibbonItems] = useState(() => {
+    try { return JSON.parse(vals.sponsor_ribbon_items || "[]"); } catch { return []; }
+  });
+  const [uploading, setUploading] = useState(false);
+  const [progress, setProgress] = useState(null);
+  const [pendingItems, setPendingItems] = useState(() => {
+    try { const raw = JSON.parse(sessionStorage.getItem("ribbon_pending") || "[]"); return Array.isArray(raw) ? raw : []; } catch { return []; }
+  });
+  const fileRef = useRef(null);
+  const reviewRef = useRef(null);
+  const reviewWasEmpty = useRef(true);
+
+  useEffect(() => {
+    try { setRibbonItems(JSON.parse(vals.sponsor_ribbon_items || "[]")); } catch { setRibbonItems([]); }
+  }, [vals.sponsor_ribbon_items]);
+
+  useEffect(() => {
+    try { sessionStorage.setItem("ribbon_pending", JSON.stringify(pendingItems)); } catch {}
+  }, [pendingItems]);
+
+  useEffect(() => {
+    if (pendingItems.length > 0 && reviewWasEmpty.current) {
+      reviewRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+    reviewWasEmpty.current = pendingItems.length === 0;
+  }, [pendingItems]);
+
+  async function handleFile(e) {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+    setUploading(true);
+    setProgress({ done: 0, total: files.length });
+    const added = [];
+    for (let idx = 0; idx < files.length; idx++) {
+      const file = files[idx];
+      try {
+        const url = await uploadFile(file, 'team-assets');
+        if (!url) { showToast(`"${file.name}" upload failed.`, "#ef4444"); continue; }
+        const base64 = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = ev => resolve(ev.target.result.split(',')[1]);
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
+        let name = file.name.replace(/\.[^.]+$/, '').replace(/[-_]/g, ' ').trim();
+        try {
+          const r = await fetch("/api/extract-brands", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ imageBase64: base64, mimeType: file.type }),
+          });
+          if (r.ok) {
+            const data = await r.json();
+            if (data.brands?.[0]) name = data.brands[0];
+          }
+        } catch {}
+        added.push({ company: name, logo_url: url });
+        setProgress({ done: idx + 1, total: files.length });
+      } catch { showToast(`"${file.name}" failed to process.`, "#ef4444"); }
+    }
+    setUploading(false);
+    setProgress(null);
+    if (added.length > 0) {
+      setPendingItems(p => [...p, ...added]);
+      showToast(`Added ${added.length} logo${added.length !== 1 ? "s" : ""} — review below.`);
+    }
+    e.target.value = "";
+  }
+
+  function updatePending(idx, patch) {
+    setPendingItems(items => items.map((it, i) => i === idx ? { ...it, ...patch } : it));
+  }
+
+  function removePending(idx) {
+    setPendingItems(items => items.filter((_, i) => i !== idx));
+  }
+
+  function confirmAdd() {
+    if (pendingItems.length === 0) return;
+    const existing = new Set((ribbonItems || []).map(r => r.logo_url).filter(Boolean));
+    const fresh = [];
+    const seen = new Set();
+    let skipped = 0;
+    pendingItems.forEach(p => {
+      if (existing.has(p.logo_url) || seen.has(p.logo_url)) { skipped++; return; }
+      seen.add(p.logo_url);
+      fresh.push(p);
+    });
+    setPendingItems([]);
+    if (fresh.length === 0) { showToast(`No new sponsors — all ${skipped} are duplicates already in the ribbon.`, "#f59e0b"); return; }
+    const updated = [...(ribbonItems || []), ...fresh];
+    setRibbonItems(updated);
+    setVals(v => ({ ...v, sponsor_ribbon_items: JSON.stringify(updated) }));
+    showToast(skipped > 0 ? `Added ${fresh.length}, skipped ${skipped} duplicate${skipped !== 1 ? "s" : ""} — don't forget Save Ribbon.` : `Added ${fresh.length} — don't forget Save Ribbon.`);
+  }
+
+  function removeItem(idx) {
+    const updated = ribbonItems.filter((_, i) => i !== idx);
+    setRibbonItems(updated);
+    setVals(v => ({ ...v, sponsor_ribbon_items: JSON.stringify(updated) }));
+  }
+
+  return (
+    <div style={{ ...S.card, marginTop: 16 }}>
+      <div style={S.cardTitle}>Sponsor Ribbon</div>
+      <div style={{ display: "flex", flexDirection: isMobile ? 'column' : 'row', gap: isMobile ? 6 : 10, marginBottom: 12, alignItems: isMobile ? 'stretch' : 'center' }}>
+        <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: 13, color: "#e2e8f0", flexShrink: 0 }}>
+          <input type="checkbox" checked={vals.sponsor_bar_enabled !== "false"} onChange={e => setVals({ ...vals, sponsor_bar_enabled: e.target.checked ? "true" : "false" })} style={{ width: 16, height: 16, cursor: "pointer" }} />
+          Show on homepage
+        </label>
+        <button onClick={() => saveKey("sponsor_bar_enabled")} style={{ ...S.btnGhost, width: isMobile ? '100%' : undefined }}>Save Toggle</button>
+      </div>
+      <div style={{ fontSize: 12, color: "#94a3b8", fontFamily: "monospace", marginBottom: 10 }}>Upload one or more sponsor logo images — AI will detect the company names automatically:</div>
+      <div style={{ display: "flex", gap: 8, marginBottom: 12, alignItems: "center", flexWrap: "wrap" }}>
+        <button onClick={() => fileRef.current?.click()} style={{ ...S.btnPrimary, width: isMobile ? '100%' : undefined }}>{uploading ? "Uploading..." : "Upload Logo Images"}</button>
+        <input ref={fileRef} type="file" accept="image/*" multiple style={{ display: "none" }} onChange={handleFile} />
+        {uploading && progress && <span style={{ fontSize: 12, color: "#a78bfa", fontFamily: "monospace" }}>Processing {progress.done} of {progress.total}...</span>}
+      </div>
+      {pendingItems.length > 0 && (
+        <div ref={reviewRef} style={{ padding: "12px 14px", background: "rgba(34,197,94,0.08)", border: "1px solid rgba(34,197,94,0.3)", borderRadius: 8, marginBottom: 12 }}>
+          <div style={{ fontSize: 12, color: "#22c55e", fontFamily: "monospace", marginBottom: 8 }}>✓ {pendingItems.length} logo{pendingItems.length !== 1 ? "s" : ""} pending — review each below, then click "Add to Ribbon":</div>
+          {pendingItems.map((p, pi) => (
+            <div key={pi} style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "8px 0", borderBottom: pi < pendingItems.length - 1 ? "1px solid rgba(255,255,255,0.06)" : "none" }}>
+              <LogoThumb url={p.logo_url} alt={p.company} size={48} />
+              <div style={{ flex: 1, minWidth: 180 }}>
+                <input
+                  value={p.company}
+                  onChange={e => updatePending(pi, { company: e.target.value })}
+                  placeholder="Company name"
+                  style={{ ...S.input, width: "100%", marginBottom: 6 }}
+                />
+                <input
+                  value={p.website || ""}
+                  onChange={e => updatePending(pi, { website: e.target.value })}
+                  placeholder="Website URL (e.g. https://company.com)"
+                  style={{ ...S.input, width: "100%", marginBottom: 6, minWidth: 0 }}
+                />
+              </div>
+              <button onClick={() => removePending(pi)} style={{ background: "transparent", border: "none", color: "#ef4444", cursor: "pointer", fontSize: 16, padding: 2 }} title="Remove">&times;</button>
+            </div>
+          ))}
+          <div style={{ display: "flex", gap: 8, marginTop: 12, flexWrap: "wrap" }}>
+            <button onClick={confirmAdd} style={S.btnPrimary}>Add {pendingItems.length} to Ribbon</button>
+            <button onClick={() => setPendingItems([])} style={S.btnGhost}>Clear</button>
+          </div>
+        </div>
+      )}
+      <div style={{ fontSize: 12, color: "#94a3b8", fontFamily: "monospace", marginBottom: 10 }}>Current ribbon sponsors:</div>
+      {ribbonItems.length === 0 && <div style={{ fontSize: 12, color: "#475569", fontFamily: "monospace", marginBottom: 10 }}>No sponsors in ribbon yet.</div>}
+      {ribbonItems.length > 0 && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 12 }}>
+          {ribbonItems.map((item, i) => (
+            <div key={i} style={{ display: "flex", flexDirection: "column", gap: 6, padding: "10px 12px", background: "rgba(255,255,255,0.03)", borderRadius: 8, border: "1px solid rgba(255,255,255,0.06)" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                {item.logo_url ? <LogoThumb url={item.logo_url} alt={item.company} size={36} /> : <span style={{ fontSize: 18 }}>🏢</span>}
+                <span style={{ flex: 1, fontSize: 13, color: "#e2e8f0" }}>{item.company}</span>
+                <button onClick={() => removeItem(i)} style={{ background: "transparent", border: "none", color: "#ef4444", cursor: "pointer", fontSize: 16 }} title="Remove">&times;</button>
+              </div>
+              <input
+                value={item.website || ""}
+                onChange={e => {
+                  const updated = ribbonItems.map((r, ri) => ri === i ? { ...r, website: e.target.value } : r);
+                  setRibbonItems(updated);
+                  setVals(v => ({ ...v, sponsor_ribbon_items: JSON.stringify(updated) }));
+                }}
+                placeholder="Website URL (e.g. https://company.com)"
+                style={{ ...S.input, width: "100%", marginBottom: 0, minWidth: 0 }}
+              />
+            </div>
+          ))}
+          <button onClick={async () => { try { await saveKey("sponsor_ribbon_items", JSON.stringify(ribbonItems)); } catch (e) { showToast("Save failed: " + (e.message || e), "#ef4444"); } }} style={{ ...S.btnGhost, alignSelf: 'flex-start' }}>Save Ribbon</button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── SITE CONFIG ───────────────────────────────────────────
 function SiteConfig({ config, logoUrl, setLogoUrl, reload, showToast, isMobile }) {
   const [vals, setVals] = useState({});
@@ -1456,7 +1706,7 @@ function SiteConfig({ config, logoUrl, setLogoUrl, reload, showToast, isMobile }
           </div>
         </div>
       </div>
-      <BannerManager />
+      <BannerManager vals={vals} setVals={setVals} saveKey={saveKey} showToast={showToast} isMobile={isMobile} />
       <div style={S.card}>
         <div style={S.cardTitle}>Hub Tiles — Reorder & Toggle Visibility</div>
         <div style={{ display: "flex", flexDirection: isMobile ? 'column' : 'row', gap: 8, marginBottom: 14 }}>
@@ -1544,7 +1794,7 @@ function SiteConfig({ config, logoUrl, setLogoUrl, reload, showToast, isMobile }
           </div>
         ))}
       </div>
-      <SponsorRibbonManager />
+      <SponsorRibbonManager vals={vals} setVals={setVals} saveKey={saveKey} showToast={showToast} isMobile={isMobile} />
       <div style={S.card}>
         <div style={S.cardTitle}>Media Storage</div>
         {storageStatus && (
@@ -1569,256 +1819,7 @@ function SiteConfig({ config, logoUrl, setLogoUrl, reload, showToast, isMobile }
     </div>
   );
 
-  // ── LANDING BANNERS / POSTERS MANAGER (nested) ──────────
-  function BannerManager() {
-    const [banners, setBanners] = useState(() => {
-      try { return JSON.parse(vals.landing_banners || "[]"); } catch { return []; }
-    });
-    const [uploading, setUploading] = useState(false);
-    const fileRef = useRef(null);
-
-    useEffect(() => {
-      try { setBanners(JSON.parse(vals.landing_banners || "[]")); } catch { setBanners([]); }
-    }, [vals.landing_banners]);
-
-    async function handleFiles(e) {
-      const files = e.target.files;
-      if (!files || !files.length) return;
-      setUploading(true);
-      const uploaded = [];
-      for (const file of files) {
-        try {
-          const url = await uploadFile(file, 'team-assets');
-          if (url) uploaded.push(url);
-        } catch {}
-      }
-      if (uploaded.length) {
-        const updated = [...banners, ...uploaded];
-        setBanners(updated);
-        setVals(v => ({ ...v, landing_banners: JSON.stringify(updated) }));
-        showToast(`✅ Uploaded ${uploaded.length} banner${uploaded.length > 1 ? "s" : ""}.`);
-      } else {
-        showToast("Upload failed.", "#ef4444");
-      }
-      setUploading(false);
-      e.target.value = "";
-    }
-
-    function removeBanner(idx) {
-      const updated = banners.filter((_, i) => i !== idx);
-      setBanners(updated);
-      setVals(v => ({ ...v, landing_banners: JSON.stringify(updated) }));
-    }
-
-    return (
-      <div style={{ ...S.card, marginTop: 16 }}>
-        <div style={S.cardTitle}>Landing Banners / Posters</div>
-        <div style={{ display: "flex", flexDirection: isMobile ? 'column' : 'row', gap: isMobile ? 6 : 10, marginBottom: 12, alignItems: isMobile ? 'stretch' : 'center' }}>
-          <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: 13, color: "#e2e8f0", flexShrink: 0 }}>
-            <input type="checkbox" checked={vals.landing_banners_enabled !== "false"} onChange={e => setVals({ ...vals, landing_banners_enabled: e.target.checked ? "true" : "false" })} style={{ width: 16, height: 16, cursor: "pointer" }} />
-            Show on homepage
-          </label>
-          <button onClick={() => saveKey("landing_banners_enabled")} style={{ ...S.btnGhost, width: isMobile ? '100%' : undefined }}>Save Toggle</button>
-        </div>
-        <div style={{ fontSize: 12, color: "#94a3b8", fontFamily: "monospace", marginBottom: 10 }}>Upload one or more banner/poster images (optimal size: 1200px × 400px):</div>
-        <div style={{ display: "flex", gap: 8, marginBottom: 12, alignItems: "center", flexWrap: "wrap" }}>
-          <button onClick={() => fileRef.current?.click()} style={{ ...S.btnPrimary, width: isMobile ? '100%' : undefined }}>{uploading ? "Uploading..." : "Upload Banner Images"}</button>
-          <input ref={fileRef} type="file" accept="image/*" multiple style={{ display: "none" }} onChange={handleFiles} />
-          {uploading && <span style={{ fontSize: 12, color: "#a78bfa", fontFamily: "monospace" }}>Uploading...</span>}
-        </div>
-        <div style={{ fontSize: 12, color: "#94a3b8", fontFamily: "monospace", marginBottom: 10 }}>Current banners:</div>
-        {banners.length === 0 && <div style={{ fontSize: 12, color: "#475569", fontFamily: "monospace", marginBottom: 10 }}>No banners yet.</div>}
-        {banners.length > 0 && (
-          <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 12 }}>
-            {banners.map((url, i) => (
-              <BannerRow key={i} url={url} isMobile={isMobile} onRemove={() => removeBanner(i)} />
-            ))}
-            <button onClick={async () => { try { await saveKey("landing_banners", JSON.stringify(banners)); } catch (e) { showToast("Save failed: " + (e.message || e), "#ef4444"); } }} style={{ ...S.btnGhost, alignSelf: 'flex-start' }}>Save Banners</button>
-          </div>
-        )}
-      </div>
-    );
   }
-
-  // ── SPONSOR RIBBON MANAGER (nested) ─────────────────────
-  function SponsorRibbonManager() {
-    const [ribbonItems, setRibbonItems] = useState(() => {
-      try { return JSON.parse(vals.sponsor_ribbon_items || "[]"); } catch { return []; }
-    });
-    const [uploading, setUploading] = useState(false);
-    const [progress, setProgress] = useState(null);
-    const [pendingItems, setPendingItems] = useState(() => {
-      try { const raw = JSON.parse(sessionStorage.getItem("ribbon_pending") || "[]"); return Array.isArray(raw) ? raw : []; } catch { return []; }
-    });
-    const fileRef = useRef(null);
-    const reviewRef = useRef(null);
-    const reviewWasEmpty = useRef(true);
-
-    useEffect(() => {
-      try { setRibbonItems(JSON.parse(vals.sponsor_ribbon_items || "[]")); } catch { setRibbonItems([]); }
-    }, [vals.sponsor_ribbon_items]);
-
-    useEffect(() => {
-      try { sessionStorage.setItem("ribbon_pending", JSON.stringify(pendingItems)); } catch {}
-    }, [pendingItems]);
-
-    useEffect(() => {
-      if (pendingItems.length > 0 && reviewWasEmpty.current) {
-        reviewRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
-      }
-      reviewWasEmpty.current = pendingItems.length === 0;
-    }, [pendingItems]);
-
-    async function handleFile(e) {
-      const files = Array.from(e.target.files || []);
-      if (files.length === 0) return;
-      setUploading(true);
-      setProgress({ done: 0, total: files.length });
-      const added = [];
-      for (let idx = 0; idx < files.length; idx++) {
-        const file = files[idx];
-        try {
-          const url = await uploadFile(file, 'team-assets');
-          if (!url) { showToast(`"${file.name}" upload failed.`, "#ef4444"); continue; }
-          const base64 = await new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onload = ev => resolve(ev.target.result.split(',')[1]);
-            reader.onerror = reject;
-            reader.readAsDataURL(file);
-          });
-          let name = file.name.replace(/\.[^.]+$/, '').replace(/[-_]/g, ' ').trim();
-          try {
-            const r = await fetch("/api/extract-brands", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ imageBase64: base64, mimeType: file.type }),
-            });
-            if (r.ok) {
-              const data = await r.json();
-              if (data.brands?.[0]) name = data.brands[0];
-            }
-          } catch {}
-          added.push({ company: name, logo_url: url });
-          setProgress({ done: idx + 1, total: files.length });
-        } catch { showToast(`"${file.name}" failed to process.`, "#ef4444"); }
-      }
-      setUploading(false);
-      setProgress(null);
-      if (added.length > 0) {
-        setPendingItems(p => [...p, ...added]);
-        showToast(`Added ${added.length} logo${added.length !== 1 ? "s" : ""} — review below.`);
-      }
-      e.target.value = "";
-    }
-
-    function updatePending(idx, patch) {
-      setPendingItems(items => items.map((it, i) => i === idx ? { ...it, ...patch } : it));
-    }
-
-    function removePending(idx) {
-      setPendingItems(items => items.filter((_, i) => i !== idx));
-    }
-
-    function confirmAdd() {
-      if (pendingItems.length === 0) return;
-      const existing = new Set((ribbonItems || []).map(r => r.logo_url).filter(Boolean));
-      const fresh = [];
-      const seen = new Set();
-      let skipped = 0;
-      pendingItems.forEach(p => {
-        if (existing.has(p.logo_url) || seen.has(p.logo_url)) { skipped++; return; }
-        seen.add(p.logo_url);
-        fresh.push(p);
-      });
-      setPendingItems([]);
-      if (fresh.length === 0) { showToast(`No new sponsors — all ${skipped} are duplicates already in the ribbon.`, "#f59e0b"); return; }
-      const updated = [...(ribbonItems || []), ...fresh];
-      setRibbonItems(updated);
-      setVals(v => ({ ...v, sponsor_ribbon_items: JSON.stringify(updated) }));
-      showToast(skipped > 0 ? `Added ${fresh.length}, skipped ${skipped} duplicate${skipped !== 1 ? "s" : ""} — don't forget Save Ribbon.` : `Added ${fresh.length} — don't forget Save Ribbon.`);
-    }
-
-    function removeItem(idx) {
-      const updated = ribbonItems.filter((_, i) => i !== idx);
-      setRibbonItems(updated);
-      setVals(v => ({ ...v, sponsor_ribbon_items: JSON.stringify(updated) }));
-    }
-
-    return (
-      <div style={{ ...S.card, marginTop: 16 }}>
-        <div style={S.cardTitle}>Sponsor Ribbon</div>
-        <div style={{ display: "flex", flexDirection: isMobile ? 'column' : 'row', gap: isMobile ? 6 : 10, marginBottom: 12, alignItems: isMobile ? 'stretch' : 'center' }}>
-          <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: 13, color: "#e2e8f0", flexShrink: 0 }}>
-            <input type="checkbox" checked={vals.sponsor_bar_enabled !== "false"} onChange={e => setVals({ ...vals, sponsor_bar_enabled: e.target.checked ? "true" : "false" })} style={{ width: 16, height: 16, cursor: "pointer" }} />
-            Show on homepage
-          </label>
-          <button onClick={() => saveKey("sponsor_bar_enabled")} style={{ ...S.btnGhost, width: isMobile ? '100%' : undefined }}>Save Toggle</button>
-        </div>
-        <div style={{ fontSize: 12, color: "#94a3b8", fontFamily: "monospace", marginBottom: 10 }}>Upload one or more sponsor logo images — AI will detect the company names automatically:</div>
-        <div style={{ display: "flex", gap: 8, marginBottom: 12, alignItems: "center", flexWrap: "wrap" }}>
-          <button onClick={() => fileRef.current?.click()} style={{ ...S.btnPrimary, width: isMobile ? '100%' : undefined }}>{uploading ? "Uploading..." : "Upload Logo Images"}</button>
-          <input ref={fileRef} type="file" accept="image/*" multiple style={{ display: "none" }} onChange={handleFile} />
-          {uploading && progress && <span style={{ fontSize: 12, color: "#a78bfa", fontFamily: "monospace" }}>Processing {progress.done} of {progress.total}...</span>}
-        </div>
-        {pendingItems.length > 0 && (
-          <div ref={reviewRef} style={{ padding: "12px 14px", background: "rgba(34,197,94,0.08)", border: "1px solid rgba(34,197,94,0.3)", borderRadius: 8, marginBottom: 12 }}>
-            <div style={{ fontSize: 12, color: "#22c55e", fontFamily: "monospace", marginBottom: 8 }}>✓ {pendingItems.length} logo{pendingItems.length !== 1 ? "s" : ""} pending — review each below, then click "Add to Ribbon":</div>
-            {pendingItems.map((p, pi) => (
-              <div key={pi} style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "8px 0", borderBottom: pi < pendingItems.length - 1 ? "1px solid rgba(255,255,255,0.06)" : "none" }}>
-                <LogoThumb url={p.logo_url} alt={p.company} size={48} />
-                <div style={{ flex: 1, minWidth: 180 }}>
-                  <input
-                    value={p.company}
-                    onChange={e => updatePending(pi, { company: e.target.value })}
-                    placeholder="Company name"
-                    style={{ ...S.input, width: "100%", marginBottom: 6 }}
-                  />
-                  <input
-                    value={p.website || ""}
-                    onChange={e => updatePending(pi, { website: e.target.value })}
-                    placeholder="Website URL (e.g. https://company.com)"
-                    style={{ ...S.input, width: "100%", marginBottom: 6, minWidth: 0 }}
-                  />
-                </div>
-                <button onClick={() => removePending(pi)} style={{ background: "transparent", border: "none", color: "#ef4444", cursor: "pointer", fontSize: 16, padding: 2 }} title="Remove">&times;</button>
-              </div>
-            ))}
-            <div style={{ display: "flex", gap: 8, marginTop: 12, flexWrap: "wrap" }}>
-              <button onClick={confirmAdd} style={S.btnPrimary}>Add {pendingItems.length} to Ribbon</button>
-              <button onClick={() => setPendingItems([])} style={S.btnGhost}>Clear</button>
-            </div>
-          </div>
-        )}
-        <div style={{ fontSize: 12, color: "#94a3b8", fontFamily: "monospace", marginBottom: 10 }}>Current ribbon sponsors:</div>
-        {ribbonItems.length === 0 && <div style={{ fontSize: 12, color: "#475569", fontFamily: "monospace", marginBottom: 10 }}>No sponsors in ribbon yet.</div>}
-        {ribbonItems.length > 0 && (
-          <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 12 }}>
-            {ribbonItems.map((item, i) => (
-              <div key={i} style={{ display: "flex", flexDirection: "column", gap: 6, padding: "10px 12px", background: "rgba(255,255,255,0.03)", borderRadius: 8, border: "1px solid rgba(255,255,255,0.06)" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  {item.logo_url ? <LogoThumb url={item.logo_url} alt={item.company} size={36} /> : <span style={{ fontSize: 18 }}>🏢</span>}
-                  <span style={{ flex: 1, fontSize: 13, color: "#e2e8f0" }}>{item.company}</span>
-                  <button onClick={() => removeItem(i)} style={{ background: "transparent", border: "none", color: "#ef4444", cursor: "pointer", fontSize: 16 }} title="Remove">&times;</button>
-                </div>
-                <input
-                  value={item.website || ""}
-                  onChange={e => {
-                    const updated = ribbonItems.map((r, ri) => ri === i ? { ...r, website: e.target.value } : r);
-                    setRibbonItems(updated);
-                    setVals(v => ({ ...v, sponsor_ribbon_items: JSON.stringify(updated) }));
-                  }}
-                  placeholder="Website URL (e.g. https://company.com)"
-                  style={{ ...S.input, width: "100%", marginBottom: 0, minWidth: 0 }}
-                />
-              </div>
-            ))}
-            <button onClick={async () => { try { await saveKey("sponsor_ribbon_items", JSON.stringify(ribbonItems)); } catch (e) { showToast("Save failed: " + (e.message || e), "#ef4444"); } }} style={{ ...S.btnGhost, alignSelf: 'flex-start' }}>Save Ribbon</button>
-          </div>
-        )}
-      </div>
-    );
-  }
-}
 
 const S = {
   layout: { display: "flex", minHeight: "100vh", background: "#080a0f", color: "#f1f5f9", fontFamily: "'Exo 2', sans-serif" },
