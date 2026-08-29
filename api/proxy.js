@@ -36,6 +36,24 @@ export default async function handler(req, res) {
     }
 
     const { table, action, payload: bodyPayload } = req.body || {};
+
+    if (action === 'upload') {
+      const { bucket, fileName, base64, contentType } = bodyPayload || {};
+      if (!bucket || !fileName || !base64) return res.status(400).json({ error: 'Missing upload data' });
+      if (bucket !== 'team-assets') return res.status(400).json({ error: 'Unsupported bucket' });
+      const buf = Buffer.from(base64, 'base64');
+      if (!buf.length) return res.status(400).json({ error: 'Empty file data' });
+      const opts = { contentType: contentType || 'application/octet-stream', upsert: true };
+      let { data, error } = await supabase.storage.from(bucket).upload(fileName, buf, opts);
+      if (error && /bucket|not found|not exist/i.test(error.message)) {
+        try { await supabase.storage.createBucket(bucket, { public: true }); } catch {}
+        ({ data, error } = await supabase.storage.from(bucket).upload(fileName, buf, opts));
+      }
+      if (error) return res.status(500).json({ error: error.message });
+      const { data: pub } = supabase.storage.from(bucket).getPublicUrl(data?.path || fileName);
+      return res.status(200).json({ data: { url: pub.publicUrl } });
+    }
+
     if (!table) return res.status(400).json({ error: 'Missing table' });
 
     const allowedTables = isAdmin ? ADMIN_TABLES : HUB_TABLES;

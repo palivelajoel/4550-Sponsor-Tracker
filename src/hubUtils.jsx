@@ -51,13 +51,33 @@ export async function sbFetch(path, opts = {}) {
 
 export async function uploadFile(file, bucket = "team-assets") {
   const safeFileName = `${Date.now()}-${file.name}`.replace(/\s+/g,"_").replace(/[^a-zA-Z0-9._-]/g,"_");
-  const res = await fetch(`${SUPABASE_URL}/storage/v1/object/${bucket}/${safeFileName}`, {
-    method: "POST",
-    headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, "Content-Type": file.type, "x-upsert": "true" },
-    body: file,
-  });
-  if (!res.ok) return null;
-  return `${SUPABASE_URL}/storage/v1/object/public/${bucket}/${safeFileName}`;
+  try {
+    const res = await fetch(`${SUPABASE_URL}/storage/v1/object/${bucket}/${safeFileName}`, {
+      method: "POST",
+      headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, "Content-Type": file.type, "x-upsert": "true" },
+      body: file,
+    });
+    if (res.ok) return `${SUPABASE_URL}/storage/v1/object/public/${bucket}/${safeFileName}`;
+  } catch {}
+  try {
+    const token = localStorage.getItem("admin_token") || localStorage.getItem("hub_token");
+    if (!token) return null;
+    const base64 = await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = ev => resolve(String(ev.target.result).split(",")[1]);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+    const endpoint = localStorage.getItem("admin_token") ? "/api/admin-proxy" : "/api/hub-proxy";
+    const res = await fetch(endpoint, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ action: "upload", payload: { bucket, fileName: safeFileName, base64, contentType: file.type } }),
+    });
+    const j = await res.json().catch(() => ({}));
+    if (!res.ok || !j?.data?.url) return null;
+    return j.data.url;
+  } catch { return null; }
 }
 
 /** Public URL helpers for captain headshots (`team-assets` bucket only). */
