@@ -82,6 +82,7 @@ export default function PublicFormFill() {
           questions: form.questions || [],
           answers: payload,
           submittedBy: "public",
+          submissionId: data?.data?.[0]?.id || "",
           timestamp: new Date().toISOString(),
         }),
       }).then(async r => {

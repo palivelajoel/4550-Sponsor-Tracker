@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { motion } from 'framer-motion'
-import { FONTS, C, sbFetch, isAuthed, canEditHub, getUsername, HubHeader, FormHeader, toastStyle, inputStyle, selectStyle, addBtnStyle, ghostBtn, hubProxy, getVisibleQuestions } from "./hubUtils.jsx";
+import { FONTS, C, sbFetch, isAuthed, canEditHub, getUsername, getToken, HubHeader, FormHeader, toastStyle, inputStyle, selectStyle, addBtnStyle, ghostBtn, hubProxy, getVisibleQuestions } from "./hubUtils.jsx";
 import HubBackground from "./HubBackground.jsx";
 
 export default function HubForms() {
@@ -123,7 +123,7 @@ export default function HubForms() {
           form={fillForm} username={username}
           onSubmit={async answers => {
             try {
-              await hubProxy("hub_form_submissions", "insert", { form_id: fillForm.id, submitted_by: username, answers });
+              const res = await hubProxy("hub_form_submissions", "insert", { form_id: fillForm.id, submitted_by: username, answers });
               showToast("Response submitted.");
               fetch("/api/sheets-sync", {
                 method: "POST",
@@ -133,6 +133,7 @@ export default function HubForms() {
                   questions: fillForm.questions || [],
                   answers,
                   submittedBy: username,
+                  submissionId: res?.data?.[0]?.id || "",
                   timestamp: new Date().toISOString(),
                 }),
               }).then(async r => {
@@ -153,6 +154,7 @@ export default function HubForms() {
       {view === "responses" && responsesForm && (
         <FormResponses
           form={responsesForm} submissions={submissions.filter(s => s.form_id === responsesForm.id)}
+          canSync={canEdit} onReload={loadData}
           onBack={() => setView("list")}
         />
       )}
@@ -698,10 +700,33 @@ function FormFill({ form, username, onSubmit, onCancel }) {
   );
 }
 
-function FormResponses({ form, submissions }) {
+function FormResponses({ form, submissions, canSync, onReload }) {
   const questions = form.questions || [];
   const hasSubmissions = submissions.length > 0;
   const [viewType, setViewType] = useState("table");
+  const [syncing, setSyncing] = useState(false);
+  const [syncMsg, setSyncMsg] = useState("");
+  const [syncErr, setSyncErr] = useState(false);
+
+  async function syncWithSheets() {
+    setSyncing(true); setSyncMsg(""); setSyncErr(false);
+    try {
+      const res = await fetch("/api/sheets-sync", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${getToken()}` },
+        body: JSON.stringify({ action: "sync", formId: form.id, questions }),
+      });
+      const j = await res.json();
+      if (!res.ok) throw new Error(j.error || res.status);
+      setSyncMsg(`✓ Sheets synced — ${j.pushed} pushed · ${j.imported} added · ${j.removed} removed · ${j.total} responses.`);
+      if (onReload) onReload();
+    } catch (e) {
+      setSyncErr(true);
+      setSyncMsg("Sync failed: " + (e.message || e));
+    } finally {
+      setSyncing(false);
+    }
+  }
 
   function downloadCSV() {
     if (!hasSubmissions) return;
@@ -751,12 +776,23 @@ function FormResponses({ form, submissions }) {
             {submissions.length} response{submissions.length !== 1 ? "s" : ""}
           </div>
         </div>
+        {canSync && (
+          <button onClick={syncWithSheets} disabled={syncing} style={{ ...ghostBtn, fontSize: 11, padding: "8px 14px", marginLeft: hasSubmissions && canSync ? 0 : "auto", opacity: syncing ? 0.6 : 1 }}>
+            {syncing ? "Syncing…" : "⇅ Sync with Sheets"}
+          </button>
+        )}
         {hasSubmissions && (
-          <button onClick={downloadCSV} style={{ ...ghostBtn, fontSize: 11, padding: "8px 14px", marginLeft: "auto" }}>
+          <button onClick={downloadCSV} style={{ ...ghostBtn, fontSize: 11, padding: "8px 14px", marginLeft: canSync ? 0 : "auto" }}>
             ↓ Download CSV
           </button>
         )}
       </div>
+
+      {syncMsg && (
+        <div style={{ background: syncErr ? "rgba(239,68,68,0.08)" : "rgba(34,197,94,0.08)", border: `1px solid ${syncErr ? "rgba(239,68,68,0.25)" : "rgba(34,197,94,0.25)"}`, borderRadius: 10, padding: "10px 14px", marginBottom: 16, fontSize: 11, fontFamily: "monospace", color: syncErr ? "#f87171" : "#4ade80" }}>
+          {syncMsg}
+        </div>
+      )}
 
       {answerKey.length > 0 && (
         <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 10, padding: "12px 16px", marginBottom: 16, fontSize: 11, fontFamily: "monospace", color: "#22c55e" }}>
@@ -778,7 +814,7 @@ function FormResponses({ form, submissions }) {
           No responses yet.
         </div>
       ) : viewType === "table" ? (
-        <div style={{ overflowX: "auto" }}>
+        <div style={{ overflowX: "auto", paddingBottom: 16 }}>
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12, fontFamily: "monospace" }}>
             <thead>
               <tr>
