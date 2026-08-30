@@ -465,3 +465,32 @@ export function HubHeader({ title }) {
     </header>
   );
 }
+
+export function FormHeader({ title = "FORMS & SURVEYS", subtitle = "FRC Team 4550 · Something's Bruin", right }) {
+  const [logoUrl, setLogoUrl] = useState("/logo.jpg");
+  const [isMobile, setIsMobile] = useState(typeof window !== "undefined" && window.innerWidth <= 640);
+
+  useEffect(() => {
+    sbFetch("site_config?key=eq.logo_url&select=value").then(r => {
+      if (r && r[0] && r[0].value) setLogoUrl(r[0].value);
+    }).catch(() => {});
+    const onResize = () => setIsMobile(window.innerWidth <= 640);
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+
+  return (
+    <header style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding: isMobile ? "12px 14px" : "14px 28px", borderBottom:"1px solid rgba(255,255,255,0.08)", background:"rgba(8,10,15,0.88)", backdropFilter:"blur(16px)", position:"sticky", top:"env(safe-area-inset-top,0px)", zIndex:100, gap:10, flexWrap:"wrap" }}>
+      <div style={{ display:"flex", alignItems:"center", gap:12, minWidth:0 }}>
+        <img src={logoUrl} alt="logo" style={{ width:isMobile?30:36, height:isMobile?30:36, borderRadius:"50%", objectFit:"cover", border:"1px solid rgba(239,68,68,0.4)", flexShrink:0 }} />
+        {!isMobile && (
+          <div style={{ minWidth:0 }}>
+            <div style={{ fontFamily:"'Orbitron',sans-serif", fontWeight:700, fontSize:13, color:C.red, letterSpacing:2 }}>{title}</div>
+            <div style={{ fontSize:10, color:C.dim, fontFamily:"monospace" }}>{subtitle}</div>
+          </div>
+        )}
+      </div>
+      {right ? <div style={{ display:"flex", alignItems:"center", gap:8, flexShrink:0 }}>{right}</div> : null}
+    </header>
+  );
+}

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { motion } from 'framer-motion'
-import { FONTS, C, sbFetch, isAuthed, canEditHub, getUsername, HubHeader, toastStyle, inputStyle, selectStyle, addBtnStyle, ghostBtn, hubProxy, getVisibleQuestions } from "./hubUtils.jsx";
+import { FONTS, C, sbFetch, isAuthed, canEditHub, getUsername, HubHeader, FormHeader, toastStyle, inputStyle, selectStyle, addBtnStyle, ghostBtn, hubProxy, getVisibleQuestions } from "./hubUtils.jsx";
 import HubBackground from "./HubBackground.jsx";
 
 export default function HubForms() {
@@ -52,7 +52,11 @@ export default function HubForms() {
       <HubBackground density={11000} opacity={0.28} />
       <style>{FONTS}</style>
       {toast && <div style={toastStyle}>{toast}</div>}
-      <HubHeader title="📋 Forms" />
+      {view === "fill" ? (
+        <FormHeader right={<button onClick={() => setView("list")} style={ghostBtn}>← Back</button>} />
+      ) : (
+        <HubHeader title="📋 Forms" />
+      )}
 
       {view === "list" && (
         <ListForms

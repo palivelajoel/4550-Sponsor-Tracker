@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { FONTS, C, sbFetch, toastStyle, inputStyle, selectStyle, addBtnStyle, ghostBtn, getVisibleQuestions } from "./hubUtils.jsx";
+import { FONTS, C, sbFetch, toastStyle, inputStyle, selectStyle, addBtnStyle, ghostBtn, getVisibleQuestions, FormHeader } from "./hubUtils.jsx";
 
 export default function PublicFormFill() {
   const [form, setForm] = useState(null);
@@ -113,12 +113,15 @@ export default function PublicFormFill() {
 
   if (submitted) {
     return (
-      <div style={{ minHeight: "100vh", background: "#0a0a0f", color: "#e2e8f0", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Exo 2', sans-serif" }}>
+      <div style={{ minHeight: "100vh", background: "#0a0a0f", color: "#e2e8f0", display: "flex", flexDirection: "column", fontFamily: "'Exo 2', sans-serif" }}>
         <style>{FONTS}</style>
-        <div style={{ textAlign: "center" }}>
-          <div style={{ fontSize: 40, marginBottom: 12 }}>✓</div>
-          <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 20, fontWeight: 700, marginBottom: 8, color: "#22c55e" }}>Submitted!</div>
-          <div style={{ fontSize: 13, color: "#64748b", fontFamily: "monospace" }}>Thank you for your response.</div>
+        <FormHeader right={<a href="/" style={{ fontSize: 12, color: "#64748b", textDecoration: "none", fontFamily: "monospace" }}>← Back</a>} />
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", flex: 1, textAlign: "center", padding: "40px 20px" }}>
+          <div style={{ textAlign: "center" }}>
+            <div style={{ fontSize: 40, marginBottom: 12 }}>✓</div>
+            <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 20, fontWeight: 700, marginBottom: 8, color: "#22c55e" }}>Submitted!</div>
+            <div style={{ fontSize: 13, color: "#64748b", fontFamily: "monospace" }}>Thank you for your response.</div>
+          </div>
         </div>
       </div>
     );
@@ -127,6 +130,7 @@ export default function PublicFormFill() {
   return (
     <div style={{ minHeight: "100vh", background: "#0a0a0f", color: "#e2e8f0", fontFamily: "'Exo 2', sans-serif", position: "relative", overflow: "hidden" }}>
       <style>{FONTS}</style>
+      <FormHeader right={<a href="/" style={{ fontSize: 12, color: "#64748b", textDecoration: "none", fontFamily: "monospace" }}>← Back</a>} />
       {toast && <div style={toastStyle}>{toast}</div>}
 
       <div style={{ position: "absolute", inset: 0, pointerEvents: "none", overflow: "hidden", zIndex: 0 }}>
