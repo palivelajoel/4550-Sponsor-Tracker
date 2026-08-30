@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { FONTS, C, sbFetch, toastStyle, inputStyle, selectStyle, addBtnStyle, ghostBtn } from "./hubUtils.jsx";
+import { FONTS, C, sbFetch, toastStyle, inputStyle, selectStyle, addBtnStyle, ghostBtn, getVisibleQuestions } from "./hubUtils.jsx";
 
 export default function PublicFormFill() {
   const [form, setForm] = useState(null);
@@ -32,9 +32,11 @@ export default function PublicFormFill() {
     setErrors({ ...errors, [qid]: "" });
   }
 
+  const visibleQ = form ? getVisibleQuestions(form.questions || [], answers) : [];
+
   function serializeAnswers() {
     const out = {};
-    (form.questions || []).forEach(q => {
+    visibleQ.forEach(q => {
       const val = answers[q.id];
       if (val === undefined) return;
       if (q.type === "radio") out[q.id] = (q.options || [])[Number(val)] ?? "";
@@ -47,7 +49,7 @@ export default function PublicFormFill() {
   async function handleSubmit(e) {
     e.preventDefault();
     const newErrors = {};
-    (form.questions || []).forEach(q => {
+    visibleQ.forEach(q => {
       if (q.required) {
         const val = answers[q.id];
         if (!val || (Array.isArray(val) && val.length === 0)) {
@@ -137,7 +139,7 @@ export default function PublicFormFill() {
 
         <form onSubmit={handleSubmit}>
           <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
-            {(form.questions || []).map((q, qi) => (
+            {visibleQ.map((q, qi) => (
               <div key={q.id} style={{ background: "rgba(255,255,255,0.03)", border: `1px solid ${errors[q.id] ? "#ef4444" : "rgba(255,255,255,0.08)"}`, borderRadius: 10, padding: "16px 18px" }}>
                 <div style={{ display: "flex", alignItems: "flex-start", gap: 4, marginBottom: 10 }}>
                   <span style={{ fontSize: 13, fontWeight: 600, color: "#e2e8f0" }}>{q.label}</span>

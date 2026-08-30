@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion } from 'framer-motion'
-import { FONTS, C, sbFetch, isAuthed, canEditHub, getUsername, HubHeader, toastStyle, inputStyle, selectStyle, addBtnStyle, ghostBtn, hubProxy } from "./hubUtils.jsx";
+import { FONTS, C, sbFetch, isAuthed, canEditHub, getUsername, HubHeader, toastStyle, inputStyle, selectStyle, addBtnStyle, ghostBtn, hubProxy, getVisibleQuestions } from "./hubUtils.jsx";
 import HubBackground from "./HubBackground.jsx";
 
 export default function HubForms() {
@@ -61,11 +61,18 @@ export default function HubForms() {
           onFill={f => { setFillForm(f); setView("fill"); }}
           onEdit={f => {
             const seen = {};
+            const remap = {};
             const qs = (f.questions || []).map(q => {
               let id = q.id;
-              if (!id || seen[id]) { do { id = nextQid(); } while (seen[id]); }
+              if (!id || seen[id]) { do { id = nextQid(); } while (seen[id]); if (q.id) remap[q.id] = id; }
               seen[id] = true;
               return { ...q, id };
+            });
+            qs.forEach(q => {
+              if (q.show_if && q.show_if.questionId) {
+                const n = remap[q.show_if.questionId] || q.show_if.questionId;
+                if (n !== q.show_if.questionId) q.show_if = { ...q.show_if, questionId: n };
+              }
             });
             setEditForm({ ...f, questions: qs }); setView("edit");
           }}
@@ -258,6 +265,8 @@ function FormBuilder({ form: initial, onSave, onCancel }) {
   const [questions, setQuestions] = useState(initial.questions || []);
   const [visibility, setVisibility] = useState(initial.visibility || "draft");
   const [errors, setErrors] = useState("");
+  const dragFrom = useRef(null);
+  const [dragOverQi, setDragOverQi] = useState(null);
 
   function addQuestion() {
     setQuestions([...questions, { id: nextQid(), type: "text", label: "", required: false, placeholder: "", options: [""] }]);
@@ -269,6 +278,46 @@ function FormBuilder({ form: initial, onSave, onCancel }) {
 
   function removeQuestion(id) {
     setQuestions(questions.filter(q => q.id !== id));
+  }
+
+  function moveQuestion(from, to) {
+    if (from === to) return;
+    const arr = [...questions];
+    const [m] = arr.splice(from, 1);
+    arr.splice(to, 0, m);
+    setQuestions(arr);
+  }
+
+  function finishDrag(targetQi) {
+    if (dragFrom.current !== null && dragFrom.current !== targetQi) moveQuestion(dragFrom.current, targetQi);
+    dragFrom.current = null;
+    setDragOverQi(null);
+  }
+
+  function setShowIf(qid, questionId) {
+    const prev = questions.find(q => q.id === qid)?.show_if;
+    if (!questionId) { updateQuestion(qid, { show_if: undefined }); return; }
+    const same = prev && prev.questionId === questionId;
+    updateQuestion(qid, { show_if: { questionId, values: same ? prev.values || [] : [], not: same ? !!prev.not : false } });
+  }
+
+  function toggleShowIfVal(qid, value) {
+    const prev = questions.find(q => q.id === qid)?.show_if;
+    const g = { questionId: "", values: [], not: false, ...(prev || {}) };
+    const cur = Array.isArray(g.values) ? g.values : [];
+    updateQuestion(qid, { show_if: { ...g, values: cur.includes(value) ? cur.filter(v => v !== value) : [...cur, value] } });
+  }
+
+  function setShowIfRaw(qid, text) {
+    const prev = questions.find(q => q.id === qid)?.show_if;
+    const g = { questionId: "", values: [], not: false, ...(prev || {}) };
+    updateQuestion(qid, { show_if: { ...g, values: text.split(",").map(s => s.trim()).filter(Boolean) } });
+  }
+
+  function setShowIfNot(qid) {
+    const prev = questions.find(q => q.id === qid)?.show_if;
+    const g = { questionId: "", values: [], not: false, ...(prev || {}) };
+    updateQuestion(qid, { show_if: { ...g, not: !g.not } });
   }
 
   function addOption(qid) {
@@ -362,9 +411,15 @@ function FormBuilder({ form: initial, onSave, onCancel }) {
 
       <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
         {questions.map((q, qi) => (
-          <div key={q.id} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 10, padding: "16px 18px" }}>
+          <div key={q.id} onDragOver={e => { e.preventDefault(); e.dataTransfer.dropEffect = "move"; setDragOverQi(qi); }} onDragLeave={() => { if (dragOverQi === qi) setDragOverQi(null); }} onDrop={e => { e.preventDefault(); finishDrag(qi); }}
+            style={{ background: C.surface, border: `1px solid ${dragOverQi === qi ? "#22d3ee" : C.border}`, borderRadius: 10, padding: "16px 18px", transition: "border-color 0.15s", boxShadow: dragOverQi === qi ? "0 0 0 1px rgba(34,211,238,0.25)" : "none" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-              <span style={{ fontSize: 10, color: C.dim, fontFamily: "monospace" }}>Q{qi + 1}</span>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <span draggable onDragStart={e => { dragFrom.current = qi; e.dataTransfer.effectAllowed = "move"; try { e.dataTransfer.setData("text/plain", String(qi)); } catch {} }}
+                  title="Drag to reorder"
+                  style={{ cursor: "grab", color: dragOverQi === qi ? "#22d3ee" : C.dim, fontSize: 13, letterSpacing: 1, userSelect: "none", transform: dragOverQi === qi ? "rotate(90deg)" : "none", transition: "transform 0.15s" }}>⠿</span>
+                <span style={{ fontSize: 10, color: C.dim, fontFamily: "monospace" }}>Q{qi + 1}</span>
+              </div>
               <button onClick={() => removeQuestion(q.id)} style={{ background: "none", border: "none", color: C.red, cursor: "pointer", fontSize: 13, padding: "2px 4px" }}>✕</button>
             </div>
 
@@ -405,6 +460,54 @@ function FormBuilder({ form: initial, onSave, onCancel }) {
                 onChange={e => updateQuestion(q.id, { placeholder: e.target.value })}
                 style={{ ...inputStyle, fontSize: 12, marginTop: 8, padding: "6px 10px" }} />
             )}
+
+            {(() => {
+              const gate = q.show_if;
+              const target = gate && gate.questionId ? questions.find(p => p.id === gate.questionId) : null;
+              const isChoice = target && ["select", "radio", "checkbox"].includes(target.type);
+              const vals = gate && Array.isArray(gate.values) ? gate.values : [];
+              return (
+                <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 10, paddingTop: 10, borderTop: `1px dashed ${C.border}` }}>
+                  <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: C.dim, fontFamily: "monospace" }}>
+                    ← Show only if answer to…
+                    <select value={gate?.questionId || ""} onChange={e => setShowIf(q.id, e.target.value)}
+                      style={{ ...selectStyle, fontSize: 12, padding: "6px 8px", width: "auto", flex: 1 }}>
+                      <option value="">(always show)</option>
+                      {questions.map((p, pi) => pi === qi ? null : (
+                        <option key={p.id} value={p.id}>Q{pi + 1}: {String(p.label || "").slice(0, 40) || "(untitled)"}</option>
+                      ))}
+                    </select>
+                  </label>
+                  {target && (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                      <div style={{ fontSize: 10, color: C.dim, fontFamily: "monospace" }}>{isChoice ? "is one of:" : "matches (comma-separated values):"}</div>
+                      {isChoice ? (
+                        <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
+                          {(target.options || []).filter(o => o.trim()).map((o, oi) => {
+                            const ov = o.trim();
+                            const on = vals.includes(ov);
+                            return (
+                              <label key={oi} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: on ? "#22d3ee" : C.muted, fontFamily: "monospace", cursor: "pointer" }}>
+                                <input type="checkbox" checked={on} onChange={() => toggleShowIfVal(q.id, ov)} style={{ cursor: "pointer" }} />
+                                {o}
+                              </label>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <input value={vals.join(", ")} onChange={e => setShowIfRaw(q.id, e.target.value)}
+                          placeholder="e.g. yes, maybe (blank = shows only if left empty)"
+                          style={{ ...inputStyle, fontSize: 12, padding: "6px 10px" }} />
+                      )}
+                      <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: C.muted, fontFamily: "monospace", cursor: "pointer" }}>
+                        <input type="checkbox" checked={!!gate?.not} onChange={() => setShowIfNot(q.id)} style={{ cursor: "pointer" }} />
+                        invert — show when answer is NONE of these
+                      </label>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
 
             <div style={{ display: "flex", gap: 8, marginTop: 8, alignItems: "center" }}>
               <label style={{ display: "flex", alignItems: "center", gap: 5, cursor: "pointer", fontSize: 11, color: C.muted, fontFamily: "monospace" }}>
@@ -449,6 +552,7 @@ function FormFill({ form, username, onSubmit, onCancel }) {
   const [answers, setAnswers] = useState({});
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
+  const visibleQ = getVisibleQuestions(form.questions, answers);
 
   function setAnswer(qid, val) {
     setAnswers({ ...answers, [qid]: val });
@@ -457,7 +561,7 @@ function FormFill({ form, username, onSubmit, onCancel }) {
 
   function serializeAnswers() {
     const out = {};
-    (form.questions || []).forEach(q => {
+    visibleQ.forEach(q => {
       const val = answers[q.id];
       if (val === undefined) return;
       if (q.type === "radio") out[q.id] = (q.options || [])[Number(val)] ?? "";
@@ -469,7 +573,7 @@ function FormFill({ form, username, onSubmit, onCancel }) {
 
   function handleSubmit() {
     const newErrors = {};
-    (form.questions || []).forEach(q => {
+    visibleQ.forEach(q => {
       if (q.required) {
         const val = answers[q.id];
         if (!val || (Array.isArray(val) && val.length === 0)) {
@@ -491,7 +595,7 @@ function FormFill({ form, username, onSubmit, onCancel }) {
       {form.description && <div style={{ fontSize: 13, color: C.muted, fontFamily: "monospace", marginBottom: 20 }}>{form.description}</div>}
 
       <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
-        {(form.questions || []).map((q, qi) => (
+        {visibleQ.map((q, qi) => (
           <div key={q.id} style={{ background: C.surface, border: `1px solid ${errors[q.id] ? C.red : C.border}`, borderRadius: 10, padding: "16px 18px" }}>
             <div style={{ display: "flex", alignItems: "flex-start", gap: 4, marginBottom: 10 }}>
               <span style={{ fontSize: 13, fontWeight: 600, color: C.text }}>{q.label}</span>

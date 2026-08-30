@@ -27,6 +27,34 @@ function decodeTokenPayload(token) {
 }
 export const getTokenUserId = () => { const t = getToken(); return t ? decodeTokenPayload(t)?.userId : null; };
 
+export function getVisibleQuestions(questions, answers) {
+  const visible = new Map();
+  function isVisible(q) {
+    if (visible.has(q.id)) return visible.get(q.id);
+    visible.set(q.id, false);
+    const gate = q.show_if;
+    if (!gate || !gate.questionId) { visible.set(q.id, true); return true; }
+    const target = (questions || []).find(x => x.id === gate.questionId);
+    if (!target) { visible.set(q.id, true); return true; }
+    if (!isVisible(target)) { visible.set(q.id, false); return false; }
+    const values = Array.isArray(gate.values) ? gate.values : [];
+    const raw = answers ? answers[gate.questionId] : undefined;
+    let matched = false;
+    if (raw === undefined || raw === "" || (Array.isArray(raw) && raw.length === 0)) {
+      matched = values.includes("");
+    } else if (Array.isArray(raw)) {
+      matched = raw.some(i => values.includes((target.options || [])[Number(i)] ?? ""));
+    } else {
+      const text = target.type === "radio" ? ((target.options || [])[Number(raw)] ?? "") : String(raw);
+      matched = values.includes(text);
+    }
+    if (gate.not) matched = !matched;
+    visible.set(q.id, matched);
+    return matched;
+  }
+  return (questions || []).filter(isVisible);
+}
+
 export async function hubProxy(table, action, payload) {
   const token = getToken();
   if (!token) throw new Error("Not authenticated");
