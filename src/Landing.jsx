@@ -352,7 +352,7 @@ function SponsorBar({ sponsors = [], isMobile }) {
       multRef.current += (targetRef.current - multRef.current) * ease;
       const sw = setWRef.current;
       if (sw > 0) {
-        xRef.current -= (sw / speed) * multRef.current * dt * 0.85;
+        xRef.current -= (sw / speed) * multRef.current * dt * 0.65;
         if (xRef.current <= -sw) xRef.current += sw;
         el.style.transform = `translate3d(${xRef.current}px,0,0)`;
       }
