@@ -1,5 +1,9 @@
 import { useState, useEffect } from "react";
-import { FONTS, C, sbFetch, toastStyle, inputStyle, selectStyle, addBtnStyle, ghostBtn, getVisibleQuestions, FormHeader } from "./hubUtils.jsx";
+import { FONTS, C, sbFetch, isAuthed, toastStyle, inputStyle, selectStyle, addBtnStyle, ghostBtn, getVisibleQuestions, FormHeader } from "./hubUtils.jsx";
+
+const backRight = isAuthed()
+  ? <a href="/member-hub/forms" style={{ fontSize: 12, color: "#64748b", textDecoration: "none", fontFamily: "monospace" }}>← Back</a>
+  : <a href="/" style={{ fontSize: 12, color: "#64748b", textDecoration: "none", fontFamily: "monospace" }}>Main Website</a>;
 
 export default function PublicFormFill() {
   const [form, setForm] = useState(null);
@@ -115,7 +119,7 @@ export default function PublicFormFill() {
     return (
       <div style={{ minHeight: "100vh", background: "#0a0a0f", color: "#e2e8f0", display: "flex", flexDirection: "column", fontFamily: "'Exo 2', sans-serif" }}>
         <style>{FONTS}</style>
-        <FormHeader right={<a href="/" style={{ fontSize: 12, color: "#64748b", textDecoration: "none", fontFamily: "monospace" }}>← Back</a>} />
+        <FormHeader right={backRight} />
         <div style={{ display: "flex", alignItems: "center", justifyContent: "center", flex: 1, textAlign: "center", padding: "40px 20px" }}>
           <div style={{ textAlign: "center" }}>
             <div style={{ fontSize: 40, marginBottom: 12 }}>✓</div>
@@ -130,7 +134,7 @@ export default function PublicFormFill() {
   return (
     <div style={{ minHeight: "100vh", background: "#0a0a0f", color: "#e2e8f0", fontFamily: "'Exo 2', sans-serif", position: "relative", overflow: "hidden" }}>
       <style>{FONTS}</style>
-      <FormHeader right={<a href="/" style={{ fontSize: 12, color: "#64748b", textDecoration: "none", fontFamily: "monospace" }}>← Back</a>} />
+      <FormHeader right={backRight} />
       {toast && <div style={toastStyle}>{toast}</div>}
 
       <div style={{ position: "absolute", inset: 0, pointerEvents: "none", overflow: "hidden", zIndex: 0 }}>
