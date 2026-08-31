@@ -831,7 +831,8 @@ function FormResponses({ form, submissions, canSync, onReload }) {
                 ))}
                 <th style={{ textAlign: "left", padding: "10px 12px", borderBottom: `1px solid ${C.border}`, color: C.muted }}>Submitted By</th>
                 <th style={{ textAlign: "left", padding: "10px 12px", borderBottom: `1px solid ${C.border}`, color: C.muted, whiteSpace: "nowrap" }}>Date</th>
-              </tr>
+                {canSync && <th style={{ width: 1 }}></th>}
+                </tr>
             </thead>
             <tbody>
               {submissions.map((s, si) => (
@@ -846,6 +847,23 @@ function FormResponses({ form, submissions, canSync, onReload }) {
                   <td style={{ padding: "10px 12px", borderBottom: `1px solid ${C.border}`, color: C.dim, whiteSpace: "nowrap" }}>
                     {new Date(s.created_at).toLocaleDateString()}
                   </td>
+                  {canSync && (
+                    <td style={{ padding: "10px 12px", borderBottom: `1px solid ${C.border}`, textAlign: "right", whiteSpace: "nowrap" }}>
+                      <button
+                        onClick={async () => {
+                          if (!window.confirm(`Delete response #${si + 1}? This removes it from the viewer.`)) return;
+                          try {
+                            await hubProxy("hub_form_submissions", "delete", { id: s.id });
+                            showToast(`Response #${si + 1} deleted.`);
+                            if (onReload) onReload();
+                          } catch (e) { showToast("Delete failed: " + (e.message || e)); }
+                        }}
+                        style={{ ...ghostBtn, fontSize: 11, padding: "4px 9px", color: "#ef4444", borderColor: "rgba(239,68,68,0.35)" }}
+                      >
+                        ✕ Delete
+                      </button>
+                    </td>
+                  )}
                 </tr>
               ))}
             </tbody>
