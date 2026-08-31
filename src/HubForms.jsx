@@ -768,6 +768,13 @@ function FormResponses({ form, submissions, canSync, onReload }) {
 
   return (
     <div style={{ maxWidth: 900, margin: "0 auto", padding: "24px 20px" }}>
+      <style>{`
+        .form-response-scroll{scrollbar-width:thin;scrollbar-color:#ef4444 #0d1117;}
+        .form-response-scroll::-webkit-scrollbar{height:10px;}
+        .form-response-scroll::-webkit-scrollbar-track{background:#0d1117;border-radius:6px;}
+        .form-response-scroll::-webkit-scrollbar-thumb{background:#ef4444;border-radius:6px;}
+        .form-response-scroll::-webkit-scrollbar-thumb:hover{background:#f87171;}
+      `}</style>
       <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 20 }}>
         <a href="/member-hub/forms" style={{ ...ghostBtn, fontSize: 12 }}>← Back</a>
         <div>
@@ -814,7 +821,7 @@ function FormResponses({ form, submissions, canSync, onReload }) {
           No responses yet.
         </div>
       ) : viewType === "table" ? (
-        <div style={{ overflowX: "auto", paddingBottom: 16 }}>
+        <div className="form-response-scroll" style={{ overflowX: "scroll", paddingBottom: 16 }}>
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12, fontFamily: "monospace" }}>
             <thead>
               <tr>
