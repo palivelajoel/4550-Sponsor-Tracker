@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import Starfield from "./Starfield.jsx";
+import QRCode from "qrcode";
 
 import { CaptainPhoto, sbFetch, uploadFile } from './hubUtils.jsx';
 
@@ -58,6 +59,7 @@ const NAV = [
   { id: "captains", label: "🏆 Leadership" },
   { id: "suggestions", label: "💡 Suggestions" },
   { id: "site", label: "⚙️ Site Config" },
+  { id: "qr", label: "▦ QR Generator" },
 ];
 
 export default function Admin() {
@@ -282,6 +284,7 @@ export default function Admin() {
         {page === "captains" && <CaptainsAdmin captains={captains} reload={loadAll} showToast={showToast} isMobile={isMobile} />}
         {page === "suggestions" && <Suggestions suggestions={suggestions} reload={loadAll} showToast={showToast} />}
         {page === "site" && <SiteConfig config={config} logoUrl={logoUrl} setLogoUrl={setLogoUrl} reload={loadAll} showToast={showToast} isMobile={isMobile} />}
+        {page === "qr" && <QRGenerator reload={loadAll} showToast={showToast} vals={config} isMobile={isMobile} />}
       </main>
     </div>
   );
@@ -1065,7 +1068,7 @@ function Suggestions({ suggestions, reload, showToast }) {
 const PRIVACY_FALLBACK = `...
         <h1>Privacy Policy</h1>
         <p class="updated">Last Updated: May 26, 2026</p>
-        <p>FRC Team 4550 "Something's Bruin" ("we," "our," or "us") operates the website at <a href="https://4550robotics.com">4550robotics.com</a> (the "Site"). This Privacy Policy explains how we collect, use, disclose, and protect your information when you visit our Site or use our services.</p>
+        <p>FRC Team 4550 "Something's Bruin" ("we," "our," or "us") operates the website at <a href="https://frc4550.org">frc4550.org</a> (the "Site"). This Privacy Policy explains how we collect, use, disclose, and protect your information when you visit our Site or use our services.</p>
         <h2>1. Information We Collect</h2>
         <h3>Information You Provide to Us</h3>
         <ul>
@@ -1173,7 +1176,7 @@ const PRIVACY_FALLBACK = `...
 const TERMS_FALLBACK = `...
         <h1>Terms &amp; Conditions</h1>
         <p class="updated">Last Updated: May 26, 2026</p>
-        <p>Welcome to FRC Team 4550 "Something's Bruin." By accessing or using our website at <a href="https://4550robotics.com">4550robotics.com</a> (the "Site"), you agree to be bound by these Terms &amp; Conditions ("Terms"). If you do not agree with any part of these Terms, you must not use the Site.</p>
+        <p>Welcome to FRC Team 4550 "Something's Bruin." By accessing or using our website at <a href="https://frc4550.org">frc4550.org</a> (the "Site"), you agree to be bound by these Terms &amp; Conditions ("Terms"). If you do not agree with any part of these Terms, you must not use the Site.</p>
         <h2>1. Acceptance of Terms</h2>
         <p>By using the Site, you affirm that you are at least 13 years of age, or if you are under 13, that you have obtained parental consent to use the Site. The Member Hub is restricted to current team members, alumni, mentors, and authorized school personnel.</p>
         <h2>2. Description of Services</h2>
@@ -1599,6 +1602,9 @@ function SiteConfig({ config, logoUrl, setLogoUrl, reload, showToast, isMobile }
   const [pendingImgUploads, setPendingImgUploads] = useState({});
   const [uploadingImg, setUploadingImg] = useState(null);
   const imgFileRefs = useRef({});
+  const adFileRefs = useRef({});
+  const [pendingAdUploads, setPendingAdUploads] = useState({});
+  const [uploadingAd, setUploadingAd] = useState(null);
   const [aboutMetrics, setAboutMetrics] = useState(() => {
     try {
       const arr = JSON.parse(vals.about_metrics || "[]");
@@ -1613,6 +1619,34 @@ function SiteConfig({ config, logoUrl, setLogoUrl, reload, showToast, isMobile }
       if (Array.isArray(arr) && arr.length) setAboutMetrics(arr);
     } catch {}
   }, [vals.about_metrics]);
+  const [adSlides, setAdSlides] = useState(() => {
+    try {
+      const arr = JSON.parse(vals.ad_slides || "[]");
+      return Array.isArray(arr) ? arr : [];
+    } catch {
+      return [];
+    }
+  });
+  useEffect(() => {
+    try {
+      const arr = JSON.parse(vals.ad_slides || "[]");
+      if (Array.isArray(arr)) setAdSlides(arr);
+    } catch {}
+  }, [vals.ad_slides]);
+  const [qrConfig, setQrConfig] = useState(() => {
+    try {
+      const j = JSON.parse(vals.qr_config || "{}");
+      return j && j.url ? j : { url: "https://frc4550.org" };
+    } catch {
+      return { url: "https://frc4550.org" };
+    }
+  });
+  useEffect(() => {
+    try {
+      const j = JSON.parse(vals.qr_config || "{}");
+      if (j && j.url) setQrConfig(j);
+    } catch {}
+  }, [vals.qr_config]);
   const [siteOrder, setSiteOrder] = useState([]);
   const [siteDragId, setSiteDragId] = useState(null);
   const [siteDragOverId, setSiteDragOverId] = useState(null);
@@ -1685,6 +1719,80 @@ function SiteConfig({ config, logoUrl, setLogoUrl, reload, showToast, isMobile }
     setPendingImgUploads(p => { const n = { ...p }; delete n[key]; return n; });
     setUploadingImg(null);
     showToast(`✅ ${key} updated.`);
+  }
+
+  function defaultAdDuration(type) {
+    if (type === "video") return 20;
+    if (type === "image") return 8;
+    if (type === "cad") return 12;
+    return 10;
+  }
+
+  function updateAdSlide(idx, patch) {
+    setAdSlides(arr => arr.map((s, i) => i === idx ? { ...s, ...patch } : s));
+  }
+
+  function moveAdSlide(idx, dir) {
+    const target = idx + dir;
+    if (target < 0 || target >= adSlides.length) return;
+    const arr = [...adSlides];
+    const [item] = arr.splice(idx, 1);
+    arr.splice(target, 0, item);
+    setAdSlides(arr);
+  }
+
+  function deleteAdSlide(idx) {
+    setAdSlides(arr => arr.filter((_, i) => i !== idx));
+    const n = { ...pendingAdUploads };
+    delete n[idx];
+    setPendingAdUploads(n);
+  }
+
+  function addAdSlide() {
+    const slide = { type: "image", title: "", url: "", durationSec: 8, info: [] };
+    setAdSlides(arr => [...arr, slide]);
+  }
+
+  function updateAdInfo(idx, fi, field, val) {
+    setAdSlides(arr => arr.map((s, i) => i === idx ? { ...s, info: (s.info || []).map((f, j) => j === fi ? { ...f, [field]: val } : f) } : s));
+  }
+
+  function removeAdInfo(idx, fi) {
+    setAdSlides(arr => arr.map((s, i) => i === idx ? { ...s, info: (s.info || []).filter((_, j) => j !== fi) } : s));
+  }
+
+  function addAdInfo(idx) {
+    setAdSlides(arr => arr.map((s, i) => i === idx ? { ...s, info: [...(s.info || []), { label: "", value: "" }] } : s));
+  }
+
+  async function uploadAdMedia(idx) {
+    const file = pendingAdUploads[idx];
+    if (!file) return;
+    setUploadingAd(idx);
+    const url = await uploadFile(file, 'team-assets');
+    if (!url) { showToast("Upload failed.", "#ef4444"); setUploadingAd(null); return; }
+    setAdSlides(arr => arr.map((s, i) => i === idx ? { ...s, url } : s));
+    setPendingAdUploads(p => { const n = { ...p }; delete n[idx]; return n; });
+    setUploadingAd(null);
+    showToast("✅ Media uploaded.");
+  }
+
+  async function saveAdSlides() {
+    try {
+      await adminProxy('site_config', 'upsert', { key: 'ad_slides', value: JSON.stringify(adSlides) });
+      reload(); showToast("✅ Advert slides saved.");
+    } catch (e) {
+      showToast("Save failed: " + (e.message || e), "#ef4444");
+    }
+  }
+
+  async function saveQrConfig() {
+    try {
+      await adminProxy('site_config', 'upsert', { key: 'qr_config', value: JSON.stringify(qrConfig) });
+      reload(); showToast("✅ QR URL saved.");
+    } catch (e) {
+      showToast("Save failed: " + (e.message || e), "#ef4444");
+    }
   }
 
   async function runStorageCleanup() {
@@ -1980,6 +2088,63 @@ function SiteConfig({ config, logoUrl, setLogoUrl, reload, showToast, isMobile }
       </div>
       <SponsorRibbonManager vals={vals} setVals={setVals} saveKey={saveKey} showToast={showToast} isMobile={isMobile} />
       <div style={S.card}>
+        <div style={S.cardTitle}>📢 Advertisement / Slides</div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+            <label style={{ color: "#94a3b8", fontSize: 12, fontFamily: "monospace" }}>Website URL (used by QR screen)</label>
+            <input value={qrConfig.url || ""} onChange={e => setQrConfig(c => ({ ...c, url: e.target.value }))} placeholder="https://frc4550.org" style={{ ...S.input, width: "100%" }} />
+          </div>
+          {adSlides.map((slide, idx) => (
+            <div key={idx} style={{ display: "flex", flexDirection: "column", gap: 8, padding: "12px 14px", background: "rgba(255,255,255,0.03)", borderRadius: 10, border: "1px solid rgba(255,255,255,0.06)" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <select value={slide.type || "image"} onChange={e => updateAdSlide(idx, { type: e.target.value })} style={{ ...S.select, flex: 1, minWidth: 0, marginBottom: 0 }}>
+                  {["video", "image", "cad", "info"].map(t => <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>)}
+                </select>
+                <button onClick={() => moveAdSlide(idx, -1)} disabled={idx === 0} style={{ ...S.btnGhost, padding: "5px 10px", fontSize: 12 }}>▲</button>
+                <button onClick={() => moveAdSlide(idx, 1)} disabled={idx === adSlides.length - 1} style={{ ...S.btnGhost, padding: "5px 10px", fontSize: 12 }}>▼</button>
+                <button onClick={() => deleteAdSlide(idx)} style={{ ...S.btnDanger, padding: "5px 10px", fontSize: 12 }}>✕</button>
+              </div>
+              <input value={slide.title || ""} onChange={e => updateAdSlide(idx, { title: e.target.value })} placeholder="Slide title" style={{ ...S.input, width: "100%", marginBottom: 0 }} />
+              {slide.type !== "info" && (
+                <div style={{ display: "flex", flexDirection: isMobile ? 'column' : 'row', gap: 8, alignItems: isMobile ? 'stretch' : 'center' }}>
+                  <input value={slide.url || ""} onChange={e => updateAdSlide(idx, { url: e.target.value })} placeholder="Media URL (or upload below)" style={{ ...S.input, flex: 1, marginBottom: 0, minWidth: 0 }} />
+                  <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                    <button onClick={() => { adFileRefs.current[idx]?.click(); }} style={{ ...S.btnGhost, flexShrink: 0, padding: "6px 10px", fontSize: 12 }}>
+                      {pendingAdUploads[idx] ? `📤 ${pendingAdUploads[idx].name}` : "Upload"}
+                    </button>
+                    {pendingAdUploads[idx] && <button onClick={() => uploadAdMedia(idx)} disabled={uploadingAd === idx} style={{ ...S.btnPrimary, flexShrink: 0, padding: "6px 10px", fontSize: 12 }}>{uploadingAd === idx ? "Uploading..." : "Go"}</button>}
+                    <input ref={el => adFileRefs.current[idx] = el} type="file" style={{ display: "none" }} onChange={e => { const file = e.target.files?.[0]; if (file) setPendingAdUploads(p => ({ ...p, [idx]: file })); }} />
+                  </div>
+                </div>
+              )}
+              {slide.type === "info" && (
+                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                  <textarea value={slide.caption || ""} onChange={e => updateAdSlide(idx, { caption: e.target.value })} placeholder="Caption" rows={2} style={{ ...S.input, width: "100%", resize: "vertical", marginBottom: 0 }} />
+                  <div style={{ color: "#94a3b8", fontSize: 12, fontFamily: "monospace" }}>Robot info fields</div>
+                  {(slide.info || []).map((f, fi) => (
+                    <div key={fi} style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                      <input value={f.label || ""} onChange={e => updateAdInfo(idx, fi, "label", e.target.value)} placeholder="Label" style={{ ...S.input, flex: 1, marginBottom: 0, minWidth: 0 }} />
+                      <input value={f.value || ""} onChange={e => updateAdInfo(idx, fi, "value", e.target.value)} placeholder="Value" style={{ ...S.input, flex: 1, marginBottom: 0, minWidth: 0 }} />
+                      <button onClick={() => removeAdInfo(idx, fi)} style={{ ...S.btnDanger, padding: "5px 10px", fontSize: 12 }}>✕</button>
+                    </div>
+                  ))}
+                  <button onClick={() => addAdInfo(idx)} style={{ ...S.btnGhost, alignSelf: 'flex-start', padding: "6px 10px", fontSize: 12 }}>+ Add field</button>
+                </div>
+              )}
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <label style={{ color: "#94a3b8", fontSize: 12, fontFamily: "monospace" }}>Duration (sec)</label>
+                <input type="number" min={1} value={slide.durationSec ?? defaultAdDuration(slide.type)} onChange={e => updateAdSlide(idx, { durationSec: Number(e.target.value) || 0 })} style={{ ...S.input, maxWidth: 90, marginBottom: 0 }} />
+              </div>
+            </div>
+          ))}
+          <button onClick={addAdSlide} style={{ ...S.btnGhost, alignSelf: 'flex-start' }}>+ Add Slide</button>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <button onClick={saveAdSlides} style={S.btnPrimary}>Save Advert Slides</button>
+            <button onClick={saveQrConfig} style={S.btnPrimary}>Save QR URL</button>
+          </div>
+        </div>
+      </div>
+      <div style={S.card}>
         <div style={S.cardTitle}>Media Storage</div>
         {storageStatus && (
           <div style={{ fontSize: 12, color: "#94a3b8", fontFamily: "monospace", marginBottom: 10, lineHeight: 1.6 }}>
@@ -2062,3 +2227,128 @@ const S = {
   loginBtn: { background: "#ef4444", border: "none", borderRadius: 10, padding: 12, color: "#fff", fontFamily: "'Orbitron', sans-serif", fontWeight: 700, fontSize: 13, letterSpacing: 2, cursor: "pointer" },
   loginBack: { display: "block", marginTop: 24, color: "#64748b", fontSize: 12, fontFamily: "monospace", textDecoration: "none" },
 };
+
+// ── QR GENERATOR ──────────────────────────────────────────
+function QRGenerator({ reload, showToast, vals, isMobile }) {
+  const [text, setText] = useState(() => {
+    try {
+      const j = JSON.parse(vals?.qr_config || "{}");
+      return j.url || "https://frc4550.org";
+    } catch {
+      return "https://frc4550.org";
+    }
+  });
+  const [size, setSize] = useState(600);
+  const [errorCorrectionLevel, setErrorCorrectionLevel] = useState("M");
+  const [dark, setDark] = useState("#ef4444");
+  const [light, setLight] = useState("#ffffff");
+  const [margin, setMargin] = useState(2);
+  const [downloading, setDownloading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const canvasRef = useRef(null);
+
+  useEffect(() => {
+    try {
+      const j = JSON.parse(vals?.qr_config || "{}");
+      if (j && j.url) setText(j.url);
+      if (j && j.width) setSize(j.width);
+      if (j && j.errorCorrectionLevel) setErrorCorrectionLevel(j.errorCorrectionLevel);
+      if (j && j.dark) setDark(j.dark);
+      if (j && j.light) setLight(j.light);
+      if (j && typeof j.margin === "number") setMargin(j.margin);
+    } catch {}
+  }, [vals?.qr_config]);
+
+  const opts = {
+    width: size,
+    margin,
+    errorCorrectionLevel,
+    color: { dark, light },
+  };
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas || !text.trim()) return;
+    QRCode.toCanvas(canvas, text, opts)
+      .then(() => {})
+      .catch(() => {});
+  }, [text, size, errorCorrectionLevel, dark, light, margin]);
+
+  async function download() {
+    if (!text.trim()) { showToast("Enter content to encode.", "#ef4444"); return; }
+    setDownloading(true);
+    try {
+      const dataUrl = await QRCode.toDataURL(text, opts);
+      const a = document.createElement("a");
+      a.href = dataUrl;
+      a.download = "qrcode.png";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    } catch (e) {
+      showToast("Download failed: " + (e.message || e), "#ef4444");
+    }
+    setDownloading(false);
+  }
+
+  async function save() {
+    if (!text.trim()) { showToast("Enter content to encode.", "#ef4444"); return; }
+    setSaving(true);
+    try {
+      const cfg = { url: text, width: size, errorCorrectionLevel, dark, light, margin };
+      await adminProxy('site_config', 'upsert', { key: 'qr_config', value: JSON.stringify(cfg) });
+      reload(); showToast("✅ QR config saved.");
+    } catch (e) {
+      showToast("Save failed: " + (e.message || e), "#ef4444");
+    }
+    setSaving(false);
+  }
+
+  return (
+    <div style={{ maxWidth: 860, padding: "0 4px" }}>
+      <h1 style={{ ...S.pageTitle, fontSize: isMobile ? 16 : 20 }}>QR Generator</h1>
+      <div style={S.card}>
+        <div style={S.cardTitle}>Content</div>
+        <label style={{ color: "#94a3b8", fontSize: 12, fontFamily: "monospace" }}>Text / URL (required)</label>
+        <input value={text} onChange={e => setText(e.target.value)} placeholder="https://frc4550.org" style={{ ...S.input, width: "100%", marginTop: 6 }} />
+      </div>
+      <div style={S.card}>
+        <div style={S.cardTitle}>Options</div>
+        <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 14 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+            <label style={{ color: "#94a3b8", fontSize: 12, fontFamily: "monospace" }}>Size (px)</label>
+            <input type="number" min={80} value={size} onChange={e => setSize(Number(e.target.value) || 0)} style={{ ...S.input, marginBottom: 0 }} />
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+            <label style={{ color: "#94a3b8", fontSize: 12, fontFamily: "monospace" }}>Error correction</label>
+            <select value={errorCorrectionLevel} onChange={e => setErrorCorrectionLevel(e.target.value)} style={{ ...S.select, marginBottom: 0 }}>
+              {["L", "M", "Q", "H"].map(l => <option key={l} value={l}>{l}</option>)}
+            </select>
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+            <label style={{ color: "#94a3b8", fontSize: 12, fontFamily: "monospace" }}>Dark (foreground)</label>
+            <input type="color" value={dark} onChange={e => setDark(e.target.value)} style={{ width: "100%", marginBottom: 0, height: 40, background: "#0a0e18", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 10, cursor: "pointer" }} />
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+            <label style={{ color: "#94a3b8", fontSize: 12, fontFamily: "monospace" }}>Light (background)</label>
+            <input type="color" value={light} onChange={e => setLight(e.target.value)} style={{ width: "100%", marginBottom: 0, height: 40, background: "#0a0e18", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 10, cursor: "pointer" }} />
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+            <label style={{ color: "#94a3b8", fontSize: 12, fontFamily: "monospace" }}>Margin</label>
+            <input type="number" min={0} value={margin} onChange={e => setMargin(Number(e.target.value) || 0)} style={{ ...S.input, marginBottom: 0 }} />
+          </div>
+        </div>
+        <div style={{ display: "flex", gap: 8, marginTop: 16, flexWrap: "wrap" }}>
+          <button onClick={download} disabled={downloading} style={{ ...S.btnPrimary, opacity: downloading ? 0.6 : 1 }}>{downloading ? "Generating..." : "⬇ Download PNG"}</button>
+          <button onClick={save} disabled={saving} style={{ ...S.btnPrimary, opacity: saving ? 0.6 : 1 }}>{saving ? "Saving..." : "💾 Save to QR Config"}</button>
+        </div>
+      </div>
+      <div style={S.card}>
+        <div style={S.cardTitle}>Live Preview</div>
+        <div style={{ display: "flex", justifyContent: "center", padding: 8 }}>
+          <canvas ref={canvasRef} style={{ width: Math.min(size, 500), height: Math.min(size, 500), background: light, borderRadius: 8, maxWidth: "100%", imageRendering: "pixelated", border: "1px solid rgba(255,255,255,0.1)" }} />
+        </div>
+      </div>
+    </div>
+  );
+}

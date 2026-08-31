@@ -356,7 +356,7 @@ export default async function handler(req, res) {
       const fileName = String(f.fileName || '').replace(/[^a-zA-Z0-9._-]/g, '_');
       let bytes;
       try { bytes = Buffer.from(String(f.base64 || ''), 'base64'); } catch { bytes = Buffer.alloc(0); }
-      if (!fileName || !/^[a-zA-Z0-9][a-zA-Z0-9._-]*\.(png|jpe?g|gif|webp|svg|avif|ico|pdf|zip|rar|7z|tar|gz|txt|csv|json|md|html|mp4|webm|mov|docx?|xlsx?|pptx?|odt|ods|step|stp|stl|iges|igs|dxf|dwg|f3d|f2d|sldprt|sldasm|ai|psd)$/i.test(fileName)) {
+      if (!fileName || !/^[a-zA-Z0-9][a-zA-Z0-9._-]*\.(png|jpe?g|gif|webp|svg|avif|ico|pdf|zip|rar|7z|tar|gz|txt|csv|json|md|html|mp4|webm|mov|glb|gltf|docx?|xlsx?|pptx?|odt|ods|step|stp|stl|iges|igs|dxf|dwg|f3d|f2d|sldprt|sldasm|ai|psd)$/i.test(fileName)) {
         errors.push({ fileName, error: 'Unsupported file name/type' }); continue;
       }
       if (!bytes.length) { errors.push({ fileName, error: 'Empty file' }); continue; }

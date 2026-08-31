@@ -178,6 +178,7 @@ export default function Hub() {
     { id:"inventory", icon:"📦", label:"Inventory", description:"Track parts, tools, and supplies with AI identification.", href:"/member-hub/inventory", accent:"#22d3ee" },
     { id:"forms", icon:"📋", label:"Forms", description:"Team forms, surveys, and feedback.", href:"/member-hub/forms", accent:"#22d3ee" },
     { id:"sponsor-tracker", icon:"🤝", label:"Sponsor Tracker", description:"Manage sponsors, contact info, and outreach status.", href:"/member-hub/sponsors", accent:"#0ea5e9" },
+    { id:"advertisement", icon:"📢", label:"Advertisement", description:"Fullscreen outreach display — media, videos, robot & QR.", href:"/member-hub/advertisement", accent:"#ef4444" },
     { id:"articles", icon:"📝", label:"Articles", description:"Write and manage blog posts and outreach articles.", href:"/member-hub/articles", accent:"#a855f7" },
   ];
 

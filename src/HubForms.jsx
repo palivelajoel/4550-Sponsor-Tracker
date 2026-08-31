@@ -709,6 +709,7 @@ function FormResponses({ form, submissions, canSync, onReload, onToast }) {
   const [syncErr, setSyncErr] = useState(false);
 
   async function syncWithSheets() {
+    if (!window.confirm("Sync with Google Sheets? This may add/remove rows and can DELETE responses in the sheets that don't match the member hub. Continue?")) return;
     setSyncing(true); setSyncMsg(""); setSyncErr(false);
     try {
       const res = await fetch("/api/sheets-sync", {

@@ -10,6 +10,7 @@ import HubMedia from './HubMedia.jsx'
 import HubAnnouncements from './HubAnnouncements.jsx'
 import HubResources from './HubResources.jsx'
 import HubProjector from './HubProjector.jsx'
+import HubAdvertisement from './HubAdvertisement.jsx'
 import HubInventory from './HubInventory.jsx'
 import HubForms from './HubForms.jsx'
 import PublicFormFill from './PublicFormFill.jsx'
@@ -32,6 +33,7 @@ const Page =
   : path === '/member-hub/announcements'       ? HubAnnouncements
   : path === '/member-hub/resources'           ? HubResources
   : path === '/member-hub/projector'           ? HubProjector
+  : path === '/member-hub/advertisement'       ? HubAdvertisement
   : path === '/member-hub/forms'               ? HubForms
   : path === '/member-hub/inventory'           ? HubInventory
   : path === '/member-hub/articles'            ? HubArticles

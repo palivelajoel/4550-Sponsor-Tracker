@@ -6,7 +6,7 @@ const FALLBACK = `...
         <h1>Privacy Policy</h1>
         <p class="updated">Last Updated: May 26, 2026</p>
 
-        <p>FRC Team 4550 "Something's Bruin" ("we," "our," or "us") operates the website at <a href="https://4550robotics.com">4550robotics.com</a> (the "Site"). This Privacy Policy explains how we collect, use, disclose, and protect your information when you visit our Site or use our services.</p>
+        <p>FRC Team 4550 "Something's Bruin" ("we," "our," or "us") operates the website at <a href="https://frc4550.org">frc4550.org</a> (the "Site"). This Privacy Policy explains how we collect, use, disclose, and protect your information when you visit our Site or use our services.</p>
 
         <h2>1. Information We Collect</h2>
 

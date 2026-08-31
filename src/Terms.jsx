@@ -6,7 +6,7 @@ const FALLBACK = `...
         <h1>Terms &amp; Conditions</h1>
         <p class="updated">Last Updated: May 26, 2026</p>
 
-        <p>Welcome to FRC Team 4550 "Something's Bruin." By accessing or using our website at <a href="https://4550robotics.com">4550robotics.com</a> (the "Site"), you agree to be bound by these Terms &amp; Conditions ("Terms"). If you do not agree with any part of these Terms, you must not use the Site.</p>
+        <p>Welcome to FRC Team 4550 "Something's Bruin." By accessing or using our website at <a href="https://frc4550.org">frc4550.org</a> (the "Site"), you agree to be bound by these Terms &amp; Conditions ("Terms"). If you do not agree with any part of these Terms, you must not use the Site.</p>
 
         <h2>1. Acceptance of Terms</h2>
         <p>By using the Site, you affirm that you are at least 13 years of age, or if you are under 13, that you have obtained parental consent to use the Site. The Member Hub is restricted to current team members, alumni, mentors, and authorized school personnel.</p>

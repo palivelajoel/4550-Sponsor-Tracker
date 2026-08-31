@@ -134,16 +134,21 @@ async function fullSync(req, res, sheetId, sheets, body) {
   }
 
   const stateKey = `sheet_sync_ids:${formId}`;
-  let prevIds = new Set();
+  let storedBaseline = new Set();
   const { data: stRows } = await supabase.from('site_config').select('value').eq('key', stateKey).maybeSingle();
   if (stRows?.value) {
-    try { prevIds = new Set(JSON.parse(stRows.value)); } catch { prevIds = new Set(); }
+    try { storedBaseline = new Set(JSON.parse(stRows.value)); } catch { storedBaseline = new Set(); }
   }
+
+  // Merge stored baseline with current sheet IDs so first-sync deletions also work.
+  // Anything currently in the sheet OR previously tracked is "known to have been mirrored".
+  const prevIds = new Set([...storedBaseline, ...curIds]);
 
   const subCanon = s => canon(questions.map(q => String(s.answers?.[q.id] ?? '')));
 
-  // 1) Propagate deletions: submissions known to be in the sheet (from last sync baseline)
-  //    but no longer present by id OR by identical content -> removed from the sheet -> delete from hub.
+  // 1) Propagate deletions: a hub submission is deleted only if it was previously mirrored
+  //    (present in prevIds = stored baseline UNION current sheet ids) AND it no longer has
+  //    either an id match OR an identical-content match in the CURRENT sheet.
   const removed = subs
     .filter(s => prevIds.has(s.id) && !curIds.has(s.id) && !contentMap.has(subCanon(s)))
     .map(s => s.id);
