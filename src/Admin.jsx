@@ -50,25 +50,6 @@ async function adminProxy(table, action, payload) {
 const ROLE_COLORS = { Member: "#64748b", Captain: "#3b82f6", Admin: "#ef4444" };
 const SUBTEAM_COLORS = { Build: "#f59e0b", Programming: "#3b82f6", "Marketing & Outreach": "#22c55e", General: "#64748b" };
 
-const QR_GRID = [
-  "1111111010001111101111111", "1000001001100000001000001", "1011101011011010001011101", "1011101011000011101011101",
-  "1011101010011101101011101", "1000001010101001101000001", "1111111010101010101111111", "0000000001010001000000000",
-  "0011111100011100010111101", "1100000111010110110001000", "1001111001011000000101111", "0110000001110011100000111",
-  "0011101010001010010110100", "0101010001110000011100000", "1001011100101001011010010", "0100010000111011100110001",
-  "1110101100001011111110010", "0000000001001001100010110", "1111111010101010101011011", "1000001011010111100010011",
-  "1011101010101011111111011", "1011101010100110010101111", "1011101010001000101011101", "1000001001101110001101001",
-  "1111111000111011001011111",
-];
-function QRNavIcon({ size = 16 }) {
-  const n = QR_GRID.length;
-  const rows = QR_GRID.map(r => [...r].map(c => c === "1"));
-  return (
-    <svg width={size} height={size} viewBox={`0 0 ${n} ${n}`} shapeRendering="crispEdges" style={{ display: "inline-block", flexShrink: 0 }}>
-      {rows.map((row, y) => row.map((on, x) => on ? <rect key={`${x}-${y}`} x={x} y={y} width={1} height={1} fill="#ef4444" /> : null))}
-    </svg>
-  );
-}
-
 const NAV = [
   { id: "overview", label: "📊 Overview" },
   { id: "accounts", label: "👥 Accounts" },
@@ -78,7 +59,7 @@ const NAV = [
   { id: "captains", label: "🏆 Leadership" },
   { id: "suggestions", label: "💡 Suggestions" },
   { id: "site", label: "⚙️ Site Config" },
-  { id: "qr", label: "QR Generator", icon: "qr" },
+  { id: "tools", label: "⛏️ Other Tools" },
 ];
 
 export default function Admin() {
@@ -285,9 +266,8 @@ export default function Admin() {
         )}
         <nav className="admin-nav" style={S.sidebarNav}>
           {NAV.map(n => (
-            <button key={n.id} onClick={() => { setPage(n.id); if (isMobile) setShowMobileNav(false); }} style={{ ...S.navItem, display: "flex", alignItems: "center", gap: 8, background: page === n.id ? "rgba(239,68,68,0.15)" : "transparent", color: page === n.id ? "#ef4444" : "#94a3b8", borderLeft: page === n.id ? "3px solid #ef4444" : "3px solid transparent" }}>
-              {n.icon === "qr" ? <QRNavIcon size={15} /> : null}
-              <span>{n.label}</span>
+            <button key={n.id} onClick={() => { setPage(n.id); if (isMobile) setShowMobileNav(false); }} style={{ ...S.navItem, background: page === n.id ? "rgba(239,68,68,0.15)" : "transparent", color: page === n.id ? "#ef4444" : "#94a3b8", borderLeft: page === n.id ? "3px solid #ef4444" : "3px solid transparent" }}>
+              {n.label}
               {n.id === "suggestions" && suggestions.length > 0 && <span style={S.badge}>{suggestions.length}</span>}
             </button>
           ))}
@@ -304,7 +284,7 @@ export default function Admin() {
         {page === "captains" && <CaptainsAdmin captains={captains} reload={loadAll} showToast={showToast} isMobile={isMobile} />}
         {page === "suggestions" && <Suggestions suggestions={suggestions} reload={loadAll} showToast={showToast} />}
         {page === "site" && <SiteConfig config={config} logoUrl={logoUrl} setLogoUrl={setLogoUrl} reload={loadAll} showToast={showToast} isMobile={isMobile} />}
-        {page === "qr" && <QRGenerator reload={loadAll} showToast={showToast} vals={config} isMobile={isMobile} />}
+        {page === "tools" && <QRGenerator reload={loadAll} showToast={showToast} vals={config} isMobile={isMobile} />}
       </main>
     </div>
   );
@@ -2263,9 +2243,51 @@ function QRGenerator({ reload, showToast, vals, isMobile }) {
   const [dark, setDark] = useState("#ef4444");
   const [light, setLight] = useState("#ffffff");
   const [margin, setMargin] = useState(2);
+  const [logo, setLogo] = useState(null);
+  const [logoSize, setLogoSize] = useState(22);
+  const [caption, setCaption] = useState("");
   const [downloading, setDownloading] = useState(false);
   const [saving, setSaving] = useState(false);
   const canvasRef = useRef(null);
+  const logoInputRef = useRef(null);
+
+  async function render(canvas, t = text, logoOverride = logo) {
+    if (!canvas || !t.trim()) return;
+    const tmp = document.createElement("canvas");
+    tmp.width = size;
+    tmp.height = size;
+    await QRCode.toCanvas(tmp, t, opts).catch(() => {});
+    if (logoOverride) {
+      try {
+        const img = await new Promise((res, rej) => { const im = new Image(); im.src = logoOverride; im.onload = () => res(im); im.onerror = rej; });
+        const ctx = tmp.getContext("2d");
+        const box = size * (logoSize / 100);
+        const pad = box * 0.18;
+        const bx = (size - box) / 2;
+        const by = (size - box) / 2;
+        ctx.fillStyle = light || "#ffffff";
+        ctx.fillRect(bx - pad, by - pad, box + pad * 2, box + pad * 2);
+        ctx.drawImage(img, bx, by, box, box);
+      } catch {}
+    }
+    const hasCaption = caption && caption.trim();
+    const capH = hasCaption ? 48 : 0;
+    canvas.width = size;
+    canvas.height = size + capH;
+    const ctx = canvas.getContext("2d");
+    ctx.fillStyle = light || "#ffffff";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(tmp, 0, 0);
+    if (hasCaption) {
+      ctx.fillStyle = light || "#ffffff";
+      ctx.fillRect(0, size, canvas.width, capH);
+      ctx.fillStyle = dark || "#000000";
+      ctx.font = `${Math.max(20, Math.floor(size / 22))}px Arial, sans-serif`;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(caption, canvas.width / 2, size + capH / 2);
+    }
+  }
 
   useEffect(() => {
     try {
@@ -2276,6 +2298,9 @@ function QRGenerator({ reload, showToast, vals, isMobile }) {
       if (j && j.dark) setDark(j.dark);
       if (j && j.light) setLight(j.light);
       if (j && typeof j.margin === "number") setMargin(j.margin);
+      if (j && typeof j.logoSize === "number") setLogoSize(j.logoSize);
+      if (j && j.caption) setCaption(j.caption);
+      if (j && j.logo) setLogo(j.logo);
     } catch {}
   }, [vals?.qr_config]);
 
@@ -2289,16 +2314,16 @@ function QRGenerator({ reload, showToast, vals, isMobile }) {
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas || !text.trim()) return;
-    QRCode.toCanvas(canvas, text, opts)
-      .then(() => {})
-      .catch(() => {});
-  }, [text, size, errorCorrectionLevel, dark, light, margin]);
+    render(canvas);
+  }, [text, size, errorCorrectionLevel, dark, light, margin, logo, logoSize, caption]);
 
   async function download() {
     if (!text.trim()) { showToast("Enter content to encode.", "#ef4444"); return; }
     setDownloading(true);
     try {
-      const dataUrl = await QRCode.toDataURL(text, opts);
+      const off = document.createElement("canvas");
+      await render(off, text, logo);
+      const dataUrl = off.toDataURL("image/png");
       const a = document.createElement("a");
       a.href = dataUrl;
       a.download = "qrcode.png";
@@ -2315,7 +2340,7 @@ function QRGenerator({ reload, showToast, vals, isMobile }) {
     if (!text.trim()) { showToast("Enter content to encode.", "#ef4444"); return; }
     setSaving(true);
     try {
-      const cfg = { url: text, width: size, errorCorrectionLevel, dark, light, margin };
+      const cfg = { url: text, width: size, errorCorrectionLevel, dark, light, margin, logoSize, caption, logo };
       await adminProxy('site_config', 'upsert', { key: 'qr_config', value: JSON.stringify(cfg) });
       reload(); showToast("✅ QR config saved.");
     } catch (e) {
@@ -2324,9 +2349,18 @@ function QRGenerator({ reload, showToast, vals, isMobile }) {
     setSaving(false);
   }
 
+  function onLogoPicked(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!/^image\//.test(file.type)) { showToast("Please choose an image file.", "#ef4444"); return; }
+    const reader = new FileReader();
+    reader.onload = () => setLogo(reader.result);
+    reader.readAsDataURL(file);
+  }
+
   return (
     <div style={{ maxWidth: 860, padding: "0 4px" }}>
-      <h1 style={{ ...S.pageTitle, fontSize: isMobile ? 16 : 20 }}>QR Generator</h1>
+      <h1 style={{ ...S.pageTitle, fontSize: isMobile ? 16 : 20 }}>Other Tools · QR Generator</h1>
       <div style={S.card}>
         <div style={S.cardTitle}>Content</div>
         <label style={{ color: "#94a3b8", fontSize: 12, fontFamily: "monospace" }}>Text / URL (required)</label>
@@ -2364,9 +2398,33 @@ function QRGenerator({ reload, showToast, vals, isMobile }) {
         </div>
       </div>
       <div style={S.card}>
+        <div style={S.cardTitle}>Logo &amp; Label</div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+            <label style={{ color: "#94a3b8", fontSize: 12, fontFamily: "monospace" }}>Logo / image overlay (optional, drawn over center of the QR)</label>
+            <input ref={logoInputRef} type="file" accept="image/*" onChange={onLogoPicked} style={{ display: "none" }} />
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <button onClick={() => logoInputRef.current?.click()} style={{ ...S.btnGhost, padding: "8px 14px" }}>{logo ? "🖼 Replace Logo" : "🖼 Upload Logo"}</button>
+              {logo && <button onClick={() => setLogo(null)} style={{ ...S.btnDanger, padding: "8px 14px" }}>Remove</button>}
+              {logo && <img src={logo} alt="logo" style={{ width: 36, height: 36, objectFit: "contain", borderRadius: 6, border: "1px solid rgba(255,255,255,0.15)", background: "#fff" }} />}
+            </div>
+          </div>
+          {logo && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+              <label style={{ color: "#94a3b8", fontSize: 12, fontFamily: "monospace" }}>Logo size ({logoSize}% of QR)</label>
+              <input type="range" min={10} max={40} value={logoSize} onChange={e => setLogoSize(Number(e.target.value))} style={{ width: "100%" }} />
+            </div>
+          )}
+          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+            <label style={{ color: "#94a3b8", fontSize: 12, fontFamily: "monospace" }}>Label below QR (optional)</label>
+            <input value={caption} onChange={e => setCaption(e.target.value)} placeholder="e.g. Vote for Team 4550!" style={{ ...S.input, width: "100%", marginBottom: 0 }} />
+          </div>
+        </div>
+      </div>
+      <div style={S.card}>
         <div style={S.cardTitle}>Live Preview</div>
         <div style={{ display: "flex", justifyContent: "center", padding: 8 }}>
-          <canvas ref={canvasRef} style={{ width: Math.min(size, 500), height: Math.min(size, 500), background: light, borderRadius: 8, maxWidth: "100%", imageRendering: "pixelated", border: "1px solid rgba(255,255,255,0.1)" }} />
+          <canvas ref={canvasRef} style={{ width: Math.min(size, 500), height: Math.min(size + (caption && caption.trim() ? 48 : 0), 545), background: light, borderRadius: 8, maxWidth: "100%", imageRendering: "pixelated", border: "1px solid rgba(255,255,255,0.1)" }} />
         </div>
       </div>
     </div>
