@@ -28,7 +28,6 @@ export default function HubAdvertisement() {
   const [qrDataUrl, setQrDataUrl] = useState("");
   const containerRef = useRef(null);
   const timerRef = useRef(null);
-  const escTimerRef = useRef(null);
 
   useEffect(() => {
     document.title = "Advertisement · Team 4550";
@@ -40,7 +39,6 @@ export default function HubAdvertisement() {
     load();
     return () => {
       clearTimeout(timerRef.current);
-      clearTimeout(escTimerRef.current);
     };
   }, [authed]);
 
@@ -79,13 +77,13 @@ export default function HubAdvertisement() {
   const advance = () => setSlideIndex(s => (s + 1) % Math.max(slides.length, 1));
 
   useEffect(() => {
-    if (!started || showQR || slides.length === 0) return;
+    if (!started || showQR || escArmed || slides.length === 0) return;
     const slide = slides[slideIndex];
     const ms = (slide?.durationSec || 0) * 1000;
     const fallbackMs = slide?.type === "video" ? (ms || 25000) : (ms || slide?.type === "cad" ? 12000 : slide?.type === "info" ? 10000 : 8000);
     timerRef.current = setTimeout(() => advance(), fallbackMs);
     return () => clearTimeout(timerRef.current);
-  }, [started, showQR, slideIndex, slides]);
+  }, [started, showQR, escArmed, slideIndex, slides]);
 
   function start(e) {
     e?.stopPropagation();
@@ -100,6 +98,7 @@ export default function HubAdvertisement() {
 
   useEffect(() => {
     function onKey(e) {
+      if (escArmed && e.key !== "Enter" && e.key !== "Escape") return;
       if (e.code === "Space") {
         e.preventDefault();
         if (!started) {
@@ -119,9 +118,7 @@ export default function HubAdvertisement() {
       }
       if (e.key === "Escape") {
         e.preventDefault();
-        setEscArmed(true);
-        clearTimeout(escTimerRef.current);
-        escTimerRef.current = setTimeout(() => setEscArmed(false), 3000);
+        setEscArmed(a => !a);
       }
     }
     window.addEventListener("keydown", onKey);
@@ -164,6 +161,17 @@ export default function HubAdvertisement() {
             <span style={{ fontFamily: "'Orbitron', sans-serif", fontSize: 12, fontWeight: 700, color: C.red, letterSpacing: 2 }}>FRC TEAM 4550 · SOMETHING'S BRUIN</span>
           </div>
           <button onClick={exitToHub} style={{ background: "rgba(0,0,0,0.5)", border: "1px solid rgba(255,255,255,0.15)", color: C.text, borderRadius: 6, padding: "6px 12px", cursor: "pointer", fontSize: 13, fontFamily: "monospace", pointerEvents: "auto" }}>✕ Exit</button>
+        </div>
+      )}
+
+      {escArmed && (
+        <div style={{ position: "fixed", inset: 0, zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(5,7,9,0.92)" }}>
+          <div style={{ textAlign: "center", fontFamily: "'Exo 2', sans-serif", padding: 32 }}>
+            <div style={{ fontFamily: "'Orbitron', sans-serif", fontWeight: 700, fontSize: "clamp(18px,3vw,30px)", letterSpacing: 2, color: C.text, marginBottom: 12 }}>EXIT PRESENTATION?</div>
+            <div style={{ color: C.dim, fontSize: 15, marginBottom: 6 }}>Press <span style={{ color: "#fff" }}>Enter</span> to exit to the Member Hub</div>
+            <div style={{ color: C.muted, fontSize: 13, marginBottom: 20 }}>Press <span style={{ color: "#fff" }}>Escape</span> to keep watching</div>
+            <button onClick={exitToHub} style={{ background: C.red, border: "none", color: "#fff", borderRadius: 8, padding: "10px 20px", fontFamily: "'Orbitron', sans-serif", fontSize: 13, fontWeight: 700, letterSpacing: 1, cursor: "pointer" }}>Exit to Hub</button>
+          </div>
         </div>
       )}
 
