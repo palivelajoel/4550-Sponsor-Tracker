@@ -154,7 +154,7 @@ export default function HubForms() {
       {view === "responses" && responsesForm && (
         <FormResponses
           form={responsesForm} submissions={submissions.filter(s => s.form_id === responsesForm.id)}
-          canSync={canEdit} onReload={loadData}
+          canSync={canEdit} onReload={loadData} onToast={showToast}
           onBack={() => setView("list")}
         />
       )}
@@ -700,7 +700,7 @@ function FormFill({ form, username, onSubmit, onCancel }) {
   );
 }
 
-function FormResponses({ form, submissions, canSync, onReload }) {
+function FormResponses({ form, submissions, canSync, onReload, onToast }) {
   const questions = form.questions || [];
   const hasSubmissions = submissions.length > 0;
   const [viewType, setViewType] = useState("table");
@@ -854,9 +854,9 @@ function FormResponses({ form, submissions, canSync, onReload }) {
                           if (!window.confirm(`Delete response #${si + 1}? This removes it from the viewer.`)) return;
                           try {
                             await hubProxy("hub_form_submissions", "delete", { id: s.id });
-                            showToast(`Response #${si + 1} deleted.`);
+                            if (onToast) onToast(`Response #${si + 1} deleted.`);
                             if (onReload) onReload();
-                          } catch (e) { showToast("Delete failed: " + (e.message || e)); }
+                          } catch (e) { if (onToast) onToast("Delete failed: " + (e.message || e)); }
                         }}
                         style={{ ...ghostBtn, fontSize: 11, padding: "4px 9px", color: "#ef4444", borderColor: "rgba(239,68,68,0.35)" }}
                       >
