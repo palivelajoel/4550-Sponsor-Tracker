@@ -2,7 +2,9 @@ import { createClient } from '@supabase/supabase-js';
 import { verifyToken, getTokenFromRequest, hashPassword } from './_shared.js';
 
 const ADMIN_TABLES = ['sponsors', 'captains', 'site_config', 'members', 'hub_tasks', 'suggestions', 'hub_calendar', 'inventory_items', 'articles'];
-const HUB_TABLES = ['hub_tasks', 'inventory_items', 'inventory_transactions', 'hub_announcements', 'hub_media', 'hub_resources', 'sponsors', 'sponsor_notes', 'hub_forms', 'hub_form_submissions', 'articles'];
+const HUB_TABLES = ['hub_tasks', 'inventory_items', 'inventory_transactions', 'hub_announcements', 'hub_media', 'hub_resources', 'sponsors', 'sponsor_notes', 'hub_forms', 'hub_form_submissions', 'articles', 'site_config'];
+
+const HUB_CONFIG_KEYS = ['media_folders'];
 
 export default async function handler(req, res) {
   try {
@@ -75,6 +77,16 @@ export default async function handler(req, res) {
     }
 
     if (!['select', 'insert', 'update', 'delete', 'upsert'].includes(action)) return res.status(400).json({ error: 'Invalid action' });
+
+    if (isHub && table === 'site_config' && action !== 'select') {
+      const cfgKey = bodyPayload?.key || (action === 'upsert' ? bodyPayload?.key : null);
+      if (!cfgKey || !HUB_CONFIG_KEYS.includes(cfgKey)) {
+        return res.status(403).json({ error: 'Forbidden: cannot modify that config key' });
+      }
+    }
+    if (isHub && table === 'site_config' && action === 'select' && bodyPayload?.key && !HUB_CONFIG_KEYS.includes(bodyPayload.key)) {
+      return res.status(403).json({ error: 'Forbidden: cannot read that config key' });
+    }
 
     if (action === 'select') {
       const { filters, order, limit: selLimit } = bodyPayload || {};

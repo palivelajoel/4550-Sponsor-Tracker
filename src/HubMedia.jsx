@@ -122,9 +122,14 @@ export default function HubMedia() {
   const [form, setForm] = useState({ title: "", category: "Competition", description: "", year: new Date().getFullYear(), url: "", folder: "" });
   const [uploadMode, setUploadMode] = useState("file");
   const [file, setFile] = useState(null);
+  const [dirFiles, setDirFiles] = useState(null);
+  const [targetFolder, setTargetFolder] = useState("");
+  const [mediaFolders, setMediaFolders] = useState([]);
   const [toast, setToast] = useState("");
   const [cropFile, setCropFile] = useState(null);
+  const [editItem, setEditItem] = useState(null);
   const fileRef = useRef(null);
+  const folderRef = useRef(null);
 
   useEffect(() => {
     if (!authed) { window.location.href = "/member-hub"; return; }
@@ -137,17 +142,50 @@ export default function HubMedia() {
   async function load() {
     const r = await sbFetch("hub_media?select=*&order=created_at.desc");
     if (r) setItems(r);
+    if (canEdit) {
+      try {
+        const cfg = await hubProxy("site_config", "select", { filters: { key: "media_folders" } });
+        const row = (cfg?.data || [])[0];
+        const arr = row?.value ? JSON.parse(row.value) : [];
+        setMediaFolders(Array.isArray(arr) ? arr : []);
+      } catch {}
+    }
+  }
+
+  function persistFolders(arr) {
+    const list = [...new Set(arr.map(s => String(s).trim()).filter(Boolean))].sort();
+    setMediaFolders(list);
+    return hubProxy("site_config", "upsert", { key: "media_folders", value: JSON.stringify(list) });
+  }
+
+  async function createFolder() {
+    if (!canEdit) return;
+    const name = prompt("New folder name:");
+    if (!name || !name.trim()) return;
+    try {
+      await persistFolders([...mediaFolders, name.trim()]);
+      showToast(`Folder "${name.trim()}" created.`);
+    } catch (e) { showToast("Create failed: " + (e.message || e)); }
+  }
+
+  function titleFromName(name) {
+    let n = name.replace(/\.[^.]+$/, "");
+    n = n.replace(/[-_]+/g, " ").replace(/\s+/g, " ").trim();
+    return n.charAt(0).toUpperCase() + n.slice(1) || name;
   }
 
   async function submit() {
+    if (uploadMode === "folder") {
+      return submitFolder();
+    }
     if (!form.title) return showToast("Title required.");
     setUploading(true);
     let url = form.url;
-    if (uploadMode === "file" && file) {
+    if (file) {
       url = await uploadMediaFile(file, "team-media");
       if (!url) { showToast("Upload failed."); setUploading(false); return; }
     }
-    if (!url) { showToast("Provide a file or URL."); setUploading(false); return; }
+    if (!url) { showToast("Provide a file."); setUploading(false); return; }
 
     const isVideo = url.includes("youtube") || url.includes("youtu.be") || url.includes("vimeo") || (file && file.type.startsWith("video"));
     try {
@@ -159,6 +197,36 @@ export default function HubMedia() {
     setAddModal(false);
     setFile(null);
     setForm({ title: "", category: "Competition", description: "", year: new Date().getFullYear(), url: "", folder: "" });
+    setUploading(false);
+    load();
+  }
+
+  async function submitFolder() {
+    if (!dirFiles || dirFiles.length === 0) return showToast("Choose a folder first.");
+    setUploading(true);
+    let ok = 0, fail = 0;
+    for (let i = 0; i < dirFiles.length; i++) {
+      const f = dirFiles[i];
+      const url = await uploadMediaFile(f, "team-media");
+      if (!url) { fail++; continue; }
+      const isVideo = f.type.startsWith("video");
+      try {
+        await hubProxy("hub_media", "insert", {
+          title: titleFromName(f.name),
+          category: form.category,
+          description: "",
+          year: form.year,
+          url,
+          type: isVideo ? "video" : "image",
+          folder: targetFolder || "",
+        });
+        ok++;
+      } catch { fail++; }
+    }
+    showToast(`Uploaded ${ok} item${ok !== 1 ? "s" : ""}${fail ? ` · ${fail} failed` : ""}.`);
+    setAddModal(false);
+    setDirFiles(null);
+    setTargetFolder("");
     setUploading(false);
     load();
   }
@@ -175,6 +243,22 @@ export default function HubMedia() {
     load();
   }
 
+  async function saveEdit() {
+    if (!editItem || !editItem.title) { showToast("Title required."); return; }
+    try {
+      await hubProxy("hub_media", "update", {
+        id: editItem.id,
+        updates: { title: editItem.title, category: editItem.category, folder: editItem.folder || "", year: editItem.year, description: editItem.description || "" },
+      });
+      showToast("Saved.");
+      const merged = await persistFolders([...mediaFolders, editItem.folder || ""]);
+      setEditItem(null);
+      setLightbox(null);
+      load();
+      setMediaFolders(merged ? merged : mediaFolders);
+    } catch (e) { showToast("Save failed: " + (e.message || e)); }
+  }
+
   function getYoutubeId(url) {
     const m = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\s]+)/);
     return m ? m[1] : null;
@@ -189,7 +273,7 @@ export default function HubMedia() {
     return item.url;
   }
 
-  const folders = [...new Set(items.map(i => i.folder || ""))].sort();
+  const folders = [...new Set([...(items.map(i => i.folder || "")), ...mediaFolders])].sort();
 
   const filtered = items.filter(i => {
     if (filter !== "All" && i.category !== filter) return false;
@@ -249,14 +333,17 @@ export default function HubMedia() {
             ))}
           </div>
         )}
-        <div style={{ marginLeft: "auto", fontSize: 12, color: C.dim, fontFamily: "monospace" }}>{filtered.length} items</div>
+        <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 10 }}>
+          {canEdit && <button onClick={createFolder} style={{ ...ghostBtn, fontSize: 11, padding: "6px 12px" }}>📁 New Folder</button>}
+          <span style={{ fontSize: 12, color: C.dim, fontFamily: "monospace" }}>{filtered.length} items</span>
+        </div>
       </div>
 
       {/* Gallery */}
       <div style={{ padding: "20px" }}>
         {filtered.length === 0 && (
           <div style={{ textAlign: "center", color: C.dim, padding: "60px 0", fontFamily: "monospace" }}>
-            No media yet. Click "Add Media" to upload photos or link videos.
+            No media yet. Click "Add Media" to upload photos or videos.
           </div>
         )}
         <div className="media-grid">
@@ -302,6 +389,7 @@ export default function HubMedia() {
                 <div style={{ fontSize: 12, color: C.dim, fontFamily: "monospace", marginTop: 2 }}>{lightbox.category} · {lightbox.year}{lightbox.folder ? ` · ${lightbox.folder}` : ""}</div>
               </div>
               <div style={{ display: "flex", gap: 8 }}>
+                {canEdit && <button onClick={() => { setEditItem({ ...lightbox }); setLightbox(null); }} style={ghostBtn}>✎ Edit</button>}
                 {canEdit && <button onClick={() => deleteItem(lightbox.id)} style={dangerBtn}>Delete</button>}
                 <button onClick={() => setLightbox(null)} style={ghostBtn}>✕ Close</button>
               </div>
@@ -343,9 +431,9 @@ export default function HubMedia() {
 
               {/* Upload mode toggle */}
               <div style={{ display: "flex", gap: 0, borderRadius: 6, overflow: "hidden", border: `1px solid ${C.border}` }}>
-                {["file", "url"].map(m => (
+                {["file", "folder"].map(m => (
                   <button key={m} onClick={() => setUploadMode(m)} style={{ flex: 1, padding: "8px", background: uploadMode === m ? "rgba(239,68,68,0.2)" : "transparent", border: "none", color: uploadMode === m ? C.red : C.muted, cursor: "pointer", fontSize: 12, fontFamily: "monospace" }}>
-                    {m === "file" ? "📁 Upload File" : "🔗 URL / YouTube"}
+                    {m === "file" ? "📁 Single File" : "🗂 Folder"}
                   </button>
                 ))}
               </div>
@@ -363,12 +451,57 @@ export default function HubMedia() {
                   )}
                 </div>
               ) : (
-                <input placeholder="https://youtube.com/watch?v=... or image URL" value={form.url} onChange={e => setForm({ ...form, url: e.target.value })} style={inputStyle} />
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  <button onClick={() => folderRef.current?.click()} style={{ ...ghostBtn, width: "100%", padding: "10px" }}>
+                    {dirFiles ? `✓ ${dirFiles.length} file${dirFiles.length !== 1 ? "s" : ""} selected` : "Choose a folder"}
+                  </button>
+                  <input ref={folderRef} type="file" webkitdirectory="" directory="" multiple style={{ display: "none" }}
+                    onChange={e => {
+                      const files = Array.from(e.target.files || []);
+                      setDirFiles(files);
+                      if (!targetFolder && files.length) setTargetFolder(files[0].webkitRelativePath?.split("/")[0] || "");
+                    }} />
+                  <input placeholder="Target folder (or type a new one)" value={targetFolder}
+                    onChange={e => setTargetFolder(e.target.value)} list="media-target-folders" style={inputStyle} />
+                  <datalist id="media-target-folders">
+                    {folders.filter(f => f).map(f => <option key={f} value={f} />)}
+                  </datalist>
+                  {dirFiles && dirFiles.length > 0 && (
+                    <div style={{ fontSize: 10, color: C.dim, fontFamily: "monospace" }}>
+                      Titles are auto-named from each filename (you can rename later).
+                    </div>
+                  )}
+                </div>
               )}
 
               <div style={{ display: "flex", gap: 10, marginTop: 4 }}>
-                <button onClick={submit} disabled={uploading} style={{ ...addBtnStyle, flex: 1, opacity: uploading ? 0.6 : 1 }}>{uploading ? "Uploading..." : "Add"}</button>
+                <button onClick={submit} disabled={uploading} style={{ ...addBtnStyle, flex: 1, opacity: uploading ? 0.6 : 1 }}>{uploading ? "Uploading..." : uploadMode === "folder" ? "Upload Folder" : "Add"}</button>
                 <button onClick={() => setAddModal(false)} style={{ ...ghostBtn, flex: 1 }}>Cancel</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Media Modal */}
+      {editItem && (
+        <div style={overlayStyle} onClick={e => { if (e.target === e.currentTarget) { setEditItem(null); setLightbox(null); } }}>
+          <div style={{ background: "#0d1117", border: `1px solid ${C.border}`, borderRadius: 14, padding: "24px", width: "100%", maxWidth: 460 }}>
+            <div style={{ fontFamily: "'Orbitron', sans-serif", fontSize: 14, fontWeight: 700, color: C.text, marginBottom: 16, letterSpacing: 2 }}>✎ Edit Media</div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 11 }}>
+              <input placeholder="Title *" value={editItem.title} onChange={e => setEditItem({ ...editItem, title: e.target.value })} style={inputStyle} />
+              <select value={editItem.category} onChange={e => setEditItem({ ...editItem, category: e.target.value })} style={selectStyle}>
+                {CATEGORIES.filter(c => c !== "All").map(c => <option key={c}>{c}</option>)}
+              </select>
+              <input placeholder="Folder (optional)" value={editItem.folder || ""} onChange={e => setEditItem({ ...editItem, folder: e.target.value })} list="media-edit-folders" style={inputStyle} />
+              <datalist id="media-edit-folders">
+                {folders.filter(f => f).map(f => <option key={f} value={f} />)}
+              </datalist>
+              <input type="number" placeholder="Year" value={editItem.year} onChange={e => setEditItem({ ...editItem, year: e.target.value })} style={inputStyle} />
+              <textarea placeholder="Description (optional)" value={editItem.description || ""} onChange={e => setEditItem({ ...editItem, description: e.target.value })} style={{ ...inputStyle, minHeight: 60, resize: "vertical" }} />
+              <div style={{ display: "flex", gap: 10, marginTop: 4 }}>
+                <button onClick={saveEdit} style={{ ...addBtnStyle, flex: 1 }}>Save</button>
+                <button onClick={() => { setEditItem(null); setLightbox(null); }} style={{ ...ghostBtn, flex: 1 }}>Cancel</button>
               </div>
             </div>
           </div>
