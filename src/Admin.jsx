@@ -50,6 +50,25 @@ async function adminProxy(table, action, payload) {
 const ROLE_COLORS = { Member: "#64748b", Captain: "#3b82f6", Admin: "#ef4444" };
 const SUBTEAM_COLORS = { Build: "#f59e0b", Programming: "#3b82f6", "Marketing & Outreach": "#22c55e", General: "#64748b" };
 
+const QR_GRID = [
+  "1111111010001111101111111", "1000001001100000001000001", "1011101011011010001011101", "1011101011000011101011101",
+  "1011101010011101101011101", "1000001010101001101000001", "1111111010101010101111111", "0000000001010001000000000",
+  "0011111100011100010111101", "1100000111010110110001000", "1001111001011000000101111", "0110000001110011100000111",
+  "0011101010001010010110100", "0101010001110000011100000", "1001011100101001011010010", "0100010000111011100110001",
+  "1110101100001011111110010", "0000000001001001100010110", "1111111010101010101011011", "1000001011010111100010011",
+  "1011101010101011111111011", "1011101010100110010101111", "1011101010001000101011101", "1000001001101110001101001",
+  "1111111000111011001011111",
+];
+function QRNavIcon({ size = 16 }) {
+  const n = QR_GRID.length;
+  const rows = QR_GRID.map(r => [...r].map(c => c === "1"));
+  return (
+    <svg width={size} height={size} viewBox={`0 0 ${n} ${n}`} shapeRendering="crispEdges" style={{ display: "inline-block", flexShrink: 0 }}>
+      {rows.map((row, y) => row.map((on, x) => on ? <rect key={`${x}-${y}`} x={x} y={y} width={1} height={1} fill="#ef4444" /> : null))}
+    </svg>
+  );
+}
+
 const NAV = [
   { id: "overview", label: "📊 Overview" },
   { id: "accounts", label: "👥 Accounts" },
@@ -59,7 +78,7 @@ const NAV = [
   { id: "captains", label: "🏆 Leadership" },
   { id: "suggestions", label: "💡 Suggestions" },
   { id: "site", label: "⚙️ Site Config" },
-  { id: "qr", label: "▦ QR Generator" },
+  { id: "qr", label: "QR Generator", icon: "qr" },
 ];
 
 export default function Admin() {
@@ -266,8 +285,9 @@ export default function Admin() {
         )}
         <nav className="admin-nav" style={S.sidebarNav}>
           {NAV.map(n => (
-            <button key={n.id} onClick={() => { setPage(n.id); if (isMobile) setShowMobileNav(false); }} style={{ ...S.navItem, background: page === n.id ? "rgba(239,68,68,0.15)" : "transparent", color: page === n.id ? "#ef4444" : "#94a3b8", borderLeft: page === n.id ? "3px solid #ef4444" : "3px solid transparent" }}>
-              {n.label}
+            <button key={n.id} onClick={() => { setPage(n.id); if (isMobile) setShowMobileNav(false); }} style={{ ...S.navItem, display: "flex", alignItems: "center", gap: 8, background: page === n.id ? "rgba(239,68,68,0.15)" : "transparent", color: page === n.id ? "#ef4444" : "#94a3b8", borderLeft: page === n.id ? "3px solid #ef4444" : "3px solid transparent" }}>
+              {n.icon === "qr" ? <QRNavIcon size={15} /> : null}
+              <span>{n.label}</span>
               {n.id === "suggestions" && suggestions.length > 0 && <span style={S.badge}>{suggestions.length}</span>}
             </button>
           ))}
