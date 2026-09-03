@@ -1,18 +1,12 @@
-import { createClient } from '@supabase/supabase-js';
+import { d1SelectOne } from './_gateway.js';
 
 export default async function handler(req, res) {
-  const supabaseUrl = process.env.SUPABASE_URL;
-  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE;
-
   let logoUrl = '/logo.jpg';
 
-  if (supabaseUrl && supabaseKey) {
-    try {
-      const supabase = createClient(supabaseUrl, supabaseKey);
-      const { data } = await supabase.from('site_config').select('value').eq('key', 'logo_url').maybeSingle();
-      if (data?.value) logoUrl = data.value;
-    } catch {}
-  }
+  try {
+    const row = await d1SelectOne('site_config', { filters: [{ col: 'key', op: 'eq', value: 'logo_url' }] });
+    if (row?.value) logoUrl = row.value;
+  } catch {}
 
   res.setHeader('Content-Type', 'application/json');
   res.setHeader('Cache-Control', 'public, max-age=3600, s-maxage=3600');

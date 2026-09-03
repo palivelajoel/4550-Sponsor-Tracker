@@ -9,7 +9,7 @@ By using 4550robotics.com you agree to these terms. The Member Hub is restricted
 - Users must be 13+ or have parental consent
 - Member Hub credentials must not be shared
 - User content may be moderated or removed
-- We use Supabase, Vercel, YouTube, and other third-party services
+- We use Cloudflare D1, Vercel, YouTube, and other third-party services
 - Donations processed by Vanco Events (non-refundable except as required by law)
 - Site provided "as is" without warranties
 - Colorado law governs these terms

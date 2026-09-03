@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js';
+import { d1Select } from './_gateway.js';
 
 function icalEscape(text) {
   return (text || '')
@@ -71,17 +71,13 @@ function buildICS(events, tasks) {
 }
 
 export default async function handler(req, res) {
-  const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE);
   try {
-    const [evRes, taskRes] = await Promise.all([
-      supabase.from('hub_calendar').select('*').order('date', { ascending: true }),
-      supabase.from('hub_tasks').select('id,title,description,status,priority,due_date,due_time,start_date,start_time,assigned_name,subteam').not('due_date', 'is', null).order('due_date', { ascending: true }),
+    const [events, tasks] = await Promise.all([
+      d1Select('hub_calendar', { order: [{ col: 'date', asc: true }] }),
+      d1Select('hub_tasks', { filters: [{ col: 'due_date', op: 'not.is', value: null }], order: [{ col: 'due_date', asc: true }] }),
     ]);
 
-    const events = evRes.data || [];
-    const tasks = taskRes.data || [];
-
-    const ics = buildICS(events, tasks);
+    const ics = buildICS(events || [], tasks || []);
 
     res.setHeader('Content-Type', 'text/calendar; charset=utf-8');
     res.setHeader('Content-Disposition', 'inline; filename="frc4550-calendar.ics"');

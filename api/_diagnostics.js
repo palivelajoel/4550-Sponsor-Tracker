@@ -4,8 +4,8 @@
 export default async function handler(req, res) {
   try {
     const env = {
-      SUPABASE_URL: !!process.env.SUPABASE_URL,
-      SUPABASE_SERVICE_ROLE: !!process.env.SUPABASE_SERVICE_ROLE,
+      D1_GATEWAY_URL: !!process.env.D1_GATEWAY_URL,
+      D1_GATEWAY_TOKEN: !!process.env.D1_GATEWAY_TOKEN,
       ADMIN_API_TOKEN: !!process.env.ADMIN_API_TOKEN,
       GROQ_API_KEY: !!process.env.GROQ_API_KEY,
       ANTHROPIC_API_KEY: !!process.env.ANTHROPIC_API_KEY,

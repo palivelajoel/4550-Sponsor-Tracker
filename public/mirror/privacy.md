@@ -13,18 +13,18 @@ Last Updated: May 26, 2026
 ### Information Collected Automatically
 - **Log Data:** IP address, browser type, operating system, referring URLs, pages visited
 - **Cookies:** essential cookies for login sessions only (no tracking or advertising cookies)
-- **Service Providers:** Vercel (hosting), Supabase (database & authentication)
+- **Service Providers:** Vercel (hosting), Cloudflare D1 (database), GitHub (media storage)
 
 ### Data Inventory
 | Data Point | Purpose | Storage | Retention | Shared With |
 |---|---|---|---|---|
-| Name / Username | Member Hub access & identification | Supabase | Until account deactivation | Never sold |
-| Email address | Communication, login | Supabase | Until account deactivation | Never sold |
-| Phone number | Sponsor outreach | Supabase | Until requested deletion | Never sold |
-| Task assignments | Team coordination | Supabase | Until deleted by user | Never sold |
-| Calendar events | Team scheduling | Supabase | Until deleted by user | Never sold |
-| Media uploads | Team gallery | Supabase Storage | Until deleted by user | Never sold |
-| Suggestions/Feedback | Team improvement | Supabase | Indefinite (anonymized) | Never sold |
+| Name / Username | Member Hub access & identification | Cloudflare D1 | Until account deactivation | Never sold |
+| Email address | Communication, login | Cloudflare D1 | Until account deactivation | Never sold |
+| Phone number | Sponsor outreach | Cloudflare D1 | Until requested deletion | Never sold |
+| Task assignments | Team coordination | Cloudflare D1 | Until deleted by user | Never sold |
+| Calendar events | Team scheduling | Cloudflare D1 | Until deleted by user | Never sold |
+| Media uploads | Team gallery | GitHub | Until deleted by user | Never sold |
+| Suggestions/Feedback | Team improvement | Cloudflare D1 | Indefinite (anonymized) | Never sold |
 | IP address | Analytics, security | Vercel logs | 30 days | Vercel (processor) |
 | Login sessions | Authentication | LocalStorage | Until logout | Never |
 

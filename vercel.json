@@ -30,6 +30,8 @@
     { "source": "/api/identify-item", "destination": "/api/ai" },
     { "source": "/api/extract-brands", "destination": "/api/ai" },
     { "source": "/api/upload", "destination": "/api/upload" },
+    { "source": "/api/d1", "destination": "/api/d1" },
+    { "source": "/api/d1/:path*", "destination": "/api/d1" },
     { "source": "/api/lookup", "destination": "/api/ai" },
     { "source": "/api/trace-pit-map", "destination": "/api/ai" },
     { "source": "/api/parse-csv", "destination": "/api/ai" },

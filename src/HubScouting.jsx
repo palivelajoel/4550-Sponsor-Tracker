@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { FONTS, C, sbFetch, isAuthed, canEditHub, HubHeader, toastStyle, inputStyle, selectStyle, overlayStyle, addBtnStyle, ghostBtn, dangerBtn } from "./hubUtils.jsx";
+import { FONTS, C, sbFetch, isAuthed, canEditHub, HubHeader, toastStyle, inputStyle, selectStyle, overlayStyle, addBtnStyle, ghostBtn, dangerBtn, hubProxy } from "./hubUtils.jsx";
 import HubBackground from "./HubBackground.jsx";
 
 // ─────────────────────────────────────────────────────────
@@ -126,7 +126,7 @@ function MatchScout({ onSubmit, username, cfg = DEFAULT_GAME_CONFIG, isMobile })
   async function submit() {
     if (!form.team_number || !form.match_number) return;
     setSaving(true);
-    await sbFetch("scouting_matches", { method:"POST", body:JSON.stringify({ ...form, team_number:parseInt(form.team_number), match_number:parseInt(form.match_number) }) });
+    await hubProxy("scouting_matches", "insert", { ...form, team_number:parseInt(form.team_number), match_number:parseInt(form.match_number) });
     setSaving(false);
     setForm({ ...EMPTY_MATCH, scouter_name:form.scouter_name });
     onSubmit?.();
@@ -269,7 +269,7 @@ function PitScout({ onSubmit, username, isMobile }) {
   async function submit() {
     if (!form.team_number) return;
     setSaving(true);
-    await sbFetch("scouting_pits", { method:"POST", body:JSON.stringify({...form, team_number:parseInt(form.team_number)}) });
+    await hubProxy("scouting_pits", "insert", {...form, team_number:parseInt(form.team_number)});
     setSaving(false);
     setForm({...EMPTY_PIT, scouter_name:form.scouter_name});
     onSubmit?.();
@@ -527,9 +527,9 @@ function Picklist({ matches, picklist, onReload, cfg = DEFAULT_GAME_CONFIG, isMo
     // Delete all then reinsert
     const existing = await sbFetch("scouting_picklist?select=id");
     if (existing?.length) {
-      for (const e of existing) await sbFetch(`scouting_picklist?id=eq.${e.id}`, { method:"DELETE" });
+      for (const e of existing) await hubProxy("scouting_picklist", "delete", { id: e.id });
     }
-    if (list.length) await sbFetch("scouting_picklist", { method:"POST", body:JSON.stringify(list.map((t,i)=>({team_number:t,rank:i+1}))) });
+    for (const t of list) await hubProxy("scouting_picklist", "insert", { team_number: t, rank: list.indexOf(t) + 1 });
     setSaving(false); onReload?.();
   }
 
@@ -913,7 +913,7 @@ export default function HubScouting() {
 
   async function deleteMatch(id) {
     if (!confirm("Delete this entry?")) return;
-    await sbFetch(`scouting_matches?id=eq.${id}`, { method:"DELETE" });
+    await hubProxy("scouting_matches", "delete", { id });
     loadAll(); showToast("Deleted.");
   }
 

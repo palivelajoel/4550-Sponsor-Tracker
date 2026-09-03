@@ -1,5 +1,5 @@
 import { google } from 'googleapis';
-import { createClient } from '@supabase/supabase-js';
+import { d1Select, d1SelectOne, d1Insert, d1Update, d1Delete } from './_gateway.js';
 import { verifyToken, getTokenFromRequest } from './_shared.js';
 
 function getAuth() {
@@ -87,13 +87,10 @@ async function fullSync(req, res, sheetId, sheets, body) {
     return res.status(403).json({ error: 'Forbidden: captain or admin role required' });
   }
 
-  const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE);
-
   const { formId, questions: clientQuestions } = body;
   if (!formId) return res.status(400).json({ error: 'Missing formId' });
 
-  const { data: form, error: fErr } = await supabase.from('hub_forms').select('*').eq('id', formId).maybeSingle();
-  if (fErr) return res.status(500).json({ error: fErr.message });
+  const form = await d1SelectOne('hub_forms', { filters: [{ col: 'id', op: 'eq', value: Number(formId) }] });
   if (!form) return res.status(404).json({ error: 'Form not found' });
 
   const questions = Array.isArray(clientQuestions) && clientQuestions.length ? clientQuestions : (form.questions || []);
@@ -101,9 +98,8 @@ async function fullSync(req, res, sheetId, sheets, body) {
   const header = ['Date', ...labels, ...META];
   const tname = tabName(form.title);
 
-  const { data: subs, error: sErr } = await supabase
-    .from('hub_form_submissions').select('*').eq('form_id', formId).order('created_at', { ascending: true });
-  if (sErr) return res.status(500).json({ error: sErr.message });
+  let subs = await d1Select('hub_form_submissions', { filters: [{ col: 'form_id', op: 'eq', value: Number(formId) }], order: [{ col: 'created_at', asc: true }] });
+  if (!subs) subs = [];
 
   // Read the whole tab. If the tab doesn't exist yet, treat as empty.
   let allValues = [];
@@ -135,9 +131,9 @@ async function fullSync(req, res, sheetId, sheets, body) {
 
   const stateKey = `sheet_sync_ids:${formId}`;
   let storedBaseline = new Set();
-  const { data: stRows } = await supabase.from('site_config').select('value').eq('key', stateKey).maybeSingle();
-  if (stRows?.value) {
-    try { storedBaseline = new Set(JSON.parse(stRows.value)); } catch { storedBaseline = new Set(); }
+  const stRow = await d1SelectOne('site_config', { filters: [{ col: 'key', op: 'eq', value: stateKey }] });
+  if (stRow?.value) {
+    try { storedBaseline = new Set(JSON.parse(stRow.value)); } catch { storedBaseline = new Set(); }
   }
 
   // Merge stored baseline with current sheet IDs so first-sync deletions also work.
@@ -153,8 +149,7 @@ async function fullSync(req, res, sheetId, sheets, body) {
     .filter(s => prevIds.has(s.id) && !curIds.has(s.id) && !contentMap.has(subCanon(s)))
     .map(s => s.id);
   if (removed.length) {
-    const { error: dErr } = await supabase.from('hub_form_submissions').delete().in('id', removed);
-    if (dErr) return res.status(500).json({ error: dErr.message });
+    await d1Delete('hub_form_submissions', [{ col: 'id', op: 'in', value: removed }]);
   }
   const keptSubs = subs.filter(s => !removed.includes(s.id));
 
@@ -191,12 +186,8 @@ async function fullSync(req, res, sheetId, sheets, body) {
     const answers = {};
     questions.forEach((q, i) => { answers[q.id] = r.cells[1 + i] ?? ''; });
     const submittedBy = String(r.cells[byCol] ?? '').trim() || 'sheet-import';
-    const { data: ins, error: inErr } = await supabase
-      .from('hub_form_submissions')
-      .insert({ form_id: formId, submitted_by: submittedBy, answers })
-      .select('id');
-    if (inErr) return res.status(500).json({ error: inErr.message });
-    const newId = ins?.[0]?.id;
+    const ins = await d1Insert('hub_form_submissions', { form_id: Number(formId), submitted_by: submittedBy, answers });
+    const newId = ins?.id;
     if (newId) inserted.push({ newId, rowIdx: r.rowIdx });
   }
   if (inserted.length) {
@@ -214,11 +205,11 @@ async function fullSync(req, res, sheetId, sheets, body) {
 
   // 4) Persist the now-known sheet ids as the deletion-detection baseline for the next sync.
   const nextIds = JSON.stringify([...curIds, ...toPush.map(s => s.id), ...inserted.map(x => x.newId)]);
-  const { data: existingState } = await supabase.from('site_config').select('key').eq('key', stateKey).maybeSingle();
+  const existingState = await d1SelectOne('site_config', { filters: [{ col: 'key', op: 'eq', value: stateKey }] });
   if (existingState) {
-    await supabase.from('site_config').update({ value: nextIds }).eq('key', stateKey);
+    await d1Update('site_config', [{ col: 'key', op: 'eq', value: stateKey }], { value: nextIds });
   } else {
-    await supabase.from('site_config').insert({ key: stateKey, value: nextIds });
+    await d1Insert('site_config', { key: stateKey, value: nextIds });
   }
 
   return res.status(200).json({ ok: true, formId, total: keptSubs.length - removed.length + inserted.length, pushed, imported: inserted.length, removed: removed.length });

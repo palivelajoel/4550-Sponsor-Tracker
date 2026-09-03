@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js';
+import { d1Insert } from './_gateway.js';
 import { verifyToken, getTokenFromRequest } from './_shared.js';
 
 async function announceToDiscord(req, res) {
@@ -58,19 +58,15 @@ async function discordToAnnouncement(req, res) {
   const { content, author } = req.body || {};
   if (!content) return res.status(400).json({ error: 'Missing content' });
 
-  const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE);
-
   const title = content.split('\n')[0].slice(0, 100) || 'Discord Announcement';
 
-  const { error } = await supabase.from('hub_announcements').insert({
+  await d1Insert('hub_announcements', {
     title,
     body: content,
     tag: 'General',
     pinned: false,
     author: author || 'Discord',
   });
-
-  if (error) return res.status(500).json({ error: error.message });
   return res.status(200).json({ ok: true });
 }
 

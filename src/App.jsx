@@ -1,13 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { motion, useScroll, useTransform } from 'framer-motion'
-import { createClient } from '@supabase/supabase-js'
 import Starfield from './Starfield.jsx'
-import { FONTS, hubProxy, getUsername } from './hubUtils.jsx'
-
-const supabase = createClient(
-  import.meta.env.VITE_SUPABASE_URL,
-  import.meta.env.VITE_SUPABASE_ANON_KEY
-)
+import { FONTS, hubProxy, getUsername, sbFetch } from './hubUtils.jsx'
 
 const STATUS_COLORS = {
   'Not Contacted': '#64748b',
@@ -83,7 +77,7 @@ function SuggestionsBox({ showToast }) {
   const submit = async () => {
     if (!msg.trim()) return
     setSending(true)
-    await supabase.from('suggestions').insert([{ message: msg.trim() }])
+    await hubProxy("suggestions", "insert", { message: msg.trim() })
     setMsg('')
     setSending(false)
     showToast('💡 Suggestion submitted!')
@@ -156,8 +150,8 @@ function NotesModal({ sponsor, onClose }) {
 
   useEffect(() => {
     const fetch = async () => {
-      const { data } = await supabase.from('sponsor_notes').select('*').eq('sponsor_id', sponsor.id).order('created_at', { ascending: false })
-      if (data) setNotes(data)
+      const data = await sbFetch("sponsor_notes?sponsor_id=eq." + sponsor.id + "&order=created_at.desc") || []
+      setNotes(data)
       setLoading(false)
     }
     fetch()
@@ -397,17 +391,15 @@ export default function App() {
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(null), 3500) }
 
   const fetchSponsors = useCallback(async () => {
-    const { data } = await supabase.from('sponsors').select('*').order('date_added', { ascending: false })
-    if (data) setSponsors(data)
+    const data = await sbFetch("sponsors?order=date_added.desc") || []
+    setSponsors(data)
     setLoading(false)
   }, [])
 
   useEffect(() => {
     fetchSponsors()
-    const channel = supabase.channel('sponsors-realtime')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'sponsors' }, () => { fetchSponsors(); showToast('🔄 List updated by a teammate') })
-      .subscribe()
-    return () => supabase.removeChannel(channel)
+    const intervalId = setInterval(fetchSponsors, 15000)
+    return () => clearInterval(intervalId)
   }, [fetchSponsors])
 
   useEffect(() => {

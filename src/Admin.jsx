@@ -1081,7 +1081,7 @@ const PRIVACY_FALLBACK = `...
         <ul>
           <li><strong>Log Data:</strong> Our servers automatically record certain information when you visit the Site, including your IP address, browser type, operating system, referring URLs, and pages visited.</li>
           <li><strong>Cookies:</strong> We use essential cookies for authentication (login sessions). We do not use tracking cookies or third-party advertising cookies.</li>
-          <li><strong>Service Providers:</strong> We use Vercel (hosting) and Supabase (database/authentication), which may process data as described in their respective privacy policies.</li>
+          <li><strong>Service Providers:</strong> We use Vercel (hosting) and Cloudflare (database via D1), which may process data as described in their respective privacy policies.</li>
         </ul>
         <h2>2. How We Use Your Information</h2>
         <p>We use the information we collect for the following purposes:</p>
@@ -1106,16 +1106,16 @@ const PRIVACY_FALLBACK = `...
               </tr>
             </thead>
             <tbody>
-              <tr style="border-bottom:1px solid rgba(255,255,255,0.05)"><td style="padding:8px 12px">Name / Username</td><td style="padding:8px 12px">Member Hub identification</td><td style="padding:8px 12px">Supabase</td><td style="padding:8px 12px">Until deactivation</td><td style="padding:8px 12px">Never sold</td></tr>
-              <tr style="border-bottom:1px solid rgba(255,255,255,0.05);background:rgba(255,255,255,0.02)"><td style="padding:8px 12px">Email address</td><td style="padding:8px 12px">Communication, login</td><td style="padding:8px 12px">Supabase</td><td style="padding:8px 12px">Until deactivation</td><td style="padding:8px 12px">Never sold</td></tr>
-              <tr style="border-bottom:1px solid rgba(255,255,255,0.05)"><td style="padding:8px 12px">Phone number</td><td style="padding:8px 12px">Sponsor outreach</td><td style="padding:8px 12px">Supabase</td><td style="padding:8px 12px">Until requested deletion</td><td style="padding:8px 12px">Never sold</td></tr>
-              <tr style="border-bottom:1px solid rgba(255,255,255,0.05);background:rgba(255,255,255,0.02)"><td style="padding:8px 12px">Task assignments</td><td style="padding:8px 12px">Team coordination</td><td style="padding:8px 12px">Supabase</td><td style="padding:8px 12px">Until deleted by user</td><td style="padding:8px 12px">Never sold</td></tr>
-              <tr style="border-bottom:1px solid rgba(255,255,255,0.05)"><td style="padding:8px 12px">Calendar events</td><td style="padding:8px 12px">Team scheduling</td><td style="padding:8px 12px">Supabase</td><td style="padding:8px 12px">Until deleted by user</td><td style="padding:8px 12px">Never sold</td></tr>
-              <tr style="border-bottom:1px solid rgba(255,255,255,0.05);background:rgba(255,255,255,0.02)"><td style="padding:8px 12px">Media uploads</td><td style="padding:8px 12px">Team gallery</td><td style="padding:8px 12px">Supabase Storage</td><td style="padding:8px 12px">Until deleted by user</td><td style="padding:8px 12px">Never sold</td></tr>
-              <tr style="border-bottom:1px solid rgba(255,255,255,0.05)"><td style="padding:8px 12px">Suggestions / Feedback</td><td style="padding:8px 12px">Team improvement</td><td style="padding:8px 12px">Supabase</td><td style="padding:8px 12px">Indefinite (anonymized)</td><td style="padding:8px 12px">Never sold</td></tr>
+              <tr style="border-bottom:1px solid rgba(255,255,255,0.05)"><td style="padding:8px 12px">Name / Username</td><td style="padding:8px 12px">Member Hub identification</td><td style="padding:8px 12px">Cloudflare D1</td><td style="padding:8px 12px">Until deactivation</td><td style="padding:8px 12px">Never sold</td></tr>
+              <tr style="border-bottom:1px solid rgba(255,255,255,0.05);background:rgba(255,255,255,0.02)"><td style="padding:8px 12px">Email address</td><td style="padding:8px 12px">Communication, login</td><td style="padding:8px 12px">Cloudflare D1</td><td style="padding:8px 12px">Until deactivation</td><td style="padding:8px 12px">Never sold</td></tr>
+              <tr style="border-bottom:1px solid rgba(255,255,255,0.05)"><td style="padding:8px 12px">Phone number</td><td style="padding:8px 12px">Sponsor outreach</td><td style="padding:8px 12px">Cloudflare D1</td><td style="padding:8px 12px">Until requested deletion</td><td style="padding:8px 12px">Never sold</td></tr>
+              <tr style="border-bottom:1px solid rgba(255,255,255,0.05);background:rgba(255,255,255,0.02)"><td style="padding:8px 12px">Task assignments</td><td style="padding:8px 12px">Team coordination</td><td style="padding:8px 12px">Cloudflare D1</td><td style="padding:8px 12px">Until deleted by user</td><td style="padding:8px 12px">Never sold</td></tr>
+              <tr style="border-bottom:1px solid rgba(255,255,255,0.05)"><td style="padding:8px 12px">Calendar events</td><td style="padding:8px 12px">Team scheduling</td><td style="padding:8px 12px">Cloudflare D1</td><td style="padding:8px 12px">Until deleted by user</td><td style="padding:8px 12px">Never sold</td></tr>
+              <tr style="border-bottom:1px solid rgba(255,255,255,0.05);background:rgba(255,255,255,0.02)"><td style="padding:8px 12px">Media uploads</td><td style="padding:8px 12px">Team gallery</td><td style="padding:8px 12px">GitHub</td><td style="padding:8px 12px">Until deleted by user</td><td style="padding:8px 12px">Never sold</td></tr>
+              <tr style="border-bottom:1px solid rgba(255,255,255,0.05)"><td style="padding:8px 12px">Suggestions / Feedback</td><td style="padding:8px 12px">Team improvement</td><td style="padding:8px 12px">Cloudflare D1</td><td style="padding:8px 12px">Indefinite (anonymized)</td><td style="padding:8px 12px">Never sold</td></tr>
               <tr style="border-bottom:1px solid rgba(255,255,255,0.05);background:rgba(255,255,255,0.02)"><td style="padding:8px 12px">IP address</td><td style="padding:8px 12px">Analytics, security</td><td style="padding:8px 12px">Vercel logs</td><td style="padding:8px 12px">30 days</td><td style="padding:8px 12px">Vercel (processor)</td></tr>
               <tr style="border-bottom:1px solid rgba(255,255,255,0.05)"><td style="padding:8px 12px">Login sessions</td><td style="padding:8px 12px">Authentication</td><td style="padding:8px 12px">LocalStorage</td><td style="padding:8px 12px">Until logout</td><td style="padding:8px 12px">Never</td></tr>
-              <tr style="border-bottom:1px solid rgba(255,255,255,0.05);background:rgba(255,255,255,0.02)"><td style="padding:8px 12px">Camera / Photos</td><td style="padding:8px 12px">Inventory AI identification</td><td style="padding:8px 12px">Supabase Storage</td><td style="padding:8px 12px">Until deleted by user</td><td style="padding:8px 12px">None (AI in-memory only)</td></tr>
+              <tr style="border-bottom:1px solid rgba(255,255,255,0.05);background:rgba(255,255,255,0.02)"><td style="padding:8px 12px">Camera / Photos</td><td style="padding:8px 12px">Inventory AI identification</td><td style="padding:8px 12px">GitHub</td><td style="padding:8px 12px">Until deleted by user</td><td style="padding:8px 12px">None (AI in-memory only)</td></tr>
             </tbody>
           </table>
         </div>
@@ -1129,7 +1129,7 @@ const PRIVACY_FALLBACK = `...
         <h2>5. Data Sharing and Disclosure</h2>
         <p>We do not sell your personal information to third parties. We may share your information in the following circumstances:</p>
         <ul>
-          <li><strong>Service Providers:</strong> With Vercel (hosting), Supabase (database &amp; authentication), and other service providers who help us operate the Site.</li>
+          <li><strong>Service Providers:</strong> With Vercel (hosting), Cloudflare (database via D1), and other service providers who help us operate the Site.</li>
           <li><strong>Legal Requirements:</strong> If required by law, court order, or governmental regulation.</li>
           <li><strong>Protection of Rights:</strong> To protect the rights, property, or safety of our team, our members, or others.</li>
           <li><strong>School District:</strong> Cherry Creek School District may have access to certain information as part of oversight of the team as a school-affiliated organization.</li>
@@ -1221,7 +1221,7 @@ const TERMS_FALLBACK = `...
         <h2>8. Third-Party Services</h2>
         <p>Our Site integrates with third-party services including:</p>
         <ul>
-          <li>Supabase (database, authentication, file storage)</li>
+          <li>Cloudflare D1 (database), GitHub (file storage)</li>
           <li>Vercel (hosting)</li>
           <li>YouTube (video embedding)</li>
           <li>Instagram (social media linking)</li>
@@ -1703,8 +1703,8 @@ function SiteConfig({ config, logoUrl, setLogoUrl, reload, showToast, isMobile }
     const url = await uploadFile(logoFile);
     if (!url) { showToast("Upload failed.", "#ef4444"); setUploading(false); return; }
     const existing = await sbFetch("site_config?key=eq.logo_url&select=key");
-    if (existing?.length) await sbFetch("site_config?key=eq.logo_url", { method: "PATCH", body: JSON.stringify({ value: url }) });
-    else await sbFetch("site_config", { method: "POST", body: JSON.stringify({ key: "logo_url", value: url }) });
+    if (existing?.length) await adminProxy("site_config", "update", { id: existing[0].id, updates: { value: url } });
+    else await adminProxy("site_config", "insert", { key: "logo_url", value: url });
     setLogoUrl(url); setLogoFile(null); setUploading(false); reload(); showToast("✅ Logo updated!");
   }
 
@@ -1799,7 +1799,7 @@ function SiteConfig({ config, logoUrl, setLogoUrl, reload, showToast, isMobile }
     const adminToken = localStorage.getItem("admin_token");
     if (!adminToken) { showToast("Admin login required.", "#ef4444"); return; }
     setStorageBusy(true);
-    setStorageMsg("Working — downloads media, commits to GitHub, then cleans Supabase...");
+    setStorageMsg("Checking media storage...");
     try {
       const res = await fetch("/api/upload", {
         method: "POST",
@@ -1819,11 +1819,11 @@ function SiteConfig({ config, logoUrl, setLogoUrl, reload, showToast, isMobile }
       if (noToken) { showToast("GitHub storage isn't set up yet — add GITHUB_TOKEN in Vercel env first.", "#f59e0b"); return; }
       refreshStorageStatus();
       if (d.discovered === 0 && migrated === 0 && deleted === 0) { showToast("All media & docs are on GitHub. 🎉", "#22c55e"); return; }
-      let msg = `✅ Migrated ${migrated} media/doc${migrated === 1 ? "" : "s"} to GitHub`;
-      if (deleted) msg += `, deleted ${deleted} orphan${deleted === 1 ? "" : "s"} from Supabase`;
+      let msg = `✅ ${migrated} media/doc${migrated === 1 ? "" : "s"} on GitHub`;
+      if (deleted) msg += `, removed ${deleted} orphan${deleted === 1 ? "" : "s"}`;
       showToast(msg + ".", "#22c55e");
-      if (kept) showToast(`ℹ ${kept} non-media image${kept === 1 ? "" : "s"} stay in Supabase (by design).`, "#94a3b8");
-      if (failed) showToast(`⚠ ${failed} file${failed === 1 ? "" : "s"} couldn't migrate — kept in Supabase.`, "#f59e0b");
+      if (kept) showToast(`ℹ ${kept} non-media image${kept === 1 ? "" : "s"} stay in GitHub.`, "#94a3b8");
+      if (failed) showToast(`⚠ ${failed} file${failed === 1 ? "" : "s"} couldn't migrate.`, "#f59e0b");
       if (remaining) showToast(`⏳ ${remaining} left — run again to continue.`, "#f59e0b");
       reload();
     } catch (e) {
@@ -2149,20 +2149,20 @@ function SiteConfig({ config, logoUrl, setLogoUrl, reload, showToast, isMobile }
         {storageStatus && (
           <div style={{ fontSize: 12, color: "#94a3b8", fontFamily: "monospace", marginBottom: 10, lineHeight: 1.6 }}>
             {storageStatus.remaining > 0
-              ? <span style={{ color: "#f59e0b" }}>🗂 {storageStatus.remaining} media/doc{storageStatus.remaining === 1 ? "" : "s"} still in Supabase — run the move to finish.</span>
+              ? <span style={{ color: "#f59e0b" }}>🗂 {storageStatus.remaining} media/doc{storageStatus.remaining === 1 ? "" : "s"} still to migrate.</span>
               : <span style={{ color: "#22c55e" }}>✓ All media & docs are on GitHub.</span>}
-            {storageStatus.bucketObjects && ` — ${Object.values(storageStatus.bucketObjects).reduce((a, b) => a + b, 0)} objects in Supabase storage buckets.`}
+            {storageStatus.bucketObjects && ` — ${Object.values(storageStatus.bucketObjects).reduce((a, b) => a + b, 0)} objects in storage buckets.`}
           </div>
         )}
         <div style={{ fontSize: 12, color: "#94a3b8", fontFamily: "monospace", marginBottom: 12, lineHeight: 1.6 }}>
-          <span>Media Gallery 🖼️ and Resources 📁 (images, PDFs, CAD, videos) upload to GitHub</span> — stored in this repo under <span style={{ color: "#a78bfa" }}>public/uploads/</span>. All other images — logo, banners, sponsor/captain photos, landing, inventory — stay in <span style={{ color: "#a78bfa" }}>Supabase</span> for now.
+          <span>Media Gallery 🖼️ and Resources 📁 (images, PDFs, CAD, videos) upload to GitHub</span> — stored in this repo under <span style={{ color: "#a78bfa" }}>public/uploads/</span>. All other images — logo, banners, sponsor/captain photos, landing, inventory — also upload to GitHub. Data lives in <span style={{ color: "#a78bfa" }}>Cloudflare D1</span>.
         </div>
         <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
           <button onClick={runStorageCleanup} disabled={storageBusy} style={{ ...S.btnPrimary, opacity: storageBusy ? 0.6 : 1 }}>{storageBusy ? "Working..." : "🚀 Move Media & Docs to GitHub"}</button>
           {storageMsg && <span style={{ fontSize: 12, color: "#a78bfa", fontFamily: "monospace" }}>{storageMsg}</span>}
         </div>
         <div style={{ fontSize: 11, color: "#475569", fontFamily: "monospace", marginTop: 10 }}>
-          Moves every remaining Media Gallery + Resources file from Supabase to GitHub, rewrites the page references, then deletes whatever is no longer referenced (migrated copies, duplicates, orphans) — non-media images are never touched. Runs in batches (⏳ if more remain, just click again). Failed moves are always kept. Needs <span style={{ color: "#94a3b8" }}>GITHUB_TOKEN</span> in Vercel env and a public repo.
+          Media (images, PDFs, CAD, videos) uploads to the GitHub repo via GITHUB_TOKEN in Vercel env. Data lives in Cloudflare D1.
         </div>
       </div>
     </div>

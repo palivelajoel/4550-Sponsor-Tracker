@@ -177,13 +177,8 @@ function ProgressSection({ children, style, ...props }) {
   return <motion.div ref={ref} style={{ opacity, y, scale, ...style }} {...props}>{children}</motion.div>;
 }
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
-const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
-
 async function sbFetch(path) {
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
-    headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` },
-  });
+  const res = await fetch(`/api/d1/${path}`);
   if (!res.ok) return null;
   return res.json();
 }

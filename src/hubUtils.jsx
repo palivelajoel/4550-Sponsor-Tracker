@@ -1,9 +1,7 @@
 // hubUtils.jsx
 import { useState, useEffect, useRef } from "react";
 
-// Read Supabase config from Vite env vars so keys are not checked into source.
-export const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
-export const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
+// Read config from Vite env vars so keys are not checked into source.
 export const TEAM_PASSWORD = import.meta.env.VITE_TEAM_PASSWORD;
 
 export const ROLES = ["Member", "Captain", "Admin"];
@@ -67,10 +65,15 @@ export async function hubProxy(table, action, payload) {
   return res.json();
 }
 
-// ── Supabase ─────────────────────────────────────────────
+// ── Data reads (Cloudflare D1 via Vercel /api/d1) ────────
+// Read-only PostgREST-compatible endpoint. All reads route here; writes go through
+// the authenticated /api/hub-proxy or /api/admin-proxy (JWT gated).
 export async function sbFetch(path, opts = {}) {
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
-    headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, "Content-Type": "application/json", Prefer: "return=representation", ...opts.headers },
+  if (opts.method && opts.method !== "GET" && opts.method !== "OPTIONS") {
+    throw new Error("sbFetch is read-only; use hubProxy/adminProxy for writes.");
+  }
+  const res = await fetch(`/api/d1/${path}`, {
+    headers: { "Content-Type": "application/json", ...opts.headers },
     ...opts,
   });
   if (!res.ok) { console.error("sbFetch", res.status, path); return null; }
@@ -125,231 +128,43 @@ export async function prepareFileForUpload(file) {
 }
 
 /**
- * Generic upload → Supabase storage only (logos, banners, sponsor/captain
- * photos, landing images, inventory, etc.). Media-gallery & resource files use
- * uploadMediaFile(), which tries GitHub first.
+ * Upload a file (logos, banners, sponsor/captain photos, landing images,
+ * inventory images, etc.) to the GitHub repo via /api/upload. Returns the raw
+ * GitHub URL or null on failure.
  */
-export async function uploadFile(file, bucket = "team-assets") {
-  const { fileName: safeFileName, bytes, base64, contentType } = await prepareFileForUpload(file);
-  // Prefer the server proxy (service role): works for first uploads AND re-uploads,
-  // avoids anon-key storage RLS overwrite failures and CORS preflight noise.
+export async function uploadFile(file, _bucket) {
+  const { fileName, base64, contentType } = await prepareFileForUpload(file);
   const token = localStorage.getItem("admin_token") || localStorage.getItem("hub_token");
-  if (token) {
-    try {
-      const endpoint = localStorage.getItem("admin_token") ? "/api/admin-proxy" : "/api/hub-proxy";
-      const res = await fetch(endpoint, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ action: "upload", payload: { bucket, fileName: safeFileName, base64, contentType } }),
-      });
-      const j = await res.json().catch(() => ({}));
-      if (res.ok && j?.data?.url) return j.data.url;
-    } catch {}
-  }
+  if (!token) return null;
   try {
-    const res = await fetch(`${SUPABASE_URL}/storage/v1/object/${bucket}/${safeFileName}`, {
+    const res = await fetch("/api/upload", {
       method: "POST",
-      headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, "Content-Type": file.type, "x-upsert": "true" },
-      body: new Blob([bytes], { type: file.type }),
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ action: "upload", files: [{ fileName, base64, contentType }] }),
     });
-    if (res.ok) return `${SUPABASE_URL}/storage/v1/object/public/${bucket}/${safeFileName}`;
+    const j = await res.json().catch(() => ({}));
+    if (res.ok && j?.data?.files?.[0]?.url) return j.data.files[0].url;
   } catch {}
   return null;
 }
 
 /**
  * Upload "main media" (Media Gallery images/videos, Resources docs such as
- * PDFs/CAD files) to the GitHub repo via /api/upload, falling back to Supabase
- * storage if GitHub is unavailable.
+ * PDFs/CAD files) to the GitHub repo via /api/upload.
  */
-export async function uploadMediaFile(file, fallbackBucket) {
-  const { fileName, bytes, base64, contentType } = await prepareFileForUpload(file);
-  const token = localStorage.getItem("admin_token") || localStorage.getItem("hub_token");
-  if (token) {
-    try {
-      const res = await fetch("/api/upload", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ action: "upload", files: [{ fileName, base64, contentType }] }),
-      });
-      const j = await res.json().catch(() => ({}));
-      if (res.ok && j?.data?.files?.[0]?.url) return j.data.files[0].url;
-    } catch {}
-  }
-  const copy = new File([bytes], file.name || fileName, { type: file.type || "application/octet-stream" });
-  return uploadFile(copy, fallbackBucket || "team-assets");
+export async function uploadMediaFile(file) {
+  return uploadFile(file);
 }
 
 /** Upload a raw blob (e.g. camera photos) as a named file. */
 export async function uploadBlob(blob, name) {
-  return uploadFile(new File([blob], name || "capture.jpg", { type: blob.type || "application/octet-stream" }), "inventory-images");
-}
-
-/** Public URL helpers for captain headshots (`team-assets` bucket only). */
-
-const CAPTAIN_BUCKET = "team-assets";
-
-function safeDecode(seg) {
-  try { return decodeURIComponent(seg); } catch { return seg; }
-}
-
-/** Object path inside bucket (may include slashes), no leading slash; null if unmappable */
-export function captainStorageKeyFromStoredValue(stored) {
-  if (!stored || typeof stored !== "string") return null;
-  const raw = stored.trim();
-  if (!raw) return null;
-
-  let pathLike = raw.split(/[?#]/)[0];
-  try {
-    if (/^https?:\/\//i.test(raw)) pathLike = new URL(raw).pathname;
-  } catch {
-    return null;
-  }
-
-  const tryAfter = (s, needle) => {
-    const i = s.indexOf(needle);
-    if (i === -1) return null;
-    return safeDecode(s.slice(i + needle.length).replace(/^\/+/, ""));
-  };
-
-  let key =
-    tryAfter(pathLike, `/object/public/${CAPTAIN_BUCKET}/`) ||
-    tryAfter(pathLike, `/storage/v1/object/public/${CAPTAIN_BUCKET}/`) ||
-    tryAfter(pathLike, `/object/sign/${CAPTAIN_BUCKET}/`) ||
-    tryAfter(pathLike, `/object/${CAPTAIN_BUCKET}/`) ||
-    tryAfter(pathLike, `/${CAPTAIN_BUCKET}/`);
-  if (key) return key.replace(/^\/*/, "");
-
-  pathLike = pathLike.replace(/^\/+/, "");
-  const segments = pathLike.split("/").filter(Boolean);
-  const bi = segments.lastIndexOf(CAPTAIN_BUCKET);
-  if (bi >= 0 && bi < segments.length - 1) return segments.slice(bi + 1).map(safeDecode).join("/");
-
-  if (/^[a-zA-Z0-9._\- /]+\.(jpe?g|png|gif|webp)$/i.test(pathLike)) return pathLike;
-  const last = segments[segments.length - 1];
-  return last ? safeDecode(last) : null;
-}
-
-/** Encode each path segment (spaces etc.) once for the canonical public URL Supabase expects. */
-function escapedStoragePath(key) {
-  return key
-    .split("/")
-    .filter(Boolean)
-    .map(seg => encodeURIComponent(safeDecode(seg)))
-    .join("/");
-}
-
-/** Distinct URLs to try loading (stored URL plus canonical `public/` URLs for current project). */
-function captainAvatarUrlCandidates(storageKey, originalTrimmed) {
-  const uniq = [];
-  const add = u => {
-    if (u && typeof u === "string" && !uniq.includes(u)) uniq.push(u);
-  };
-
-  if (/^https?:\/\//i.test(originalTrimmed)) add(originalTrimmed);
-
-  if (!SUPABASE_URL || !storageKey) return uniq;
-
-  const base = `${SUPABASE_URL.replace(/\/$/, "")}/storage/v1/object/public/${CAPTAIN_BUCKET}`;
-  add(`${base}/${escapedStoragePath(storageKey)}`);
-  add(`${base}/${storageKey}`);
-  return uniq;
-}
-
-function loadImageViaTag(url) {
-  return new Promise(resolve => {
-    const img = new Image();
-    const done = ok => {
-      img.onload = null;
-      img.onerror = null;
-      resolve(ok);
-    };
-    img.onload = () => done(true);
-    img.onerror = () => done(false);
-    img.decoding = "async";
-    img.src = url;
-  });
+  return uploadFile(new File([blob], name || "capture.jpg", { type: blob.type || "application/octet-stream" }));
 }
 
 /**
- * Displays a captain/leaders headshot from `photo_url`: any full URL, legacy host, or object key under `team-assets`.
+ * Displays a captain/leaders headshot from `photo_url` (a direct GitHub/media URL).
  */
 export function CaptainPhoto({ photoUrl, name = "?", size = 80, style: extraStyle = {} }) {
-  const [status, setStatus] = useState("idle");
-  const [src, setSrc] = useState(null);
-  const blobUrlRef = useRef(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    const revokeBlob = () => {
-      if (blobUrlRef.current) {
-        URL.revokeObjectURL(blobUrlRef.current);
-        blobUrlRef.current = null;
-      }
-    };
-
-    revokeBlob();
-    setSrc(null);
-
-    const trimmed = typeof photoUrl === "string" ? photoUrl.trim() : "";
-    if (!trimmed || !SUPABASE_URL) {
-      setStatus("error");
-      return () => {
-        cancelled = true;
-        revokeBlob();
-      };
-    }
-
-    setStatus("loading");
-
-    const key = captainStorageKeyFromStoredValue(trimmed);
-    const candidates = captainAvatarUrlCandidates(key, trimmed);
-    const authHeaders =
-      SUPABASE_KEY && SUPABASE_URL
-        ? { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` }
-        : null;
-
-    (async () => {
-      for (const url of candidates) {
-        if (cancelled) return;
-        try {
-          if (await loadImageViaTag(url)) {
-            revokeBlob();
-            if (cancelled) return;
-            setSrc(url);
-            setStatus("ok");
-            return;
-          }
-        } catch { /* next */ }
-      }
-
-      if (authHeaders && candidates.length > 0) {
-        for (const url of candidates) {
-          if (cancelled) return;
-          try {
-            const r = await fetch(url, { headers: authHeaders });
-            if (!r.ok) continue;
-            const blob = await r.blob();
-            if (!blob.size || cancelled) continue;
-            revokeBlob();
-            const blobUrl = URL.createObjectURL(blob);
-            blobUrlRef.current = blobUrl;
-            setSrc(blobUrl);
-            setStatus("ok");
-            return;
-          } catch { /* next */ }
-        }
-      }
-
-      if (!cancelled) setStatus("error");
-    })();
-
-    return () => {
-      cancelled = true;
-      revokeBlob();
-    };
-  }, [photoUrl]);
-
   const merged = {
     width: size,
     height: size,
@@ -360,7 +175,7 @@ export function CaptainPhoto({ photoUrl, name = "?", size = 80, style: extraStyl
 
   const initial = ((name || "?").trim()[0] || "?").toUpperCase();
 
-  if (status === "error")
+  if (!photoUrl)
     return (
       <div
         style={{
@@ -380,21 +195,9 @@ export function CaptainPhoto({ photoUrl, name = "?", size = 80, style: extraStyl
       </div>
     );
 
-  if (status !== "ok" || !src)
-    return (
-      <div
-        aria-hidden
-        style={{
-          ...merged,
-          background: "rgba(255,255,255,0.06)",
-          border: merged.border ?? "2px solid rgba(255,255,255,0.08)",
-        }}
-      />
-    );
-
   return (
     <img
-      src={src}
+      src={photoUrl}
       alt={name || "Captain"}
       style={{
         ...merged,
@@ -405,7 +208,6 @@ export function CaptainPhoto({ photoUrl, name = "?", size = 80, style: extraStyl
       loading="lazy"
       decoding="async"
       referrerPolicy="no-referrer"
-      onError={() => setStatus("error")}
     />
   );
 }

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from 'framer-motion'
-import { FONTS, C, sbFetch, isAuthed, canEditHub, HubHeader, toastStyle, inputStyle, selectStyle, overlayStyle, modalStyle, addBtnStyle, ghostBtn, dangerBtn } from "./hubUtils.jsx";
+import { FONTS, C, sbFetch, isAuthed, canEditHub, HubHeader, toastStyle, inputStyle, selectStyle, overlayStyle, modalStyle, addBtnStyle, ghostBtn, dangerBtn, hubProxy } from "./hubUtils.jsx";
 import HubBackground from "./HubBackground.jsx";
 
 const EVENT_TYPES = [
@@ -155,10 +155,10 @@ export default function HubCalendar() {
     if (!payload.end_time) delete payload.end_time;
     if (!payload.description) delete payload.description;
     if (modal.mode === "add") {
-      await sbFetch("hub_calendar", { method: "POST", body: JSON.stringify(payload) });
+      await hubProxy("hub_calendar", "insert", payload);
       showToast("Event added!");
     } else {
-      await sbFetch(`hub_calendar?id=eq.${modal.event.id}`, { method: "PATCH", body: JSON.stringify(payload) });
+      await hubProxy("hub_calendar", "update", { id: modal.event.id, updates: payload });
       showToast("Event updated!");
     }
     setSaving(false); setModal(null); loadData();
@@ -166,7 +166,7 @@ export default function HubCalendar() {
 
   async function deleteEvent(id) {
     if (!confirm("Delete this event?")) return;
-    await sbFetch(`hub_calendar?id=eq.${id}`, { method: "DELETE" });
+    await hubProxy("hub_calendar", "delete", { id });
     showToast("Deleted."); loadData(); setSelectedDay(null);
   }
 
@@ -214,7 +214,7 @@ export default function HubCalendar() {
         if (!payload.time) delete payload.time;
         if (!payload.end_time) delete payload.end_time;
         if (!payload.description) delete payload.description;
-        await sbFetch("hub_calendar", { method: "POST", body: JSON.stringify(payload) });
+        await hubProxy("hub_calendar", "insert", payload);
         count++;
       } catch {}
     }

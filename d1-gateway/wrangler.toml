@@ -1,0 +1,12 @@
+name = "d1-gateway"
+main = "src/index.js"
+compatibility_date = "2024-11-01"
+compatibility_flags = ["nodejs_compat"]
+
+# D1 database binding (set the variable name to DB and select team4550-db in the dashboard)
+[[d1_databases]]
+binding = "DB"
+database_name = "team4550-db"
+database_id = "d37e9c52-7ba6-4c61-bd3a-99702f7da51d"
+
+# Secret (set in dashboard): API_TOKEN

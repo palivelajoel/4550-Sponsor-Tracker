@@ -1,8 +1,8 @@
-import { createClient } from '@supabase/supabase-js';
+import { d1Select, d1SelectOne, d1Insert, d1InsertMany, d1Update, d1Delete, d1Upsert } from './_gateway.js';
 import { verifyToken, getTokenFromRequest, hashPassword } from './_shared.js';
 
-const ADMIN_TABLES = ['sponsors', 'captains', 'site_config', 'members', 'hub_tasks', 'suggestions', 'hub_calendar', 'inventory_items', 'articles'];
-const HUB_TABLES = ['hub_tasks', 'inventory_items', 'inventory_transactions', 'hub_announcements', 'hub_media', 'hub_resources', 'sponsors', 'sponsor_notes', 'hub_forms', 'hub_form_submissions', 'articles', 'site_config'];
+const ADMIN_TABLES = ['sponsors', 'sponsor_notes', 'captains', 'site_config', 'members', 'hub_tasks', 'suggestions', 'hub_calendar', 'inventory_items', 'inventory_transactions', 'articles', 'hub_media', 'hub_resources', 'hub_forms', 'hub_form_submissions', 'hub_announcements', 'competitions', 'scouting_matches', 'scouting_pits', 'scouting_picklist'];
+const HUB_TABLES = ['hub_tasks', 'inventory_items', 'inventory_transactions', 'hub_announcements', 'hub_media', 'hub_resources', 'sponsors', 'sponsor_notes', 'hub_forms', 'hub_form_submissions', 'articles', 'site_config', 'hub_calendar', 'competitions', 'scouting_matches', 'scouting_pits', 'scouting_picklist'];
 
 const HUB_CONFIG_KEYS = ['media_folders'];
 
@@ -20,15 +20,13 @@ export default async function handler(req, res) {
 
     if (isAdmin && payload.role !== 'Admin') return res.status(403).json({ error: 'Forbidden: admin role required' });
 
-    const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE);
-
     const INVENTORY_TABLES = ['inventory_items', 'inventory_transactions'];
     const { table: reqTable } = req.body || {};
     const isInventoryTable = INVENTORY_TABLES.includes(reqTable);
 
     if (isHub && !['Captain', 'Admin'].includes(payload.role)) {
       if (payload.role === 'Member' && isInventoryTable) {
-        const { data: memberRow } = await supabase.from('members').select('subteam').eq('id', payload.userId).maybeSingle();
+        const memberRow = await d1SelectOne('members', { filters: [{ col: 'id', op: 'eq', value: payload.userId }] });
         if (memberRow?.subteam !== 'Build') {
           return res.status(403).json({ error: 'Forbidden: build team membership required for inventory' });
         }
@@ -40,21 +38,7 @@ export default async function handler(req, res) {
     const { table, action, payload: bodyPayload } = req.body || {};
 
     if (action === 'upload') {
-      const { bucket, fileName, base64, contentType } = bodyPayload || {};
-      if (!bucket || !fileName || !base64) return res.status(400).json({ error: 'Missing upload data' });
-      if (!['team-assets', 'inventory-images', 'team-media'].includes(bucket)) return res.status(400).json({ error: 'Unsupported bucket' });
-      const buf = Buffer.from(base64, 'base64');
-      if (!buf.length) return res.status(400).json({ error: 'Empty file data' });
-      const opts = { contentType: contentType || 'application/octet-stream', upsert: true };
-      let { data, error } = await supabase.storage.from(bucket).upload(fileName, buf, opts);
-      if (error && /bucket|not found|not exist/i.test(error.message)) {
-        try { await supabase.storage.createBucket(bucket, { public: true }); } catch {}
-        ({ data, error } = await supabase.storage.from(bucket).upload(fileName, buf, opts));
-      }
-      try { await supabase.storage.updateBucket(bucket, { public: true }); } catch {}
-      if (error) return res.status(500).json({ error: error.message });
-      const { data: pub } = supabase.storage.from(bucket).getPublicUrl(data?.path || fileName);
-      return res.status(200).json({ data: { url: pub.publicUrl } });
+      return res.status(400).json({ error: 'Uploads now go to /api/upload (GitHub)' });
     }
 
     if (!table) return res.status(400).json({ error: 'Missing table' });
@@ -71,9 +55,9 @@ export default async function handler(req, res) {
         upd.password_hash = hashPassword(pw);
       }
       delete upd.password;
-      const { data: upData, error: upErr } = await supabase.from('members').update(upd).eq('id', id).select();
-      if (upErr) return res.status(500).json({ error: upErr.message });
-      return res.status(200).json({ data: upData });
+      await d1Update('members', [{ col: 'id', op: 'eq', value: id }], upd);
+      const upData = await d1SelectOne('members', { filters: [{ col: 'id', op: 'eq', value: id }] });
+      return res.status(200).json({ data: upData ? [upData] : [] });
     }
 
     if (!['select', 'insert', 'update', 'delete', 'upsert'].includes(action)) return res.status(400).json({ error: 'Invalid action' });
@@ -90,14 +74,14 @@ export default async function handler(req, res) {
 
     if (action === 'select') {
       const { filters, order, limit: selLimit } = bodyPayload || {};
-      let query = supabase.from(table).select('*');
-      if (filters && typeof filters === 'object') {
-        Object.entries(filters).forEach(([k, v]) => { query = query.eq(k, v); });
-      }
-      if (order) query = query.order(order.column || 'created_at', { ascending: order.ascending ?? false });
-      if (selLimit) query = query.limit(selLimit);
-      const { data, error } = await query;
-      if (error) return res.status(500).json({ error: error.message });
+      const d1Filters = filters && typeof filters === 'object'
+        ? Object.entries(filters).map(([k, v]) => ({ col: k, op: 'eq', value: v }))
+        : [];
+      const data = await d1Select(table, {
+        filters: d1Filters,
+        order: order ? [{ col: order.column || 'created_at', asc: !!order.ascending }] : undefined,
+        limit: selLimit || undefined,
+      });
       return res.status(200).json({ data });
     }
 
@@ -107,42 +91,39 @@ export default async function handler(req, res) {
         dataPayload = { ...bodyPayload, password_hash: hashPassword(bodyPayload.password) };
         delete dataPayload.password;
       }
-      if (isHub && dataPayload.added_by === undefined && table === 'inventory_items') {
+      if (isHub && !Array.isArray(dataPayload) && dataPayload.added_by === undefined && table === 'inventory_items') {
         dataPayload = { ...dataPayload, added_by: payload.userId };
       }
-      const { data, error } = await supabase.from(table).insert(dataPayload).select();
-      if (error) return res.status(500).json({ error: error.message });
-      return res.status(200).json({ data });
+      if (Array.isArray(dataPayload)) {
+        await d1InsertMany(table, dataPayload);
+        return res.status(200).json({ data: [] });
+      }
+      const ins = await d1Insert(table, dataPayload);
+      const row = ins?.id != null
+        ? await d1SelectOne(table, { filters: [{ col: 'id', op: 'eq', value: ins.id }] })
+        : null;
+      return res.status(200).json({ data: row ? [row] : [] });
     }
 
     if (action === 'update') {
       const { id, updates } = bodyPayload || {};
       if (!id || !updates) return res.status(400).json({ error: 'Missing id or updates' });
-      const { data, error } = await supabase.from(table).update(updates).eq('id', id).select();
-      if (error) return res.status(500).json({ error: error.message });
-      return res.status(200).json({ data });
+      await d1Update(table, [{ col: 'id', op: 'eq', value: id }], updates);
+      const data = await d1SelectOne(table, { filters: [{ col: 'id', op: 'eq', value: id }] });
+      return res.status(200).json({ data: data ? [data] : [] });
     }
 
     if (action === 'delete') {
       const { id } = bodyPayload || {};
       if (!id) return res.status(400).json({ error: 'Missing id' });
-      const { data, error } = await supabase.from(table).delete().eq('id', id).select();
-      if (error) return res.status(500).json({ error: error.message });
-      return res.status(200).json({ data });
+      await d1Delete(table, [{ col: 'id', op: 'eq', value: id }]);
+      return res.status(200).json({ data: [{ id }] });
     }
 
     if (action === 'upsert') {
       const { key, value } = bodyPayload || {};
       if (!key) return res.status(400).json({ error: 'Missing key' });
-      const { data: existing, error: selErr } = await supabase.from(table).select('key').eq('key', key).maybeSingle();
-      if (selErr) return res.status(500).json({ error: selErr.message });
-      if (existing) {
-        const { data, error } = await supabase.from(table).update({ value }).eq('key', key).select();
-        if (error) return res.status(500).json({ error: error.message });
-        return res.status(200).json({ data });
-      }
-      const { data, error } = await supabase.from(table).insert({ key, value }).select();
-      if (error) return res.status(500).json({ error: error.message });
+      const data = await d1Upsert(table, [{ col: 'key', op: 'eq', value: key }], { key, value });
       return res.status(200).json({ data });
     }
 

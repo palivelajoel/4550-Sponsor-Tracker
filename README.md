@@ -1,6 +1,6 @@
 # FRC Team 4550 — Something's Bruin
 
-Public website and member hub for FRC Team 4550, built with React + Vite, hosted on Vercel with a Supabase backend.
+Public website and member hub for FRC Team 4550, built with React + Vite, hosted on Vercel with a Cloudflare D1 database.
 
 **Live site:** [team4550.com](https://team4550.com)
 
@@ -12,7 +12,7 @@ Public website and member hub for FRC Team 4550, built with React + Vite, hosted
 |-------|-----------|
 | Frontend | React 18, Vite, Framer Motion |
 | Hosting | Vercel (auto-deploys from `main`) |
-| Database | Supabase (PostgreSQL) |
+| Database | Cloudflare D1 (via Worker gateway) |
 | API | Vercel Serverless Functions (`/api/*`) |
 | Auth | Custom JWT-based member hub login |
 
@@ -94,7 +94,7 @@ Admins can customize the hub dashboard from the Site Config panel:
 - **Tile ordering** — drag-and-drop to reorder hub tiles
 - **Tile visibility** — toggle any tile on/off (hidden tiles are removed from the dashboard)
 - **Landing banners** — upload rotating hero banners (1200×400 optimal)
-- **Team logo** — uploaded to Supabase Storage
+- **Team logo** — uploaded to GitHub
 - **Site details** — title, email, social links, TBA API key, donate URL, season year
 
 ---
@@ -118,8 +118,8 @@ All API routes are serverless functions in `/api/`:
 |----------|---------|
 | `/api/hub-login` | Member hub authentication |
 | `/api/admin-login` | Admin panel authentication |
-| `/api/hub-proxy` | Authenticated writes to Supabase (hub tables) |
-| `/api/admin-proxy` | Authenticated writes to Supabase (admin tables) |
+| `/api/hub-proxy` | Authenticated writes to D1 (hub tables) |
+| `/api/admin-proxy` | Authenticated writes to D1 (admin tables) |
 | `/api/public-form-submit` | Public form submission (no auth required) |
 | `/api/sheets-sync` | Append form submissions to Google Sheets |
 | `/api/announce-to-discord` | Post announcements to Discord via webhook |
@@ -137,7 +137,7 @@ All API routes are serverless functions in `/api/`:
 ```
 ├── api/                    # Vercel serverless functions
 │   ├── auth.js             # Login endpoints
-│   ├── proxy.js            # Supabase write proxy
+│   ├── proxy.js            # D1 write proxy (via gateway)
 │   ├── sheets.js           # Google Sheets sync
 │   ├── public-form-submit.js
 │   ├── ai.js               # AI-powered features
@@ -164,10 +164,8 @@ All API routes are serverless functions in `/api/`:
 Required (set in Vercel dashboard):
 
 ```
-VITE_SUPABASE_URL          # Supabase project URL
-VITE_SUPABASE_ANON_KEY     # Supabase anonymous key
-SUPABASE_URL               # Server-side Supabase URL
-SUPABASE_SERVICE_ROLE      # Server-side service role key
+D1_GATEWAY_URL             # Cloudflare Worker gateway URL (read/write)
+D1_GATEWAY_TOKEN            # Gateway API token (shared with Worker secret)
 JWT_SECRET                 # Token signing secret
 ```
 

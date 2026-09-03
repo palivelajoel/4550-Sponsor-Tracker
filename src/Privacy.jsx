@@ -22,7 +22,7 @@ const FALLBACK = `...
         <ul>
           <li><strong>Log Data:</strong> Our servers automatically record certain information when you visit the Site, including your IP address, browser type, operating system, referring URLs, and pages visited.</li>
           <li><strong>Cookies:</strong> We use essential cookies for authentication (login sessions). We do not use tracking cookies or third-party advertising cookies.</li>
-          <li><strong>Service Providers:</strong> We use Vercel (hosting) and Supabase (database/authentication), which may process data as described in their respective privacy policies.</li>
+          <li><strong>Service Providers:</strong> We use Vercel (hosting) and Cloudflare D1 (database) with media on GitHub, which may process data as described in their respective privacy policies.</li>
         </ul>
 
         <h2>2. How We Use Your Information</h2>
@@ -49,16 +49,16 @@ const FALLBACK = `...
               </tr>
             </thead>
             <tbody>
-              <tr style="border-bottom:1px solid rgba(255,255,255,0.05)"><td style="padding:8px 12px">Name / Username</td><td style="padding:8px 12px">Member Hub identification</td><td style="padding:8px 12px">Supabase</td><td style="padding:8px 12px">Until deactivation</td><td style="padding:8px 12px">Never sold</td></tr>
-              <tr style="border-bottom:1px solid rgba(255,255,255,0.05);background:rgba(255,255,255,0.02)"><td style="padding:8px 12px">Email address</td><td style="padding:8px 12px">Communication, login</td><td style="padding:8px 12px">Supabase</td><td style="padding:8px 12px">Until deactivation</td><td style="padding:8px 12px">Never sold</td></tr>
-              <tr style="border-bottom:1px solid rgba(255,255,255,0.05)"><td style="padding:8px 12px">Phone number</td><td style="padding:8px 12px">Sponsor outreach</td><td style="padding:8px 12px">Supabase</td><td style="padding:8px 12px">Until requested deletion</td><td style="padding:8px 12px">Never sold</td></tr>
-              <tr style="border-bottom:1px solid rgba(255,255,255,0.05);background:rgba(255,255,255,0.02)"><td style="padding:8px 12px">Task assignments</td><td style="padding:8px 12px">Team coordination</td><td style="padding:8px 12px">Supabase</td><td style="padding:8px 12px">Until deleted by user</td><td style="padding:8px 12px">Never sold</td></tr>
-              <tr style="border-bottom:1px solid rgba(255,255,255,0.05)"><td style="padding:8px 12px">Calendar events</td><td style="padding:8px 12px">Team scheduling</td><td style="padding:8px 12px">Supabase</td><td style="padding:8px 12px">Until deleted by user</td><td style="padding:8px 12px">Never sold</td></tr>
-              <tr style="border-bottom:1px solid rgba(255,255,255,0.05);background:rgba(255,255,255,0.02)"><td style="padding:8px 12px">Media uploads</td><td style="padding:8px 12px">Team gallery</td><td style="padding:8px 12px">Supabase Storage</td><td style="padding:8px 12px">Until deleted by user</td><td style="padding:8px 12px">Never sold</td></tr>
-              <tr style="border-bottom:1px solid rgba(255,255,255,0.05)"><td style="padding:8px 12px">Suggestions / Feedback</td><td style="padding:8px 12px">Team improvement</td><td style="padding:8px 12px">Supabase</td><td style="padding:8px 12px">Indefinite (anonymized)</td><td style="padding:8px 12px">Never sold</td></tr>
+              <tr style="border-bottom:1px solid rgba(255,255,255,0.05)"><td style="padding:8px 12px">Name / Username</td><td style="padding:8px 12px">Member Hub identification</td><td style="padding:8px 12px">Cloudflare D1</td><td style="padding:8px 12px">Until deactivation</td><td style="padding:8px 12px">Never sold</td></tr>
+              <tr style="border-bottom:1px solid rgba(255,255,255,0.05);background:rgba(255,255,255,0.02)"><td style="padding:8px 12px">Email address</td><td style="padding:8px 12px">Communication, login</td><td style="padding:8px 12px">Cloudflare D1</td><td style="padding:8px 12px">Until deactivation</td><td style="padding:8px 12px">Never sold</td></tr>
+              <tr style="border-bottom:1px solid rgba(255,255,255,0.05)"><td style="padding:8px 12px">Phone number</td><td style="padding:8px 12px">Sponsor outreach</td><td style="padding:8px 12px">Cloudflare D1</td><td style="padding:8px 12px">Until requested deletion</td><td style="padding:8px 12px">Never sold</td></tr>
+              <tr style="border-bottom:1px solid rgba(255,255,255,0.05);background:rgba(255,255,255,0.02)"><td style="padding:8px 12px">Task assignments</td><td style="padding:8px 12px">Team coordination</td><td style="padding:8px 12px">Cloudflare D1</td><td style="padding:8px 12px">Until deleted by user</td><td style="padding:8px 12px">Never sold</td></tr>
+              <tr style="border-bottom:1px solid rgba(255,255,255,0.05)"><td style="padding:8px 12px">Calendar events</td><td style="padding:8px 12px">Team scheduling</td><td style="padding:8px 12px">Cloudflare D1</td><td style="padding:8px 12px">Until deleted by user</td><td style="padding:8px 12px">Never sold</td></tr>
+              <tr style="border-bottom:1px solid rgba(255,255,255,0.05);background:rgba(255,255,255,0.02)"><td style="padding:8px 12px">Media uploads</td><td style="padding:8px 12px">Team gallery</td><td style="padding:8px 12px">GitHub</td><td style="padding:8px 12px">Until deleted by user</td><td style="padding:8px 12px">Never sold</td></tr>
+              <tr style="border-bottom:1px solid rgba(255,255,255,0.05)"><td style="padding:8px 12px">Suggestions / Feedback</td><td style="padding:8px 12px">Team improvement</td><td style="padding:8px 12px">Cloudflare D1</td><td style="padding:8px 12px">Indefinite (anonymized)</td><td style="padding:8px 12px">Never sold</td></tr>
               <tr style="border-bottom:1px solid rgba(255,255,255,0.05);background:rgba(255,255,255,0.02)"><td style="padding:8px 12px">IP address</td><td style="padding:8px 12px">Analytics, security</td><td style="padding:8px 12px">Vercel logs</td><td style="padding:8px 12px">30 days</td><td style="padding:8px 12px">Vercel (processor)</td></tr>
               <tr style="border-bottom:1px solid rgba(255,255,255,0.05)"><td style="padding:8px 12px">Login sessions</td><td style="padding:8px 12px">Authentication</td><td style="padding:8px 12px">LocalStorage</td><td style="padding:8px 12px">Until logout</td><td style="padding:8px 12px">Never</td></tr>
-              <tr style="border-bottom:1px solid rgba(255,255,255,0.05);background:rgba(255,255,255,0.02)"><td style="padding:8px 12px">Camera / Photos</td><td style="padding:8px 12px">Inventory AI identification</td><td style="padding:8px 12px">Supabase Storage</td><td style="padding:8px 12px">Until deleted by user</td><td style="padding:8px 12px">None (AI in-memory only)</td></tr>
+              <tr style="border-bottom:1px solid rgba(255,255,255,0.05);background:rgba(255,255,255,0.02)"><td style="padding:8px 12px">Camera / Photos</td><td style="padding:8px 12px">Inventory AI identification</td><td style="padding:8px 12px">GitHub</td><td style="padding:8px 12px">Until deleted by user</td><td style="padding:8px 12px">None (AI in-memory only)</td></tr>
             </tbody>
           </table>
         </div>
@@ -74,7 +74,7 @@ const FALLBACK = `...
         <h2>5. Data Sharing and Disclosure</h2>
         <p>We do not sell your personal information to third parties. We may share your information in the following circumstances:</p>
         <ul>
-          <li><strong>Service Providers:</strong> With Vercel (hosting), Supabase (database &amp; authentication), and other service providers who help us operate the Site.</li>
+          <li><strong>Service Providers:</strong> With Vercel (hosting), Cloudflare D1 (database, with media on GitHub), and other service providers who help us operate the Site.</li>
           <li><strong>Legal Requirements:</strong> If required by law, court order, or governmental regulation.</li>
           <li><strong>Protection of Rights:</strong> To protect the rights, property, or safety of our team, our members, or others.</li>
           <li><strong>School District:</strong> Cherry Creek School District may have access to certain information as part of oversight of the team as a school-affiliated organization.</li>

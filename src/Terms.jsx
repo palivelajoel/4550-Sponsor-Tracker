@@ -59,7 +59,7 @@ const FALLBACK = `...
         <h2>8. Third-Party Services</h2>
         <p>Our Site integrates with third-party services including:</p>
         <ul>
-          <li>Supabase (database, authentication, file storage)</li>
+          <li>Cloudflare D1 (database), GitHub (file storage)</li>
           <li>Vercel (hosting)</li>
           <li>YouTube (video embedding)</li>
           <li>Instagram (social media linking)</li>
