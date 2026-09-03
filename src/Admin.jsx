@@ -301,7 +301,6 @@ function Overview({ members, tasks, suggestions, sponsors, events, overdue, comp
   const upcomingEvents = events.filter(e => e?.date && new Date(e.date) >= today && new Date(e.date) <= weekAhead).length;
   const nextEvents = events.filter(e => e?.date && e.date >= todayStr).slice(0, 5);
   const dueTasks = openTasks.filter(t => t.due_date).sort((a, b) => String(a.due_date).localeCompare(String(b.due_date))).slice(0, 5);
-  const mapNeeds = competitions.filter(c => c.attending && (!c.pit_map_url || !c.venue_map_url)).slice(0, 5);
   const nextComp = competitions.filter(c => c.attending && c.start_date >= todayStr).sort((a, b) => String(a.start_date).localeCompare(String(b.start_date)))[0];
   const attendingComps = competitions.filter(c => c.attending).length;
   const lowStock = inventory.filter(i => i.low_stock).length;
@@ -358,7 +357,6 @@ function Overview({ members, tasks, suggestions, sponsors, events, overdue, comp
             <div>
               <div style={{ fontSize: 15, fontWeight: 700, color: "#f1f5f9", marginBottom: 4 }}>{nextComp.name || nextComp.event_code || "TBD"}</div>
               <div style={{ fontSize: 12, color: "#94a3b8", fontFamily: "monospace" }}>{nextComp.start_date} — {nextComp.location || "TBD"}</div>
-              {mapNeeds.length > 0 && <div style={{ fontSize: 11, color: "#f87171", marginTop: 6 }}>⚠ {mapNeeds.length} comp{mapNeeds.length !== 1 ? "s" : ""} missing maps</div>}
             </div>
           ) : (
             <div style={{ fontSize: 12, color: "#64748b", fontFamily: "monospace" }}>No upcoming competitions</div>
@@ -423,25 +421,6 @@ function Overview({ members, tasks, suggestions, sponsors, events, overdue, comp
               </div>
             ))}
           </div>
-        </div>
-
-        {/* Map Needs */}
-        <div style={cardStyle}>
-          <div style={cardTitle}>🗺️ MAP NEEDS</div>
-          {mapNeeds.length > 0 ? (
-            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-              {mapNeeds.map(c => (
-                <div key={c.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 12 }}>
-                  <span style={{ color: "#e2e8f0", fontWeight: 600 }}>{c.name || c.event_code}</span>
-                  <span style={{ color: "#f87171", fontFamily: "monospace", fontSize: 10 }}>
-                    {!c.pit_map_url ? "no pit" : ""} {!c.pit_map_url && !c.venue_map_url ? "&" : ""} {!c.venue_map_url ? "no venue" : ""}
-                  </span>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div style={{ fontSize: 12, color: "#22c55e", fontFamily: "monospace" }}>✓ All maps uploaded</div>
-          )}
         </div>
 
       </div>
@@ -1183,7 +1162,7 @@ const TERMS_FALLBACK = `...
         <p>FRC Team 4550 provides the following services through the Site:</p>
         <ul>
           <li><strong>Public Website:</strong> Information about the team, its history, sponsors, media gallery, and contact information.</li>
-          <li><strong>Member Hub:</strong> A password-protected portal for team members to manage tasks, calendar events, announcements, media, resources, inventory, and scouting data.</li>
+              <li><strong>Member Hub:</strong> A password-protected portal for team members to manage tasks, calendar events, announcements, media, resources, and inventory.</li>
           <li><strong>Sponsor Tracker:</strong> A password-protected tool for managing sponsor relationships and outreach.</li>
           <li><strong>Public Media Gallery:</strong> A publicly accessible gallery of team photos and videos.</li>
         </ul>

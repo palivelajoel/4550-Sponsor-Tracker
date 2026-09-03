@@ -1,6 +1,7 @@
--- 0002 - Correct the D1 schema to exactly mirror the real Supabase schema.
--- The original 0001 schema guessed columns (integer ids, wrong column names).
--- All tables were empty, so we drop and recreate them 1:1 against Supabase.
+-- 0002 - D1 schema mirroring the real Supabase schema (post-cleanup).
+-- Corrects the original 0001 guess (integer ids, wrong columns). Tables were empty,
+-- so we drop and recreate 1:1 against Supabase.
+-- REMOVED features: scouting (pits/matches/picklist) and competition map fields.
 -- Ids are TEXT (UUIDs preserved). Booleans stored as INTEGER 0/1; JSON as TEXT.
 
 DROP TABLE IF EXISTS members;
@@ -205,13 +206,13 @@ CREATE TABLE inventory_items (
 
 -- inventory_transactions
 CREATE TABLE inventory_transactions (
-  id            TEXT PRIMARY KEY,
-  item_id       TEXT,
-  change        INTEGER,
-  new_quantity  INTEGER,
-  reason        TEXT,
-  user_id       TEXT,
-  created_at    TEXT
+  id           TEXT PRIMARY KEY,
+  item_id      TEXT,
+  change       INTEGER,
+  new_quantity INTEGER,
+  reason       TEXT,
+  user_id      TEXT,
+  created_at   TEXT
 );
 
 -- articles
@@ -230,66 +231,14 @@ CREATE TABLE articles (
 
 -- competitions
 CREATE TABLE competitions (
-  id              TEXT PRIMARY KEY,
-  created_at      TEXT,
-  event_key       TEXT,
-  name            TEXT,
-  start_date      TEXT,
-  end_date        TEXT,
-  location        TEXT,
-  attending       INTEGER DEFAULT 0,
-  venue_map_url   TEXT,
-  pit_map_url     TEXT,
-  stream_url      TEXT,
-  map_status      TEXT,
-  last_map_check  TEXT,
-  schematic_data  TEXT
-);
-
--- scouting_matches
-CREATE TABLE scouting_matches (
-  id            TEXT PRIMARY KEY,
-  created_at    TEXT,
-  team_number   INTEGER,
-  match_number  INTEGER,
-  alliance      TEXT DEFAULT 'Red',
-  scouter_name  TEXT,
-  auto_fuel     INTEGER DEFAULT 0,
-  auto_climb    INTEGER DEFAULT 0,
-  teleop_fuel   INTEGER DEFAULT 0,
-  endgame       TEXT DEFAULT 'None',
-  defense       INTEGER DEFAULT 0,
-  defended      INTEGER DEFAULT 0,
-  died          INTEGER DEFAULT 0,
-  notes         TEXT,
-  source        TEXT DEFAULT 'human',
-  event_key     TEXT
-);
-
--- scouting_pits
-CREATE TABLE scouting_pits (
-  id                   TEXT PRIMARY KEY,
-  created_at           TEXT,
-  team_number          INTEGER,
-  team_name            TEXT,
-  drivetrain           TEXT,
-  weight_lbs           REAL,
-  auto_capabilities    TEXT,
-  teleop_capabilities  TEXT,
-  climb_type           TEXT,
-  notes                TEXT,
-  scouter_name         TEXT,
-  can_score_auto_climb INTEGER DEFAULT 0,
-  can_score_fuel_near  INTEGER DEFAULT 0,
-  can_score_fuel_far   INTEGER DEFAULT 0
-);
-
--- scouting_picklist
-CREATE TABLE scouting_picklist (
   id          TEXT PRIMARY KEY,
   created_at  TEXT,
-  team_number INTEGER,
-  rank        INTEGER
+  event_key   TEXT,
+  name        TEXT,
+  start_date  TEXT,
+  end_date    TEXT,
+  location    TEXT,
+  attending   INTEGER DEFAULT 0
 );
 
 -- indexes
@@ -299,5 +248,3 @@ CREATE INDEX IF NOT EXISTS idx_hub_media_category ON hub_media(category);
 CREATE INDEX IF NOT EXISTS idx_hub_resources_category ON hub_resources(category);
 CREATE INDEX IF NOT EXISTS idx_inventory_items_category ON inventory_items(category);
 CREATE INDEX IF NOT EXISTS idx_competitions_event_key ON competitions(event_key);
-CREATE INDEX IF NOT EXISTS idx_scouting_matches_event_key ON scouting_matches(event_key);
-CREATE INDEX IF NOT EXISTS idx_scouting_picklist_rank ON scouting_picklist(rank);

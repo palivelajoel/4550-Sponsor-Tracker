@@ -147,38 +147,6 @@ async function lookupSponsor(req, res) {
   }
 }
 
-async function tracePitMap(req, res) {
-  const { imageUrl } = req.body || {};
-  if (!imageUrl) return res.status(400).json({ error: 'Missing image URL' });
-
-  const apiKey = process.env.GROQ_API_KEY || process.env.OPENAI_API_KEY;
-  if (!apiKey) return res.status(500).json({ error: 'AI API key not configured on server' });
-
-  const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-    method: 'POST',
-    headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      model: 'llama-3.2-11b-vision-preview',
-      messages: [{
-        role: 'user',
-        content: [
-          { type: 'text', text: 'Analyze this pit map image. Find all pit numbers and their approximate locations as normalized coordinates (x, y from 0.0 to 1.0, where 0,0 is top-left). Return ONLY a JSON array of objects like this: [{"team": 123, "x": 0.45, "y": 0.12}, ...]. Do not include any markdown or explanation.' },
-          { type: 'image_url', image_url: { url: imageUrl } },
-        ],
-      }],
-      response_format: { type: 'json_object' },
-    }),
-  });
-
-  const data = await response.json();
-  const content = data.choices?.[0]?.message?.content;
-  if (!content) return res.status(500).json({ error: 'AI failed to analyze image' });
-
-  const parsed = JSON.parse(content);
-  const pits = Array.isArray(parsed) ? parsed : (parsed.pits || []);
-  return res.status(200).json({ pits });
-}
-
 async function parseCSV(req, res) {
   const { csv, type } = req.body || {};
   if (!csv) return res.status(400).json({ error: 'CSV content required' });
@@ -228,7 +196,6 @@ export default async function handler(req, res) {
       case 'identify-item': return await identifyItem(req, res);
       case 'extract-brands': return await extractBrands(req, res);
       case 'lookup': return await lookupSponsor(req, res);
-      case 'trace-pit-map': return await tracePitMap(req, res);
       case 'parse-csv': return await parseCSV(req, res);
       default: return res.status(404).json({ error: 'Unknown AI endpoint' });
     }

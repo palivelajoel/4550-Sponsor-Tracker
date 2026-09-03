@@ -33,7 +33,6 @@
     { "source": "/api/d1", "destination": "/api/d1" },
     { "source": "/api/d1/:path*", "destination": "/api/d1" },
     { "source": "/api/lookup", "destination": "/api/ai" },
-    { "source": "/api/trace-pit-map", "destination": "/api/ai" },
     { "source": "/api/parse-csv", "destination": "/api/ai" },
     { "source": "/api/calendar.ics", "destination": "/api/calendar.ics" },
     { "source": "/api/announce-to-discord", "destination": "/api/discord/announce-to-discord" },

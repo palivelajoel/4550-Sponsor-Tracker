@@ -15,7 +15,7 @@ const FALLBACK = `...
         <p>FRC Team 4550 provides the following services through the Site:</p>
         <ul>
           <li><strong>Public Website:</strong> Information about the team, its history, sponsors, media gallery, and contact information.</li>
-          <li><strong>Member Hub:</strong> A password-protected portal for team members to manage tasks, calendar events, announcements, media, resources, inventory, and scouting data.</li>
+              <li><strong>Member Hub:</strong> A password-protected portal for team members to manage tasks, calendar events, announcements, media, resources, and inventory.</li>
           <li><strong>Sponsor Tracker:</strong> A password-protected tool for managing sponsor relationships and outreach.</li>
           <li><strong>Public Media Gallery:</strong> A publicly accessible gallery of team photos and videos.</li>
         </ul>

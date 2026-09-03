@@ -14,18 +14,13 @@ const BOOL_COLUMNS = new Set([
   "published",
   // competitions
   "attending",
-  // scouting_matches
-  "auto_climb", "defense", "defended", "died",
-  // scouting_pits
-  "can_score_auto_climb", "can_score_fuel_near", "can_score_fuel_far",
 ]);
 
-// Columns that are stored as JSON TEXT (Supabase jsonb) and must be parsed on read.
+// Columns that are stored as JSON TEXT (jsonb / text[]) and must be parsed on read.
 const JSON_COLUMNS = {
   hub_forms: ["questions"],
   hub_form_submissions: ["answers"],
   inventory_items: ["tags"],
-  competitions: ["schematic_data"],
 };
 
 function tryParse(v) {

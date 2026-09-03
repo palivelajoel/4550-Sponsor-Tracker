@@ -76,7 +76,7 @@ Protected admin dashboard (`/admin`) for site management.
 
 | Section | What it does |
 |---------|-------------|
-| **Overview** | 14 metric cards + 6 detail panels (tasks, events, comps, subteams, maps, inventory) |
+| **Overview** | 14 metric cards + 6 detail panels (tasks, events, comps, subteams, inventory) |
 | **Accounts** | Create/edit/delete member accounts, assign roles and subteams |
 | **Hub Tasks** | Create and assign tasks with due dates and priority levels |
 | **Hub Calendar** | Manage team events and competition dates |
@@ -128,7 +128,6 @@ All API routes are serverless functions in `/api/`:
 | `/api/extract-brands` | AI brand extraction from text |
 | `/api/lookup` | General AI lookup utility |
 | `/api/parse-csv` | CSV parsing for inventory bulk import |
-| `/api/find-event-links` | TBA event link finder |
 
 ---
 

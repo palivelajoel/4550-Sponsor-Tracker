@@ -13,7 +13,7 @@ export default async function handler(req, res) {
   res.status(200).json({
     name: "Team 4550 Something's Bruin",
     short_name: "Team 4550",
-    description: "FRC Team 4550 — Member Hub, Scouting, Inventory & Media",
+    description: "FRC Team 4550 — Member Hub, Inventory & Media",
     start_url: "/",
     scope: "/",
     display: "standalone",

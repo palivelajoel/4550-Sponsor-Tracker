@@ -1,8 +1,8 @@
 import { d1Select, d1SelectOne, d1Insert, d1InsertMany, d1Update, d1Delete, d1Upsert } from './_gateway.js';
 import { verifyToken, getTokenFromRequest, hashPassword } from './_shared.js';
 
-const ADMIN_TABLES = ['sponsors', 'sponsor_notes', 'captains', 'site_config', 'members', 'hub_tasks', 'suggestions', 'hub_calendar', 'inventory_items', 'inventory_transactions', 'articles', 'hub_media', 'hub_resources', 'hub_forms', 'hub_form_submissions', 'hub_announcements', 'competitions', 'scouting_matches', 'scouting_pits', 'scouting_picklist'];
-const HUB_TABLES = ['hub_tasks', 'inventory_items', 'inventory_transactions', 'hub_announcements', 'hub_media', 'hub_resources', 'sponsors', 'sponsor_notes', 'hub_forms', 'hub_form_submissions', 'articles', 'site_config', 'hub_calendar', 'competitions', 'scouting_matches', 'scouting_pits', 'scouting_picklist'];
+const ADMIN_TABLES = ['sponsors', 'sponsor_notes', 'captains', 'site_config', 'members', 'hub_tasks', 'suggestions', 'hub_calendar', 'inventory_items', 'inventory_transactions', 'articles', 'hub_media', 'hub_resources', 'hub_forms', 'hub_form_submissions', 'hub_announcements', 'competitions'];
+const HUB_TABLES = ['hub_tasks', 'inventory_items', 'inventory_transactions', 'hub_announcements', 'hub_media', 'hub_resources', 'sponsors', 'sponsor_notes', 'hub_forms', 'hub_form_submissions', 'articles', 'site_config', 'hub_calendar', 'competitions'];
 
 const HUB_CONFIG_KEYS = ['media_folders'];
 

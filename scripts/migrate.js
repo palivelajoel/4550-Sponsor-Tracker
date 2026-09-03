@@ -21,7 +21,6 @@ const JSON_COLUMNS = new Set([
   'questions',     // hub_forms
   'answers',       // hub_form_submissions
   'tags',          // inventory_items
-  'schematic_data',// competitions
 ]);
 
 // All boolean columns in the schema -> stored as INTEGER 0/1.
@@ -30,15 +29,18 @@ const BOOL_TABLES = {
   hub_calendar: ['all_day'],
   articles: ['published'],
   competitions: ['attending'],
-  scouting_matches: ['auto_climb', 'defense', 'defended', 'died'],
-  scouting_pits: ['can_score_auto_climb', 'can_score_fuel_near', 'can_score_fuel_far'],
+};
+
+// Columns dropped from the target D1 schema (removed features) -> strip from inserts.
+const EXCLUDE_COLUMNS = {
+  competitions: ['venue_map_url', 'pit_map_url', 'stream_url', 'map_status', 'last_map_check', 'schematic_data'],
 };
 
 const TABLES = [
   'members', 'suggestions', 'sponsors', 'sponsor_notes', 'captains', 'site_config',
   'hub_tasks', 'hub_calendar', 'hub_announcements', 'hub_media', 'hub_resources',
   'hub_forms', 'hub_form_submissions', 'inventory_items', 'inventory_transactions',
-  'articles', 'competitions', 'scouting_matches', 'scouting_pits', 'scouting_picklist',
+  'articles', 'competitions',
 ];
 
 // Normalize a value for D1 storage.
@@ -100,9 +102,13 @@ async function fetchAll(table) {
     }
     if (!rows.length) { summary.push(`${table}: 0 rows (skipped)`); continue; }
 
+    const excluded = EXCLUDE_COLUMNS[table] || [];
     const normalized = rows.map(r => {
       const out = {};
-      for (const [k, v] of Object.entries(r)) out[k] = normalize(table, k, v);
+      for (const [k, v] of Object.entries(r)) {
+        if (excluded.includes(k)) continue;
+        out[k] = normalize(table, k, v);
+      }
       return out;
     });
 

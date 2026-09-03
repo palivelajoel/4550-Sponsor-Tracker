@@ -16,7 +16,7 @@ const READ_TABLES = new Set([
   "members", "suggestions", "sponsors", "sponsor_notes", "captains", "site_config",
   "hub_tasks", "hub_calendar", "hub_announcements", "hub_media", "hub_resources",
   "hub_forms", "hub_form_submissions", "inventory_items", "inventory_transactions",
-  "articles", "competitions", "scouting_matches", "scouting_pits", "scouting_picklist",
+  "articles", "competitions",
 ]);
 
 function err(res, status, msg) {
