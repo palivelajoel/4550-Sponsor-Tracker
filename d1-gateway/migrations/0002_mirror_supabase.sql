@@ -300,4 +300,4 @@ CREATE INDEX IF NOT EXISTS idx_hub_resources_category ON hub_resources(category)
 CREATE INDEX IF NOT EXISTS idx_inventory_items_category ON inventory_items(category);
 CREATE INDEX IF NOT EXISTS idx_competitions_event_key ON competitions(event_key);
 CREATE INDEX IF NOT EXISTS idx_scouting_matches_event_key ON scouting_matches(event_key);
-CREATE INDEX IF NOT EXISTS idx_scouting_pits_event_key ON scouting_pits(event_key);
+CREATE INDEX IF NOT EXISTS idx_scouting_picklist_rank ON scouting_picklist(rank);
