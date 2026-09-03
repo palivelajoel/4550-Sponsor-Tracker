@@ -25,6 +25,7 @@ const JSON_COLUMNS = {
   hub_forms: ["questions"],
   hub_form_submissions: ["answers"],
   inventory_items: ["tags"],
+  competitions: ["schematic_data"],
 };
 
 function tryParse(v) {
