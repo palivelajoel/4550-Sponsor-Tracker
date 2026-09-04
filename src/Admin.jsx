@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import Starfield from "./Starfield.jsx";
 import QRCode from "qrcode";
 
-import { CaptainPhoto, sbFetch, uploadFile } from './hubUtils.jsx';
+import { CaptainPhoto, sbFetch, uploadFile, getLastUploadError } from './hubUtils.jsx';
 
 const ROLES = ["Member", "Captain", "Admin"];
 const SUBTEAMS = ["Build", "Programming", "Marketing & Outreach", "General"];
@@ -1692,7 +1692,7 @@ function SiteConfig({ config, logoUrl, setLogoUrl, reload, showToast, isMobile }
     if (!file) return;
     setUploadingImg(key);
     const url = await uploadFile(file, 'team-assets');
-    if (!url) { showToast("Upload failed.", "#ef4444"); setUploadingImg(null); return; }
+    if (!url) { showToast(getLastUploadError() || "Upload failed.", "#ef4444"); setUploadingImg(null); return; }
     await adminProxy('site_config', 'upsert', { key, value: url });
     setVals(v => ({ ...v, [key]: url }));
     setPendingImgUploads(p => { const n = { ...p }; delete n[key]; return n; });

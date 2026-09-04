@@ -135,7 +135,7 @@ export async function prepareFileForUpload(file) {
 export async function uploadFile(file, _bucket) {
   const { fileName, base64, contentType } = await prepareFileForUpload(file);
   const token = localStorage.getItem("admin_token") || localStorage.getItem("hub_token");
-  if (!token) return null;
+  if (!token) { await keepLastUploadError("Upload failed: no auth token — please log in again."); return null; }
   try {
     const res = await fetch("/api/upload", {
       method: "POST",
@@ -144,9 +144,18 @@ export async function uploadFile(file, _bucket) {
     });
     const j = await res.json().catch(() => ({}));
     if (res.ok && j?.data?.files?.[0]?.url) return j.data.files[0].url;
-  } catch {}
+    const apiErr = j?.error || (j?.errors?.[0]?.error) || `HTTP ${res.status}`;
+    await keepLastUploadError(`Upload failed: ${apiErr}`);
+  } catch (e) {
+    await keepLastUploadError(`Upload failed: ${(e && e.message) || e}`);
+  }
   return null;
 }
+
+// Last real error from uploadFile, so callers can surface the actual reason.
+let _lastUploadError = "";
+async function keepLastUploadError(msg) { _lastUploadError = msg; }
+export function getLastUploadError() { return _lastUploadError; }
 
 /**
  * Upload "main media" (Media Gallery images/videos, Resources docs such as
