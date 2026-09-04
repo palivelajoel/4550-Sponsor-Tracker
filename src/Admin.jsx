@@ -355,7 +355,7 @@ function Overview({ members, tasks, suggestions, sponsors, events, overdue, comp
           <div style={cardTitle}>🏆 NEXT COMPETITION</div>
           {nextComp ? (
             <div>
-              <div style={{ fontSize: 15, fontWeight: 700, color: "#f1f5f9", marginBottom: 4 }}>{nextComp.name || nextComp.event_key || "TBD"}</div>
+              <div style={{ fontSize: 15, fontWeight: 700, color: "#f1f5f9", marginBottom: 4 }}>{nextComp.name || nextComp.event_code || "TBD"}</div>
               <div style={{ fontSize: 12, color: "#94a3b8", fontFamily: "monospace" }}>{nextComp.start_date} — {nextComp.location || "TBD"}</div>
             </div>
           ) : (

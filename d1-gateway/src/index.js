@@ -4,7 +4,7 @@
  * This is the ONLY Cloudflare piece in the stack. Vercel serverless functions call
  * this worker over HTTPS; it holds the D1 binding and executes parameterized SQL.
  *
- * Security model (replaces the removed Supabase RLS):
+ * Security model:
  *  - Requests MUST send `Authorization: Bearer <API_TOKEN>` (secret set in the dashboard).
  *  - Only an explicit allowlist of tables is reachable.
  *  - All values are bound via D1's prepared-statement `bind(...)` — no string-concatenated SQL.

@@ -74,7 +74,7 @@ export default async function handler(req, res) {
     const { action } = req.body || {};
 
     if (action === 'cleanup' || action === 'status') {
-      // Legacy Supabase-storage maintenance actions no longer apply — media lives in GitHub.
+      // Legacy storage-maintenance actions no longer apply — media lives in GitHub.
       if (payload.role !== 'Admin') return res.status(403).json({ error: 'Admin role required' });
       return res.status(200).json({ data: { notice: 'Media now lives in the GitHub repo; nothing to clean up.' } });
     }

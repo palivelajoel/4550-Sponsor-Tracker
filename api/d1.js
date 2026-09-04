@@ -2,7 +2,7 @@
 // PostgREST-compatible READ endpoint backed by Cloudflare D1 (via the gateway).
 //
 // The frontend `sbFetch`/`dbFetch` reads use the same query-string syntax it used
-// against Supabase (`/api/d1/members?select=*&order=created_at.asc&role=eq.Admin`).
+// against the D1-backed API (`/api/d1/members?select=*&order=created_at.asc&role=eq.Admin`).
 // This handler translates those query strings into D1 select calls and returns rows
 // with boolean columns coerced back to true/false (D1 stores them as 0/1).
 //

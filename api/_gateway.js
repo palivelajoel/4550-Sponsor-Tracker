@@ -1,6 +1,6 @@
 // api/_gateway.js
 // Thin client for the Cloudflare D1 gateway Worker. All DB access in the
-// serverless API goes through here instead of the Supabase client.
+// serverless API goes through here.
 //
 // The gateway worker exposes parameterized JSON CRUD over Cloudflare D1 and is
 // authenticated with a Bearer token (D1_GATEWAY_TOKEN) at D1_GATEWAY_URL.
@@ -59,7 +59,7 @@ function normVal(col, v) {
     if (v === "true") return 1;
     if (v === "false") return 0;
   }
-  // Arrays/objects are stored as JSON text (Supabase jsonb).
+  // Arrays/objects are stored as JSON text.
   if (v !== null && typeof v === "object") {
     try { return JSON.stringify(v); } catch { return v; }
   }

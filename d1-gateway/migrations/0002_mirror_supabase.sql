@@ -1,6 +1,6 @@
--- 0002 - D1 schema mirroring the real Supabase schema (post-cleanup).
+-- 0002 - D1 schema mirroring the original schema (post-cleanup).
 -- Corrects the original 0001 guess (integer ids, wrong columns). Tables were empty,
--- so we drop and recreate 1:1 against Supabase.
+-- so we drop and recreate 1:1 against the source schema.
 -- REMOVED features: scouting (pits/matches/picklist) and competition map fields.
 -- Ids are TEXT (UUIDs preserved). Booleans stored as INTEGER 0/1; JSON as TEXT.
 
@@ -81,7 +81,7 @@ CREATE TABLE captains (
   created_at TEXT
 );
 
--- site_config (primary key is `key`, matching Supabase)
+-- site_config (primary key is `key`, matching the source)
 CREATE TABLE site_config (
   key   TEXT PRIMARY KEY,
   value TEXT
