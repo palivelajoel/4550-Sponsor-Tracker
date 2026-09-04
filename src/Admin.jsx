@@ -2111,8 +2111,14 @@ function SiteConfig({ config, logoUrl, setLogoUrl, reload, showToast, isMobile }
                 </div>
               )}
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <label style={{ color: "#94a3b8", fontSize: 12, fontFamily: "monospace" }}>Duration (sec)</label>
-                <input type="number" min={1} value={slide.durationSec ?? defaultAdDuration(slide.type)} onChange={e => updateAdSlide(idx, { durationSec: Number(e.target.value) || 0 })} style={{ ...S.input, maxWidth: 90, marginBottom: 0 }} />
+                {slide.type === "video" ? (
+                  <span style={{ color: "#475569", fontSize: 12, fontFamily: "monospace" }}>▶ Video plays its full length, then advances.</span>
+                ) : (
+                  <>
+                    <label style={{ color: "#94a3b8", fontSize: 12, fontFamily: "monospace" }}>Duration (sec)</label>
+                    <input type="number" min={1} value={slide.durationSec ?? defaultAdDuration(slide.type)} onChange={e => updateAdSlide(idx, { durationSec: Number(e.target.value) || 0 })} style={{ ...S.input, maxWidth: 90, marginBottom: 0 }} />
+                  </>
+                )}
               </div>
             </div>
           ))}

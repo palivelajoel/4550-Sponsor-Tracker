@@ -79,8 +79,9 @@ export default function HubAdvertisement() {
   useEffect(() => {
     if (!started || showQR || escArmed || slides.length === 0) return;
     const slide = slides[slideIndex];
+    if (slide?.type === "video") return; // videos advance only when the clip ends
     const ms = (slide?.durationSec || 0) * 1000;
-    const fallbackMs = slide?.type === "video" ? (ms || 25000) : (ms || slide?.type === "cad" ? 12000 : slide?.type === "info" ? 10000 : 8000);
+    const fallbackMs = ms || (slide?.type === "cad" ? 12000 : slide?.type === "info" ? 10000 : 8000);
     timerRef.current = setTimeout(() => advance(), fallbackMs);
     return () => clearTimeout(timerRef.current);
   }, [started, showQR, escArmed, slideIndex, slides]);
@@ -212,14 +213,8 @@ export default function HubAdvertisement() {
 }
 
 function VideoSlide({ slide, onEnded }) {
-  const timeoutRef = useRef(null);
-  const ms = (slide.durationSec || 0) * 1000 || 25000;
-  useEffect(() => {
-    timeoutRef.current = setTimeout(onEnded, ms);
-    return () => clearTimeout(timeoutRef.current);
-  }, []);
   return (
-    <video src={slide.url} poster={slide.poster} autoPlay muted={false} style={{ width: "100%", height: "100%", objectFit: "contain", background: "#000" }} onEnded={onEnded} loop={false} playsInline />
+    <video src={slide.url} poster={slide.poster} autoPlay muted={false} style={{ width: "100%", height: "100%", objectFit: "contain", background: "#000" }} onEnded={onEnded} onError={onEnded} playsInline />
   );
 }
 
