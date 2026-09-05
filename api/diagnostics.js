@@ -43,13 +43,21 @@ export default async function handler(req, res) {
       exactBody = { status: r.status, body: (await r.text()).slice(0, 120) };
     } catch (e) { exactBody = { error: String((e && e.message) || e) }; }
 
-    // 3) the REAL code path api/d1.js uses (d1Select from _gateway.js)
-    let moduleSelect = null;
-    try {
-      const rows = await d1Select("site_config", {});
-      moduleSelect = { ok: true, count: Array.isArray(rows) ? rows.length : -1 };
-    } catch (e) {
-      moduleSelect = { ok: false, error: String((e && e.message) || e), full: String(e) };
+    // 3) the REAL code path api/d1.js uses — try the exact arg combos it would pass
+    const moduleSelect = {};
+    const argCases = {
+      "plain-empty": () => d1Select("site_config", {}),
+      "limit-null": () => d1Select("site_config", { filters: [], order: [], limit: null }),
+      "filtered": () => d1Select("site_config", { filters: [{ col: "key", op: "eq", value: "logo_url" }], order: [], limit: null }),
+      "order-desc": () => d1Select("site_config", { filters: [], order: [{ col: "key", asc: false }], limit: null }),
+    };
+    for (const [name, fn] of Object.entries(argCases)) {
+      try {
+        const rows = await fn();
+        moduleSelect[name] = { ok: true, count: Array.isArray(rows) ? rows.length : -1 };
+      } catch (e) {
+        moduleSelect[name] = { ok: false, error: String((e && e.message) || e) };
+      }
     }
 
     const runtime = { onVercel: !!process.env.VERCEL, nodeEnv: process.env.NODE_ENV || null };
