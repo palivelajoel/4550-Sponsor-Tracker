@@ -4,7 +4,7 @@
 // see the exact error api/d1.js hits while a direct fetch works.
 
 import { d1Select } from './_gateway.js';
-import d1Handler from './d1.js';
+import d1Handler from './db.js';
 
 export default async function handler(req, res) {
   try {
