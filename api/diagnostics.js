@@ -4,6 +4,7 @@
 // see the exact error api/d1.js hits while a direct fetch works.
 
 import { d1Select } from './_gateway.js';
+import d1Handler from './d1.js';
 
 export default async function handler(req, res) {
   try {
@@ -60,9 +61,26 @@ export default async function handler(req, res) {
       }
     }
 
+    // 4) run the REAL api/d1.js handler in-process with a mock req/res
+    const handlerRuns = {};
+    for (const url of ["/api/d1/site_config", "/api/d1/site_config?key=eq.logo_url"]) {
+      handlerRuns[url] = await new Promise((resolve) => {
+        let settled = false;
+        const done = (x) => { if (!settled) { settled = true; resolve(x); } };
+        const timer = setTimeout(() => done({ timeout: true }), 20000);
+        const res = {
+          status(c) { return { json: (b) => { clearTimeout(timer); done({ status: c, body: b }); }, end: () => { clearTimeout(timer); done({ status: c }); } }; },
+          json(b) { clearTimeout(timer); done({ status: 200, body: b }); },
+          end() { clearTimeout(timer); done({ status: 200 }); },
+        };
+        d1Handler({ url, method: "GET" }, res)
+          .catch((e) => done({ status: -1, error: String((e && e.message) || e) }));
+      });
+    }
+
     const runtime = { onVercel: !!process.env.VERCEL, nodeEnv: process.env.NODE_ENV || null };
 
-    return res.status(200).json({ ok: true, env, gatewayUrl, tokenLast4, directFetch, exactBody, moduleSelect, runtime });
+    return res.status(200).json({ ok: true, env, gatewayUrl, tokenLast4, directFetch, exactBody, moduleSelect, handlerRuns, runtime });
   } catch (err) {
     return res.status(500).json({ error: String(err) });
   }
