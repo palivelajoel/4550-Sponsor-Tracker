@@ -1,5 +1,6 @@
-// api/d1.js
+// api/db.js
 // PostgREST-compatible READ endpoint backed by Cloudflare D1 (via the gateway).
+// Served at /api/d1/* via vercel.json rewrites.
 //
 // The frontend `sbFetch`/`dbFetch` reads use the same query-string syntax it used
 // against the D1-backed API (`/api/d1/members?select=*&order=created_at.asc&role=eq.Admin`).
