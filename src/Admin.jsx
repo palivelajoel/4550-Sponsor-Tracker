@@ -891,7 +891,10 @@ function CaptainsAdmin({ captains, reload, showToast, isMobile }) {
     setUploading(true);
     try {
       let photo_url = "";
-      if (photoFile) photo_url = (await uploadFile(photoFile)) || "";
+      if (photoFile) {
+        photo_url = (await uploadFile(photoFile)) || "";
+        if (!photo_url) { showToast(getLastUploadError() || "Photo upload failed.", "#ef4444"); setUploading(false); return; }
+      }
       await adminProxy("captains", "insert", { ...form, photo_url });
       setForm({ name: "", position: "", bio: "", sort_order: 0 });
       setPhotoFile(null);
@@ -910,7 +913,8 @@ function CaptainsAdmin({ captains, reload, showToast, isMobile }) {
       const update = { ...editData };
       if (editPhotoFile) {
         const url = await uploadFile(editPhotoFile);
-        if (url) update.photo_url = url;
+        if (!url) { showToast(getLastUploadError() || "Photo upload failed.", "#ef4444"); setUploading(false); return; }
+        update.photo_url = url;
       }
       await adminProxy("captains", "update", { id, updates: update });
       setEditId(null);
