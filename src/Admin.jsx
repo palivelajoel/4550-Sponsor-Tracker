@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import Starfield from "./Starfield.jsx";
 import QRCode from "qrcode";
 
-import { CaptainPhoto, sbFetch, uploadFile, getLastUploadError } from './hubUtils.jsx';
+import { CaptainPhoto, sbFetch, uploadFile, uploadLargeFile, needsLargeUpload, getLastUploadError } from './hubUtils.jsx';
 
 const ROLES = ["Member", "Captain", "Admin"];
 const SUBTEAMS = ["Build", "Programming", "Marketing & Outreach", "General"];
@@ -1588,6 +1588,7 @@ function SiteConfig({ config, logoUrl, setLogoUrl, reload, showToast, isMobile }
   const adFileRefs = useRef({});
   const [pendingAdUploads, setPendingAdUploads] = useState({});
   const [uploadingAd, setUploadingAd] = useState(null);
+  const [adUploadPct, setAdUploadPct] = useState(null);
   const [aboutMetrics, setAboutMetrics] = useState(() => {
     try {
       const arr = JSON.parse(vals.about_metrics || "[]");
@@ -1752,11 +1753,23 @@ function SiteConfig({ config, logoUrl, setLogoUrl, reload, showToast, isMobile }
     const file = pendingAdUploads[idx];
     if (!file) return;
     setUploadingAd(idx);
-    const url = await uploadFile(file, 'team-assets');
-    if (!url) { showToast("Upload failed.", "#ef4444"); setUploadingAd(null); return; }
+    setAdUploadPct(null);
+    let url;
+    try {
+      url = needsLargeUpload(file)
+        ? await uploadLargeFile(file, { onProgress: (d, t) => setAdUploadPct(t ? Math.round((d / t) * 100) : null) })
+        : await uploadFile(file, 'team-assets');
+    } catch (e) {
+      showToast(getLastUploadError() || "Upload failed.", "#ef4444");
+      setUploadingAd(null);
+      setAdUploadPct(null);
+      return;
+    }
+    if (!url) { showToast(getLastUploadError() || "Upload failed.", "#ef4444"); setUploadingAd(null); setAdUploadPct(null); return; }
     setAdSlides(arr => arr.map((s, i) => i === idx ? { ...s, url } : s));
     setPendingAdUploads(p => { const n = { ...p }; delete n[idx]; return n; });
     setUploadingAd(null);
+    setAdUploadPct(null);
     showToast("✅ Media uploaded.");
   }
 
@@ -2095,7 +2108,7 @@ function SiteConfig({ config, logoUrl, setLogoUrl, reload, showToast, isMobile }
                     <button onClick={() => { adFileRefs.current[idx]?.click(); }} style={{ ...S.btnGhost, flexShrink: 0, padding: "6px 10px", fontSize: 12 }}>
                       {pendingAdUploads[idx] ? `📤 ${pendingAdUploads[idx].name}` : "Upload"}
                     </button>
-                    {pendingAdUploads[idx] && <button onClick={() => uploadAdMedia(idx)} disabled={uploadingAd === idx} style={{ ...S.btnPrimary, flexShrink: 0, padding: "6px 10px", fontSize: 12 }}>{uploadingAd === idx ? "Uploading..." : "Go"}</button>}
+                    {pendingAdUploads[idx] && <button onClick={() => uploadAdMedia(idx)} disabled={uploadingAd === idx} style={{ ...S.btnPrimary, flexShrink: 0, padding: "6px 10px", fontSize: 12 }}>{uploadingAd === idx ? (adUploadPct != null ? `Uploading… ${adUploadPct}%` : "Uploading...") : "Go"}</button>}
                     <input ref={el => adFileRefs.current[idx] = el} type="file" style={{ display: "none" }} onChange={e => { const file = e.target.files?.[0]; if (file) setPendingAdUploads(p => ({ ...p, [idx]: file })); }} />
                   </div>
                 </div>

@@ -243,11 +243,12 @@ export async function uploadMediaFile(file, _bucket, opts) {
 export const MEDIA_WORKER_BASE = "https://media-gateway.palivelajoel.workers.dev";
 const MEDIA_CHUNK = 50 * 1024 * 1024; // must match the worker's CHUNK_SIZE
 
-/** Files that can't ride the small GitHub path: videos, or anything too big to
- *  be image-compressed under the upload cap. */
+/** Files that can't ride the small GitHub path: any video, or any file (incl.
+ *  large gallery images) over the compressible budget. Medium images still get
+ *  client-side compression onto GitHub where possible. */
 export function needsLargeUpload(file) {
   const t = String(file?.type || "").toLowerCase();
-  return t.startsWith("video") || ((file?.size || 0) > COMPRESS_THRESHOLD && !isCompressibleImage(file));
+  return t.startsWith("video") || (file?.size || 0) > COMPRESS_THRESHOLD;
 }
 
 function mediaWorkerBase() {
