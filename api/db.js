@@ -140,9 +140,16 @@ export default async function handler(req, res) {
   if (!table || !READ_TABLES.has(table)) return err(res, 400, "Invalid table");
 
   const query = new URLSearchParams(req.url.split("?")[1] || "");
+  const isDiag = query.get("diag") === "1";
+  // Vercel injects the rewrite's matched :path* capture as a `path` query param.
+  // It is a routing artifact (the real table comes from the URL path), not a
+  // filter column, so strip it here or the gateway would query a nonexistent
+  // `path` column and 500. `diag` is consumed below, so drop it too.
+  query.delete("path");
+  query.delete("diag");
   const { filters, order, limit, embeds } = parseQuery(query);
 
-  if (query.get("diag") === "1") {
+  if (isDiag) {
     try {
       const raw = {};
       try { raw.rawSelect = await d1Select("site_config", { limit: 2 }); } catch (e) { raw.rawSelectErr = String(e && e.message ? e.message : e); }
