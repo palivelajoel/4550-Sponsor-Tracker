@@ -1,9 +1,9 @@
-// Lightweight diagnostics endpoint for runtime env verification.
-// Returns booleans plus a safe fingerprint of the gateway config so a stale
-// D1_GATEWAY_URL / D1_GATEWAY_TOKEN can be spotted instantly, plus a live
-// gateway probe so we can see EXACTLY what the gateway returns to Vercel.
-// No secrets exposed: URL printed in full (infrastructure URL, not a secret)
-// and the token truncated to its last 4 chars only.
+// Lightweight diagnostics endpoint for runtime verification.
+// No secrets exposed: URL printed in full, token only last 4 chars.
+// This version also REPRODUCES the /api/d1 failure path in-process so we can
+// see the exact error api/d1.js hits while a direct fetch works.
+
+import { d1Select } from './_gateway.js';
 
 export default async function handler(req, res) {
   try {
@@ -21,27 +21,40 @@ export default async function handler(req, res) {
     const gatewayToken = process.env.D1_GATEWAY_TOKEN || "";
     const tokenLast4 = gatewayToken.length >= 4 ? "…" + gatewayToken.slice(-4) : null;
 
-    let gatewayProbe = null;
-    if (gatewayUrl) {
-      try {
-        const probeRes = await fetch(`${gatewayUrl}/`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json", Authorization: `Bearer ${gatewayToken}` },
-          body: JSON.stringify({ action: "select", table: "site_config", filters: [], order: [], limit: 2 }),
-        });
-        const text = await probeRes.text();
-        gatewayProbe = {
-          status: probeRes.status,
-          bodySnippet: (text || "").slice(0, 160),
-        };
-      } catch (e) {
-        gatewayProbe = { error: String((e && e.message) || e) };
-      }
+    // 1) direct fetch (as normal rest client would)
+    let directFetch = null;
+    try {
+      const r = await fetch(`${gatewayUrl}/`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${gatewayToken}` },
+        body: JSON.stringify({ action: "select", table: "site_config", filters: [], order: [], limit: 2 }),
+      });
+      directFetch = { status: r.status, body: (await r.text()).slice(0, 120) };
+    } catch (e) { directFetch = { error: String((e && e.message) || e) }; }
+
+    // 2) the exact body api/d1.js sends for GET /api/d1/site_config
+    let exactBody = null;
+    try {
+      const r = await fetch(`${gatewayUrl}/`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${gatewayToken}` },
+        body: JSON.stringify({ action: "select", table: "site_config", filters: [], order: [], limit: null }),
+      });
+      exactBody = { status: r.status, body: (await r.text()).slice(0, 120) };
+    } catch (e) { exactBody = { error: String((e && e.message) || e) }; }
+
+    // 3) the REAL code path api/d1.js uses (d1Select from _gateway.js)
+    let moduleSelect = null;
+    try {
+      const rows = await d1Select("site_config", {});
+      moduleSelect = { ok: true, count: Array.isArray(rows) ? rows.length : -1 };
+    } catch (e) {
+      moduleSelect = { ok: false, error: String((e && e.message) || e), full: String(e) };
     }
 
     const runtime = { onVercel: !!process.env.VERCEL, nodeEnv: process.env.NODE_ENV || null };
 
-    return res.status(200).json({ ok: true, env, gatewayUrl, tokenLast4, gatewayProbe, runtime });
+    return res.status(200).json({ ok: true, env, gatewayUrl, tokenLast4, directFetch, exactBody, moduleSelect, runtime });
   } catch (err) {
     return res.status(500).json({ error: String(err) });
   }
