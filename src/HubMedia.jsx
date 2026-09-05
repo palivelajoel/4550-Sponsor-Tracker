@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { motion } from 'framer-motion'
-import { FONTS, C, sbFetch, isAuthed, canEditHub, uploadMediaFile, HubHeader, toastStyle, inputStyle, selectStyle, overlayStyle, addBtnStyle, ghostBtn, dangerBtn, hubProxy } from "./hubUtils.jsx";
+import { FONTS, C, sbFetch, isAuthed, canEditHub, uploadMediaFile, uploadLargeFile, getLastUploadError, HubHeader, toastStyle, inputStyle, selectStyle, overlayStyle, addBtnStyle, ghostBtn, dangerBtn, hubProxy } from "./hubUtils.jsx";
 import HubBackground from "./HubBackground.jsx";
 
 const CATEGORIES = ["All", "Competition", "Build Season", "Outreach", "Team", "Other"];
@@ -128,6 +128,7 @@ export default function HubMedia() {
   const [toast, setToast] = useState("");
   const [cropFile, setCropFile] = useState(null);
   const [editItem, setEditItem] = useState(null);
+  const [uploadPct, setUploadPct] = useState(null);
   const fileRef = useRef(null);
   const folderRef = useRef(null);
 
@@ -180,10 +181,22 @@ export default function HubMedia() {
     }
     if (!form.title) return showToast("Title required.");
     setUploading(true);
+    setUploadPct(null);
     let url = form.url;
     if (file) {
-      url = await uploadMediaFile(file, "team-media");
-      if (!url) { showToast("Upload failed."); setUploading(false); return; }
+      if (file.type.startsWith("video")) {
+        try {
+          url = await uploadLargeFile(file, { onProgress: (done, total) => setUploadPct(total ? Math.round((done / total) * 100) : null) });
+        } catch (e) {
+          showToast((e && e.message) || "Upload failed.");
+          setUploading(false);
+          setUploadPct(null);
+          return;
+        }
+      } else {
+        url = await uploadMediaFile(file, "team-media");
+        if (!url) { showToast(getLastUploadError() || "Upload failed."); setUploading(false); return; }
+      }
     }
     if (!url) { showToast("Provide a file."); setUploading(false); return; }
 
@@ -198,16 +211,27 @@ export default function HubMedia() {
     setFile(null);
     setForm({ title: "", category: "Competition", description: "", year: new Date().getFullYear(), url: "", folder: "" });
     setUploading(false);
+    setUploadPct(null);
     load();
   }
 
   async function submitFolder() {
     if (!dirFiles || dirFiles.length === 0) return showToast("Choose a folder first.");
     setUploading(true);
+    setUploadPct(0);
+    const totalBytes = dirFiles.reduce((s, f) => s + (f.size || 0), 0);
+    let doneBytes = 0;
     let ok = 0, fail = 0;
     for (let i = 0; i < dirFiles.length; i++) {
       const f = dirFiles[i];
-      const url = await uploadMediaFile(f, "team-media");
+      const url = await uploadMediaFile(f, "team-media", {
+        onProgress: (d, t) => {
+          if (!t) return;
+          doneBytes = doneBytes - (t) + (d); // replace this file's contribution as it uploads
+          setUploadPct(totalBytes ? Math.round((doneBytes / totalBytes) * 100) : null);
+        },
+      });
+      doneBytes += f.size || 0;
       if (!url) { fail++; continue; }
       const isVideo = f.type.startsWith("video");
       try {
@@ -228,6 +252,7 @@ export default function HubMedia() {
     setDirFiles(null);
     setTargetFolder("");
     setUploading(false);
+    setUploadPct(null);
     load();
   }
 
@@ -475,9 +500,14 @@ export default function HubMedia() {
               )}
 
               <div style={{ display: "flex", gap: 10, marginTop: 4 }}>
-                <button onClick={submit} disabled={uploading} style={{ ...addBtnStyle, flex: 1, opacity: uploading ? 0.6 : 1 }}>{uploading ? "Uploading..." : uploadMode === "folder" ? "Upload Folder" : "Add"}</button>
+                <button onClick={submit} disabled={uploading} style={{ ...addBtnStyle, flex: 1, opacity: uploading ? 0.6 : 1 }}>{uploading ? (uploadPct != null ? `Uploading… ${uploadPct}%` : "Uploading...") : uploadMode === "folder" ? "Upload Folder" : "Add"}</button>
                 <button onClick={() => setAddModal(false)} style={{ ...ghostBtn, flex: 1 }}>Cancel</button>
               </div>
+              {uploading && uploadPct != null && (
+                <div style={{ height: 4, borderRadius: 2, background: "rgba(255,255,255,0.08)", overflow: "hidden", marginTop: 8 }}>
+                  <div style={{ height: "100%", width: `${Math.min(100, Math.max(0, uploadPct))}%`, background: "#ef4444", transition: "width 0.2s ease" }} />
+                </div>
+              )}
             </div>
           </div>
         </div>

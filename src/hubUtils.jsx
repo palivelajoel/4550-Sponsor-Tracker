@@ -229,8 +229,97 @@ export function getLastUploadError() { return _lastUploadError; }
  * Upload "main media" (Media Gallery images/videos, Resources docs such as
  * PDFs/CAD files) to the GitHub repo via /api/upload.
  */
-export async function uploadMediaFile(file) {
+export async function uploadMediaFile(file, _bucket, opts) {
+  if (needsLargeUpload(file)) return uploadLargeFile(file, opts);
   return uploadFile(file);
+}
+
+// ---- Large media (video) uploads via the media-gateway Cloudflare Worker ----
+//
+// Media Gallery videos can be ~500MB — far past the ~4.5MB Vercel/3MB GitHub
+// upload cap — so they go straight to the media-gateway worker, which streams
+// the file to R2 in parts. The worker subdomain mirrors the account used for
+// the d1-gateway worker; change MEDIA_WORKER_BASE if it deploys elsewhere.
+export const MEDIA_WORKER_BASE = "https://media-gateway.palivelajoel.workers.dev";
+const MEDIA_CHUNK = 50 * 1024 * 1024; // must match the worker's CHUNK_SIZE
+
+/** Files that can't ride the small GitHub path: videos, or anything too big to
+ *  be image-compressed under the upload cap. */
+export function needsLargeUpload(file) {
+  const t = String(file?.type || "").toLowerCase();
+  return t.startsWith("video") || ((file?.size || 0) > COMPRESS_THRESHOLD && !isCompressibleImage(file));
+}
+
+function mediaWorkerBase() {
+  try {
+    const override = localStorage.getItem("media_worker_base");
+    if (override) return String(override).replace(/\/$/, "");
+  } catch {}
+  return MEDIA_WORKER_BASE;
+}
+
+async function mediaJson(res) {
+  const j = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(j?.error || `HTTP ${res.status}`);
+  return j;
+}
+
+/**
+ * Upload a large file (video/CAD/etc.) to R2 via the media-gateway worker in
+ * MEDIA_CHUNK parts. Returns the worker URL for the stored object.
+ * onProgress(bytesDone, totalBytes) fires after each part.
+ */
+export async function uploadLargeFile(file, { onProgress } = {}) {
+  const token = getToken() || localStorage.getItem("admin_token");
+  if (!token) {
+    await keepLastUploadError("Upload failed: no auth token — please log in again.");
+    throw new Error("Upload failed: no auth token — please log in again.");
+  }
+  const base = mediaWorkerBase();
+
+  const started = await mediaJson(await fetch(`${base}/start`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ fileName: file.name, size: file.size }),
+  }));
+  const { key, uploadId, chunkSize } = started;
+  const chunk = chunkSize || MEDIA_CHUNK;
+
+  try {
+    const parts = [];
+    let offset = 0;
+    let partNumber = 1;
+    while (offset < file.size) {
+      const blob = file.slice(offset, offset + chunk);
+      const res = await fetch(
+        `${base}/part?key=${encodeURIComponent(key)}&uploadId=${encodeURIComponent(uploadId)}&partNumber=${partNumber}`,
+        { method: "PUT", headers: { Authorization: `Bearer ${token}` }, body: blob }
+      );
+      const j = await mediaJson(res);
+      if (!j.etag) throw new Error(`Part ${partNumber} failed`);
+      parts.push({ partNumber, etag: j.etag });
+      offset += blob.size;
+      partNumber++;
+      onProgress && onProgress(offset, file.size);
+    }
+
+    const done = await mediaJson(await fetch(`${base}/complete`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ key, uploadId, parts }),
+    }));
+    return done.url;
+  } catch (e) {
+    try {
+      await fetch(`${base}/abort`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ key, uploadId }),
+      });
+    } catch {}
+    await keepLastUploadError((e && e.message) || "Upload failed.");
+    throw e;
+  }
 }
 
 /** Upload a raw blob (e.g. camera photos) as a named file. */
