@@ -114,14 +114,82 @@ async function hashHex(bytes) {
   return h.toString(16);
 }
 
+// Images this big are auto-compressed client-side so the upload stays under the
+// server's ~3MB body budget (base64 inflates ~33%, Vercel caps ~4.5MB).
+const COMPRESS_THRESHOLD = 2.6 * 1024 * 1024;
+const COMPRESS_TARGET = 2.8 * 1024 * 1024;
+
+function isCompressibleImage(file) {
+  const t = String(file?.type || "").toLowerCase();
+  return /^image\/(png|jpe?g|webp|avif)$/.test(t);
+}
+
+function loadImageElement(bytes, mime) {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(new Blob([bytes], { type: mime || "image/png" }));
+    const img = new Image();
+    img.onload = () => { URL.revokeObjectURL(url); resolve(img); };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("Failed to decode image")); };
+    img.src = url;
+  });
+}
+
+function canvasToBlob(canvas, type, quality) {
+  return new Promise(resolve => canvas.toBlob(b => resolve(b), type, quality));
+}
+
+async function compressImageBytes(bytes, mime) {
+  let img;
+  try { img = await loadImageElement(bytes, mime); } catch { return null; }
+  const w = img.naturalWidth || 1;
+  const h = img.naturalHeight || 1;
+  if (!w || !h) return null;
+
+  const canvas = document.createElement("canvas");
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return null;
+
+  let maxDim = 2400;
+  let quality = 0.85;
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const scale = Math.min(1, maxDim / Math.max(w, h));
+    canvas.width = Math.max(1, Math.round(w * scale));
+    canvas.height = Math.max(1, Math.round(h * scale));
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+    let blob = await canvasToBlob(canvas, "image/webp", quality);
+    if (blob && blob.type !== "image/webp") blob = await canvasToBlob(canvas, "image/jpeg", quality);
+    if (!blob) return null;
+
+    const out = new Uint8Array(await blob.arrayBuffer());
+    if (out.length > 0 && out.length < COMPRESS_TARGET) {
+      const ext = blob.type === "image/webp" ? "webp" : "jpg";
+      return { bytes: out, ext, mime: blob.type };
+    }
+    maxDim = Math.max(1024, Math.floor(maxDim * 0.72));
+    quality = Math.max(0.6, quality - 0.15);
+  }
+  return null;
+}
+
 export async function prepareFileForUpload(file) {
-  const bytes = await fileBytes(file);
+  let bytes = await fileBytes(file);
+  let ext = fileExtension(file.name);
+  let mimeType = file.type || "application/octet-stream";
+  if (isCompressibleImage(file) && bytes.length > COMPRESS_THRESHOLD) {
+    const c = await compressImageBytes(bytes, mimeType);
+    if (c && c.bytes.length > 0 && c.bytes.length < bytes.length) {
+      bytes = c.bytes;
+      ext = c.ext;
+      mimeType = c.mime;
+    }
+  }
   const hash = await hashHex(bytes);
   return {
-    fileName: `${hash}.${fileExtension(file.name)}`,
+    fileName: `${hash}.${ext}`,
     base64: toBase64(bytes),
-    contentType: file.type || "application/octet-stream",
-    mimeType: file.type || "application/octet-stream",
+    contentType: mimeType,
+    mimeType,
     origName: file.name,
     bytes,
   };
