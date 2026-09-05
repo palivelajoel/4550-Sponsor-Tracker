@@ -11,7 +11,7 @@
 // authenticated /api/hub-proxy / /api/admin-proxy layer (JWT role gating), which is
 // the RLS-equivalent boundary now that D1 has no per-row security.
 
-import { d1Select, coerceRow } from './_gateway.js';
+import { d1Select, coerceRow, d1 } from './_gateway.js';
 
 const READ_TABLES = new Set([
   "members", "suggestions", "sponsors", "sponsor_notes", "captains", "site_config",
@@ -141,6 +141,27 @@ export default async function handler(req, res) {
 
   const query = new URLSearchParams(req.url.split("?")[1] || "");
   const { filters, order, limit, embeds } = parseQuery(query);
+
+  if (query.get("diag") === "1") {
+    try {
+      const raw = {};
+      try { raw.rawSelect = await d1Select("site_config", { limit: 2 }); } catch (e) { raw.rawSelectErr = String(e && e.message ? e.message : e); }
+      try {
+        const res = await fetch((process.env.D1_GATEWAY_URL || "").replace(/\/$/, "") + "/", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${process.env.D1_GATEWAY_TOKEN}` },
+          body: JSON.stringify({ action: "select", table, filters, order, limit }),
+        });
+        raw.gatewayStatus = res.status;
+        raw.gatewayText = await res.text().then(t => t.slice(0, 400));
+      } catch (e) { raw.gatewayFetchErr = String(e && e.message ? e.message : e); }
+      raw.bodySelect = { table, filters, order, limit };
+      raw.gatewayUrl = process.env.D1_GATEWAY_URL;
+      return res.status(200).json(raw);
+    } catch (e) {
+      return err(res, 500, "diag failed: " + String(e && e.message ? e.message : e));
+    }
+  }
 
   try {
     let rows;
