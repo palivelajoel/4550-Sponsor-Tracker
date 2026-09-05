@@ -11,7 +11,7 @@
 // authenticated /api/hub-proxy / /api/admin-proxy layer (JWT role gating), which is
 // the RLS-equivalent boundary now that D1 has no per-row security.
 
-import { d1Select, coerceRow, d1 } from './_gateway.js';
+import { d1Select, coerceRow } from './_gateway.js';
 
 const READ_TABLES = new Set([
   "members", "suggestions", "sponsors", "sponsor_notes", "captains", "site_config",
@@ -140,35 +140,12 @@ export default async function handler(req, res) {
   if (!table || !READ_TABLES.has(table)) return err(res, 400, "Invalid table");
 
   const query = new URLSearchParams(req.url.split("?")[1] || "");
-  const isDiag = query.get("diag") === "1";
   // Vercel injects the rewrite's matched :path* capture as a `path` query param.
   // It is a routing artifact (the real table comes from the URL path), not a
   // filter column, so strip it here or the gateway would query a nonexistent
-  // `path` column and 500. `diag` is consumed below, so drop it too.
+  // `path` column and 500.
   query.delete("path");
-  query.delete("diag");
   const { filters, order, limit, embeds } = parseQuery(query);
-
-  if (isDiag) {
-    try {
-      const raw = {};
-      try { raw.rawSelect = await d1Select("site_config", { limit: 2 }); } catch (e) { raw.rawSelectErr = String(e && e.message ? e.message : e); }
-      try {
-        const res = await fetch((process.env.D1_GATEWAY_URL || "").replace(/\/$/, "") + "/", {
-          method: "POST",
-          headers: { "Content-Type": "application/json", Authorization: `Bearer ${process.env.D1_GATEWAY_TOKEN}` },
-          body: JSON.stringify({ action: "select", table, filters, order, limit }),
-        });
-        raw.gatewayStatus = res.status;
-        raw.gatewayText = await res.text().then(t => t.slice(0, 400));
-      } catch (e) { raw.gatewayFetchErr = String(e && e.message ? e.message : e); }
-      raw.bodySelect = { table, filters, order, limit };
-      raw.gatewayUrl = process.env.D1_GATEWAY_URL;
-      return res.status(200).json(raw);
-    } catch (e) {
-      return err(res, 500, "diag failed: " + String(e && e.message ? e.message : e));
-    }
-  }
 
   try {
     let rows;
