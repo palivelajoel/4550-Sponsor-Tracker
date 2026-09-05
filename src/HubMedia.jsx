@@ -182,23 +182,30 @@ export default function HubMedia() {
     if (!form.title) return showToast("Title required.");
     setUploading(true);
     setUploadPct(null);
-    let url = form.url;
-    if (file) {
+    let url = form.url.trim();
+    // YouTube links are free & autoplay — no upload needed
+    const ytDirect = youtubeEmbedUrl(url);
+    if (ytDirect) {
+      // use the raw YouTube URL as-is; render layer converts to embed
+    } else if (file) {
       if (file.type.startsWith("video")) {
-        try {
-          url = await uploadLargeFile(file, { onProgress: (done, total) => setUploadPct(total ? Math.round((done / total) * 100) : null) });
-        } catch (e) {
-          showToast((e && e.message) || "Upload failed.");
+        // Direct 500MB video files can't go via GitHub (3MB cap) and R2 is not free,
+        // so guide to YouTube for free unlimited hosting.
+        if ((file.size || 0) > 3 * 1024 * 1024) {
+          showToast("Videos over 3MB: upload to YouTube (Unlisted) and paste the link — it will autoplay.");
           setUploading(false);
           setUploadPct(null);
           return;
         }
+        // Small videos (<3MB) can still go via GitHub if needed
+        url = await uploadMediaFile(file, "team-media");
+        if (!url) { showToast(getLastUploadError() || "Upload failed."); setUploading(false); return; }
       } else {
         url = await uploadMediaFile(file, "team-media");
         if (!url) { showToast(getLastUploadError() || "Upload failed."); setUploading(false); return; }
       }
     }
-    if (!url) { showToast("Provide a file."); setUploading(false); return; }
+    if (!url) { showToast("Provide a file or YouTube link."); setUploading(false); return; }
 
     const isVideo = url.includes("youtube") || url.includes("youtu.be") || url.includes("vimeo") || (file && file.type.startsWith("video"));
     try {
@@ -285,8 +292,13 @@ export default function HubMedia() {
   }
 
   function getYoutubeId(url) {
-    const m = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\s]+)/);
+    const m = String(url || "").match(/(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([^&\s?/]+)/);
     return m ? m[1] : null;
+  }
+
+  function youtubeEmbedUrl(url) {
+    const id = getYoutubeId(url);
+    return id ? `https://www.youtube.com/embed/${id}?autoplay=1&mute=1&rel=0&modestbranding=1&playsinline=1` : null;
   }
 
   function getThumbnail(item) {
@@ -421,12 +433,12 @@ export default function HubMedia() {
             </div>
             {lightbox.type === "video" ? (
               (() => {
-                const ytId = getYoutubeId(lightbox.url);
-                return ytId ? (
+                const embed = youtubeEmbedUrl(lightbox.url);
+                return embed ? (
                   <iframe style={{ width: "100%", aspectRatio: "16/9", border: "none", borderRadius: 8 }}
-                    src={`https://www.youtube.com/embed/${ytId}`} allowFullScreen />
+                    src={embed} allow="autoplay; encrypted-media; fullscreen" allowFullScreen />
                 ) : (
-                  <video src={lightbox.url} controls style={{ width: "100%", borderRadius: 8 }} />
+                  <video src={lightbox.url} controls autoPlay muted playsInline style={{ width: "100%", borderRadius: 8 }} />
                 );
               })()
             ) : (
@@ -453,6 +465,7 @@ export default function HubMedia() {
               </datalist>
               <input type="number" placeholder="Year" value={form.year} onChange={e => setForm({ ...form, year: e.target.value })} style={inputStyle} />
               <textarea placeholder="Description (optional)" value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} style={{ ...inputStyle, minHeight: 60, resize: "vertical" }} />
+              <input placeholder="Or paste YouTube link for videos (autoplays, free for 500MB+)" value={form.url} onChange={e => setForm({ ...form, url: e.target.value })} style={inputStyle} />
 
               {/* Upload mode toggle */}
               <div style={{ display: "flex", gap: 0, borderRadius: 6, overflow: "hidden", border: `1px solid ${C.border}` }}>

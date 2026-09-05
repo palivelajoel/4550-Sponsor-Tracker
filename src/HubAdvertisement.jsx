@@ -76,13 +76,26 @@ export default function HubAdvertisement() {
 
   const advance = () => setSlideIndex(s => (s + 1) % Math.max(slides.length, 1));
 
+  function isYoutubeUrl(url) {
+    return /(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([^&\s?/]+)/.test(String(url || ""));
+  }
+  function youtubeEmbedUrl(url) {
+    const m = String(url || "").match(/(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([^&\s?/]+)/);
+    return m ? `https://www.youtube.com/embed/${m[1]}?autoplay=1&mute=1&rel=0&modestbranding=1&playsinline=1` : null;
+  }
+
   useEffect(() => {
     if (!started || showQR || escArmed || slides.length === 0) return;
     const slide = slides[slideIndex];
-    if (slide?.type === "video") return; // videos advance only when the clip ends
+    // YouTube iframes can't signal onEnded without the API, so treat them like
+    // timed slides (durationSec or fallback)
+    const isYtVideo = slide?.type === "video" && isYoutubeUrl(slide?.url);
+    if (slide?.type === "video" && !isYtVideo) return; // native <video> advances onEnded
     const ms = (slide?.durationSec || 0) * 1000;
     const fallbackMs = ms || (slide?.type === "cad" ? 12000 : slide?.type === "info" ? 10000 : 8000);
-    timerRef.current = setTimeout(() => advance(), fallbackMs);
+    // YouTube videos get a longer default so they can play a bit
+    const ytFallback = isYtVideo ? (ms || 30000) : fallbackMs;
+    timerRef.current = setTimeout(() => advance(), ytFallback);
     return () => clearTimeout(timerRef.current);
   }, [started, showQR, escArmed, slideIndex, slides]);
 
@@ -213,8 +226,17 @@ export default function HubAdvertisement() {
 }
 
 function VideoSlide({ slide, onEnded }) {
+  const yt = (() => {
+    const m = String(slide.url || "").match(/(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([^&\s?/]+)/);
+    return m ? `https://www.youtube.com/embed/${m[1]}?autoplay=1&mute=1&rel=0&modestbranding=1&playsinline=1` : null;
+  })();
+  if (yt) {
+    return (
+      <iframe src={yt} title={slide.title || "video"} style={{ width: "100%", height: "100%", border: "none", background: "#000" }} allow="autoplay; encrypted-media; fullscreen" allowFullScreen />
+    );
+  }
   return (
-    <video src={slide.url} poster={slide.poster} autoPlay muted={false} style={{ width: "100%", height: "100%", objectFit: "contain", background: "#000" }} onEnded={onEnded} onError={onEnded} playsInline />
+    <video src={slide.url} poster={slide.poster} autoPlay muted playsInline style={{ width: "100%", height: "100%", objectFit: "contain", background: "#000" }} onEnded={onEnded} onError={onEnded} />
   );
 }
 

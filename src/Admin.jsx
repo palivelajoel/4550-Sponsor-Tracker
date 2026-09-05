@@ -1752,6 +1752,10 @@ function SiteConfig({ config, logoUrl, setLogoUrl, reload, showToast, isMobile }
   async function uploadAdMedia(idx) {
     const file = pendingAdUploads[idx];
     if (!file) return;
+    if (String(file.type || "").toLowerCase().startsWith("video") && (file.size || 0) > 3 * 1024 * 1024) {
+      showToast("Videos over 3MB: upload to YouTube (Unlisted) and paste the link — it will autoplay in the slideshow.", "#ef4444");
+      return;
+    }
     setUploadingAd(idx);
     setAdUploadPct(null);
     let url;

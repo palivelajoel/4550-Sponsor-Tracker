@@ -234,21 +234,23 @@ export async function uploadMediaFile(file, _bucket, opts) {
   return uploadFile(file);
 }
 
-// ---- Large media (video) uploads via the media-gateway Cloudflare Worker ----
+// ---- Large media (non-video) uploads via the media-gateway Cloudflare Worker ----
 //
-// Media Gallery videos can be ~500MB — far past the ~4.5MB Vercel/3MB GitHub
-// upload cap — so they go straight to the media-gateway worker, which streams
-// the file to R2 in parts. The worker subdomain mirrors the account used for
-// the d1-gateway worker; change MEDIA_WORKER_BASE if it deploys elsewhere.
+// Kept for large CAD/docs/assets that exceed the GitHub 3MB cap. Videos are
+// now handled via YouTube (paste a youtube.com / youtu.be link — see
+// getYoutubeId below) which is free and autoplays, so the gateway is not
+// required for video. Change MEDIA_WORKER_BASE if the worker deploys elsewhere.
 export const MEDIA_WORKER_BASE = "https://media-gateway.palivelajoel.workers.dev";
 const MEDIA_CHUNK = 50 * 1024 * 1024; // must match the worker's CHUNK_SIZE
 
-/** Files that can't ride the small GitHub path: any video, or any file (incl.
- *  large gallery images) over the compressible budget. Medium images still get
- *  client-side compression onto GitHub where possible. */
+/** Files that can't ride the small GitHub path. Videos now go via YouTube
+ *  (free, unlimited, autoplay) instead of R2, so only large non-image files
+ *  fall back to the R2 media-gateway. Compressible images are handled by
+ *  client-side compression onto GitHub (free, <2.8MB). */
 export function needsLargeUpload(file) {
   const t = String(file?.type || "").toLowerCase();
-  return t.startsWith("video") || (file?.size || 0) > COMPRESS_THRESHOLD;
+  if (t.startsWith("video")) return false;
+  return !isCompressibleImage(file) && (file?.size || 0) > COMPRESS_THRESHOLD;
 }
 
 function mediaWorkerBase() {
