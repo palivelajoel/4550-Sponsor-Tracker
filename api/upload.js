@@ -121,7 +121,7 @@ export default async function handler(req, res) {
     await commitFilesToRepo(gitToken, okFiles);
 
     return res.status(200).json({
-      data: { files: okFiles.map(f => ({ fileName: f.fileName, url: `https://raw.githubusercontent.com/${REPO}/${ASSET_DIR}/${f.fileName}` })) },
+      data: { files: okFiles.map(f => ({ fileName: f.fileName, url: `https://raw.githubusercontent.com/${REPO}/main/${ASSET_DIR}/${f.fileName}` })) },
       errors,
     });
   } catch (err) {
