@@ -90,7 +90,7 @@ async function fullSync(req, res, sheetId, sheets, body) {
   const { formId, questions: clientQuestions } = body;
   if (!formId) return res.status(400).json({ error: 'Missing formId' });
 
-  const form = await d1SelectOne('hub_forms', { filters: [{ col: 'id', op: 'eq', value: Number(formId) }] });
+  const form = await d1SelectOne('hub_forms', { filters: [{ col: 'id', op: 'eq', value: String(formId) }] });
   if (!form) return res.status(404).json({ error: 'Form not found' });
 
   const questions = Array.isArray(clientQuestions) && clientQuestions.length ? clientQuestions : (form.questions || []);
@@ -98,7 +98,7 @@ async function fullSync(req, res, sheetId, sheets, body) {
   const header = ['Date', ...labels, ...META];
   const tname = tabName(form.title);
 
-  let subs = await d1Select('hub_form_submissions', { filters: [{ col: 'form_id', op: 'eq', value: Number(formId) }], order: [{ col: 'created_at', asc: true }] });
+  let subs = await d1Select('hub_form_submissions', { filters: [{ col: 'form_id', op: 'eq', value: String(formId) }], order: [{ col: 'created_at', asc: true }] });
   if (!subs) subs = [];
 
   // Read the whole tab. If the tab doesn't exist yet, treat as empty.
@@ -186,7 +186,7 @@ async function fullSync(req, res, sheetId, sheets, body) {
     const answers = {};
     questions.forEach((q, i) => { answers[q.id] = r.cells[1 + i] ?? ''; });
     const submittedBy = String(r.cells[byCol] ?? '').trim() || 'sheet-import';
-    const ins = await d1Insert('hub_form_submissions', { form_id: Number(formId), submitted_by: submittedBy, answers });
+    const ins = await d1Insert('hub_form_submissions', { form_id: String(formId), submitted_by: submittedBy, answers });
     const newId = ins?.id;
     if (newId) inserted.push({ newId, rowIdx: r.rowIdx });
   }
